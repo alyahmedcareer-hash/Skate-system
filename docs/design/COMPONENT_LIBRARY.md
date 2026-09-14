@@ -74,31 +74,38 @@ A component belongs in the shared library if:
 
 ## 2. FILE STRUCTURE
 
+Actual verified structure as of Phase 03.5 completion (commit `b907372`):
+
 ```
 apps/web/src/components/
   ui/
-    Button.tsx
-    FormFields.tsx   ← Input, Select, Textarea, CheckboxField (all in one file)
-    Modal.tsx
-    Badge.tsx
-    Card.tsx
-    DataTable.tsx
-    SearchBar.tsx
-    EmptyState.tsx
-    LoadingSpinner.tsx
-    LoadingSkeleton.tsx
-    Toast.tsx
-    ToastProvider.tsx
-    ConfirmDialog.tsx
-    Alert.tsx
-    Icon.tsx
-    Pagination.tsx
-    index.ts          ← barrel export for all ui components
-  layout/
-    Sidebar.tsx       ← App sidebar (manages expanded/collapsed state)
-    Topbar.tsx        ← App topbar
-    AppShell.tsx      ← Combines Sidebar + Topbar + content area
+    Button.tsx           ← Button component (dedicated file)
+    FormFields.tsx       ← Input, Select, Textarea, CheckboxField (all in one file)
+    Modal.tsx            ← Modal + mobile bottom-sheet
+    Badge.tsx            ← Badge with semantic status mapping
+    Card.tsx             ← Card surface container
+    DataTable.tsx        ← Standard ERP data table
+    SearchBar.tsx        ← Search input with RTL icon
+    EmptyState.tsx       ← Empty list / no results
+    Loading.tsx          ← LoadingSpinner + LoadingSkeleton + PageLoader (single file)
+    Toast.tsx            ← ToastProvider + useToast hook (single file — no separate ToastProvider.tsx)
+    ConfirmDialog.tsx    ← Destructive action confirmation
+    Alert.tsx            ← Inline contextual banner
+    Icon.tsx             ← Lucide icon wrapper
+    Pagination.tsx       ← RTL-aware page navigation
+    ErrorBoundary.tsx    ← React error boundary (SYS-003)
+    index.ts             ← barrel export for all ui components
+  PermissionGate.tsx     ← Permission-conditional rendering (not in ui/)
+  ProtectedRoute.tsx     ← Auth-protected route wrapper (not in ui/)
 ```
+
+> [!IMPORTANT]
+> There is NO `layout/` subdirectory under `components/`. The App Shell (Sidebar and Topbar) is
+> implemented as internal functions within `apps/web/src/App.tsx`. Specifically:
+> - `function Sidebar(...)` — line ~97 in App.tsx
+> - `function Topbar(...)` — line ~701 in App.tsx
+> These are collocated with routing and app shell logic in App.tsx. If they are extracted to
+> separate files in a future phase, this document must be updated.
 
 All UI components must be exported from `components/ui/index.ts` for clean imports:
 
@@ -111,26 +118,28 @@ import { Button, Modal, Badge, DataTable } from '@/components/ui';
 
 ## 3. COMPONENT INDEX
 
-| Component | File | Purpose | Phase |
-|---|---|---|---|
-| `Button` | `FormFields.tsx` | All interactive buttons | 03.5 |
-| `Input` | `FormFields.tsx` | Text inputs with label + error | 03.5 |
-| `Select` | `FormFields.tsx` | Dropdown select with RTL support | 03.5 |
-| `Textarea` | `FormFields.tsx` | Multi-line text input | 03.5 |
-| `CheckboxField` | `FormFields.tsx` | Checkbox with label, validation, RTL, WCAG touch target | 03.5 D-012 |
-| `Modal` | `Modal.tsx` | Reusable modal dialog shell | 03.5 |
-| `Badge` | `Badge.tsx` | Status/label pills | 03.5 |
-| `Card` | `Card.tsx` | Surface container | 03.5 |
-| `DataTable` | `DataTable.tsx` | Standard ERP data table | 03.5 |
-| `SearchBar` | `SearchBar.tsx` | Search input with icon | 03.5 |
-| `EmptyState` | `EmptyState.tsx` | Empty list / no results | 03.5 |
-| `LoadingSpinner` | `LoadingSpinner.tsx` | Async loading indicator | 03.5 |
-| `LoadingSkeleton` | `LoadingSkeleton.tsx` | Content placeholder skeleton | 03.5 |
-| `Toast` + `ToastProvider` | `Toast.tsx` + `ToastProvider.tsx` | Non-blocking feedback | 03.5 |
-| `ConfirmDialog` | `ConfirmDialog.tsx` | Destructive action confirmation | 03.5 |
-| `Alert` | `Alert.tsx` | Inline contextual banner | 03.5 |
-| `Icon` | `Icon.tsx` | Lucide icon wrapper | 03.5 |
-| `Pagination` | `Pagination.tsx` | RTL-aware page navigation | 03.5 |
+| Component | File | Purpose | Phase | Status |
+|---|---|---|---|---|
+| `Button` | `Button.tsx` | All interactive buttons | 03.5 | VERIFIED |
+| `Input` | `FormFields.tsx` | Text inputs with label + error | 03.5 | VERIFIED |
+| `Select` | `FormFields.tsx` | Dropdown select with RTL support | 03.5 | VERIFIED |
+| `Textarea` | `FormFields.tsx` | Multi-line text input | 03.5 | VERIFIED |
+| `CheckboxField` | `FormFields.tsx` | Checkbox with label, validation, RTL, WCAG touch target | 03.5 D-012 | VERIFIED |
+| `Modal` | `Modal.tsx` | Reusable modal dialog shell with exit animation (AN-005) | 03.5 | VERIFIED |
+| `Badge` | `Badge.tsx` | Status/label pills — semantic status API (DEC-043) | 03.5 | VERIFIED |
+| `Card` | `Card.tsx` | Surface container | 03.5 | VERIFIED |
+| `DataTable` | `DataTable.tsx` | Standard ERP data table | 03.5 | VERIFIED |
+| `SearchBar` | `SearchBar.tsx` | Search input with icon | 03.5 | VERIFIED |
+| `EmptyState` | `EmptyState.tsx` | Empty list / no results | 03.5 | VERIFIED |
+| `LoadingSpinner` | `Loading.tsx` | Async loading indicator | 03.5 | VERIFIED |
+| `LoadingSkeleton` | `Loading.tsx` | Content placeholder skeleton | 03.5 | VERIFIED |
+| `PageLoader` | `Loading.tsx` | Full-page loading overlay | 03.5 | VERIFIED |
+| `ToastProvider` + `useToast` | `Toast.tsx` | Non-blocking feedback — single file exports both | 03.5 | VERIFIED |
+| `ConfirmDialog` | `ConfirmDialog.tsx` | Destructive action confirmation | 03.5 | VERIFIED |
+| `Alert` | `Alert.tsx` | Inline contextual banner | 03.5 | VERIFIED |
+| `Icon` | `Icon.tsx` | Lucide icon wrapper | 03.5 | VERIFIED |
+| `Pagination` | `Pagination.tsx` | RTL-aware page navigation | 03.5 | VERIFIED |
+| `ErrorBoundary` | `ErrorBoundary.tsx` | React error boundary (SYS-003) | 03.5 | VERIFIED |
 
 ---
 

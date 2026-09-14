@@ -829,4 +829,108 @@ Future phases must NOT redefine these unless the owner explicitly approves a cha
 
 ---
 
-*Last updated: 2026-09-10 (DEC-034 through DEC-040 added — Phase 03.5 Stage 1 owner decisions and governance decisions recorded) by AI Agent*
+### DEC-041
+
+**Date:** 2026-09-14 (Phase 03.5 close-out — SYS-018 WCAG AA correction)
+**Category:** Design — Semantic Color System
+**Decision:** The approved `--color-warning-text` token value is updated from `#C88B00` to `#7A5500`.
+
+The original value `#C88B00` was recorded in DEC-034 (Phase 03.5 OD-001). During the System-wide UI Consistency Audit (SYS-018), a WCAG AA contrast failure was discovered: `#C88B00` on `#FFF1C9` (warning-bg) achieves approximately 3.27:1 contrast ratio, below the WCAG AA minimum of 4.5:1 for small text.
+
+Owner approved Option A: darken warning text to `#7A5500`, which achieves approximately 5.9:1 contrast on the `#FFF1C9` warning background. This correction was implemented in `apps/web/src/styles/design-system.css` in commit `b907372`.
+
+**Supersedes:** The `--color-warning-text` value stated in DEC-034. All other DEC-034 semantic color values remain unchanged and active.
+
+**Implementation:**
+- `apps/web/src/styles/design-system.css` — `--color-warning-text: #7A5500` (IMPLEMENTED, commit b907372)
+- `docs/design/DESIGN_SYSTEM.md` §2.B — corrected to reflect `#7A5500` (this remediation)
+
+**Impact:** All warning-state badges (status: reserved, maintenance, system) now display with accessible contrast. No visible behavior change other than slightly darker text.
+
+**Affected Modules:** All modules using warning Badge variant
+**Status:** ACTIVE
+**Source:** Owner approval — SYS-018 Option A (2026-09-14)
+
+---
+
+### DEC-042
+
+**Date:** 2026-09-14 (Phase 03.5 — Desktop UI Audit D-009, currency standard formalized)
+**Category:** Design — Currency Display Standard
+**Decision:** The approved ERP-wide currency display standard is:
+
+- **Currency:** EGP — Egyptian Pound
+- **Arabic symbol:** ج.م (abbreviation for جنيه مصري)
+- **Numerals:** Western Arabic (0–9) using `en-US` locale formatting internally
+- **Thousands separator:** comma
+- **Decimal separator:** period
+- **Format:** `1,250 ج.م` (whole amounts) / `1,250.50 ج.م` (fractional amounts)
+- **Zero amount:** `0 ج.م`
+- **Null/undefined:** `— ج.م`
+
+**Implementation:** The shared `formatCurrency()` utility at `apps/web/src/utils/currency.ts` implements this standard. All future phases MUST use this utility for all financial amount display. A separate formatter must NOT be created.
+
+**Reason:** Ensures consistent currency display across all ERP modules. Western numerals are used for operational readability while the Arabic EGP symbol maintains the Arabic-first identity.
+
+**Affected Modules:** All modules displaying financial amounts (Rentals, Payments, Treasury, Expenses, Sales, Reports, Dashboard, Invoices)
+**Status:** ACTIVE
+**Source:** Owner approval — Phase 03.5 Desktop UI Audit D-009 (2026-09-14)
+
+---
+
+### DEC-043
+
+**Date:** 2026-09-14 (Phase 03.5 close-out — Badge API formalized)
+**Category:** Design — Badge Component API
+**Decision:** The approved `BadgeStatus` type for the shared `<Badge>` component is:
+
+```typescript
+type BadgeStatus =
+  | 'available'    // Success variant: متاح
+  | 'rented'       // Info variant: مستأجر
+  | 'reserved'     // Warning variant: محجوز
+  | 'maintenance'  // Warning variant: صيانة
+  | 'damaged'      // Danger variant: تالف
+  | 'lost'         // Neutral variant: مفقود
+  | 'active'       // Success variant: نشط
+  | 'inactive'     // Neutral variant: غير نشط
+  | 'role'         // Role variant: navy-50 bg / navy-700 text (user role pills)
+  | 'system'       // Warning variant: نظامي (system-defined resource marker)
+```
+
+All future modules MUST use these status values with the shared `<Badge status={...}>` prop. New status values for new modules (e.g., customer status, rental lifecycle, payment status) MUST be added to this union type in `Badge.tsx` and documented here before use. The variant mapping (`STATUS_VARIANT_MAP`) determines which semantic color each status uses.
+
+**Rationale:** Centralizing status semantics in the Badge component ensures consistent color-meaning mapping across all ERP modules. A new module must not invent its own status-to-color mapping.
+
+**Extension rule:** To add a new status value (e.g., `'overdue'`, `'completed'`, `'partial'`):
+1. Add the value to `BadgeStatus` in `Badge.tsx`
+2. Add the variant mapping to `STATUS_VARIANT_MAP`
+3. Record the new status values in an update to this decision
+4. Obtain owner approval if the new status introduces a new semantic meaning not covered by existing variants
+
+**Affected Modules:** All modules with status display (Skates, Users, Customers, Rentals, Payments, Damage, Maintenance, Reservations, Sales)
+**Status:** ACTIVE
+**Source:** Owner approval — Phase 03.5 Desktop UI Audit D-002/D-005/D-006 (2026-09-14)
+
+---
+
+### DEC-044
+
+**Date:** 2026-09-14 (Phase 03.5 Motion Audit — permanently deferred items)
+**Category:** Design — Motion / Animation — Permanent Deferral
+**Decision:** The following Motion & Animation audit findings are PERMANENTLY DEFERRED by explicit owner decision. Future AI agents MUST NOT rediscover, re-open, or implement these items.
+
+**AN-012 — EmptyState entrance animation:**
+The `<EmptyState>` component shall NOT have a CSS entrance animation. The component displays content directly without animating in. This was considered and explicitly declined by the owner. Rationale: the EmptyState is a negative-result signal and animating it would feel incongruous. The existing instant display is the approved behavior.
+
+**AN-013 — Alert entrance animation:**
+The `<Alert>` component shall NOT have a CSS entrance animation. Alerts appear immediately. This was considered and explicitly declined by the owner. Rationale: alerts convey time-sensitive information and delay-via-animation is counterproductive.
+
+**These items must NOT be included in future audits as open findings. They are CLOSED — PERMANENTLY DEFERRED, not forgotten.**
+
+**Status:** PERMANENTLY DEFERRED — OWNER DECISION
+**Source:** Owner decision — Phase 03.5 Motion Audit final review (2026-09-14)
+
+---
+
+*Last updated: 2026-09-14 (DEC-041 through DEC-044 added — Phase 03.5 close-out: warning-text correction, currency standard, Badge API, motion deferral) by AI Agent*

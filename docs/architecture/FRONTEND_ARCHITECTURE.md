@@ -1,8 +1,20 @@
 # Frontend Architecture — KOSHK SKATE ERP
 
-**Version:** 1.1  
-**Status:** PLANNED — No frontend code exists yet.  
-**Last updated:** 2026-09-09 (reconciled)
+**Version:** 1.2  
+**Status:** PARTIALLY IMPLEMENTED — Frontend exists through Phase 03.5; target architecture sections remain for future phases.  
+**Last updated:** 2026-09-14 (Governance Remediation — status corrected from PLANNED to PARTIALLY IMPLEMENTED)
+
+> [!NOTE]
+> Verified implementation exists for: React + Vite + TypeScript scaffold (Phase 01), React Router with
+> ProtectedRoute (Phase 02), AuthContext + JWT auth (Phase 02), Sidebar + Topbar App Shell with RTL
+> layout (Phase 03.5), full shared UI component library — 16 components (Phase 03.5), LoginPage
+> split-screen (Phase 03.5), UsersPage, RolesPage, SkatesPage (all migrated to design system Phase 03.5).
+>
+> Target architecture sections (routing map, state management strategy, API communication,
+> forms/validation strategy) describe the full intended system and are partially implemented.
+> They should NOT be treated as unimplemented placeholder text — they describe the approved
+> architecture that future phases must implement into.
+
 
 ---
 

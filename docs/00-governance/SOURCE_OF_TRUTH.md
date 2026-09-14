@@ -79,10 +79,10 @@ If two sources at the same priority level conflict:
 ### Operational Documents
 
 | Document | Location | Status |
-|---|---|---|
-| Project Map | `docs/PROJECT_MAP.md` | ACTIVE (v1.5 — Phase 03.5) |
-| Project State | `docs/PROJECT_STATE.md` | ACTIVE (v2.7 — Phase 03.5) |
-| Decision Log | `docs/decisions/DECISION_LOG.md` | ACTIVE (DEC-034 through DEC-040 added Phase 03.5) |
+|---|---|
+| Project Map | `docs/PROJECT_MAP.md` | ACTIVE (v1.5 — Phase 03.5; updated governance remediation 2026-09-14) |
+| Project State | `docs/PROJECT_STATE.md` | ACTIVE (v3.5 — Phase 03.5 Foundation Fixes + Governance Remediation 2026-09-14) |
+| Decision Log | `docs/decisions/DECISION_LOG.md` | ACTIVE (DEC-041 through DEC-044 added Phase 03.5 close-out 2026-09-14) |
 | Changelog | `docs/CHANGELOG.md` | ACTIVE |
 | Release History | `docs/RELEASE_HISTORY.md` | ACTIVE |
 
@@ -102,6 +102,34 @@ Before implementation, the AI agent MUST:
 5. Obtain owner approval where required
 
 Documentation is NOT merely a post-implementation activity.
+
+---
+
+## UI/UX Pro Max — Advisory Position (Not Authoritative)
+
+UI/UX Pro Max is a design intelligence reference that provides UX best practices, accessibility guidance, responsive design patterns, and interaction design recommendations.
+
+**UI/UX Pro Max does NOT have a formal position in the Source of Truth hierarchy.** It has no authority to override any of the following:
+
+- Owner-approved business or product decisions (priority 1)
+- Approved KOSHK Visual Design Reference (priority 5)
+- Approved KOSHK Design System (priority 5.1)
+- Any approved design, UX, or governance decision recorded in `DECISION_LOG.md`
+- Existing verified and approved implementation
+
+AI agents MAY use UI/UX Pro Max guidance:
+- To inform implementation choices when no approved decision exists
+- To improve accessibility where not in conflict with approved design
+- To suggest UX improvements for owner review
+- To provide design intelligence for new, unapproved areas
+
+AI agents MUST NOT use UI/UX Pro Max guidance:
+- To override approved KOSHK visual identity (colors, typography, spacing, radius)
+- To override an approved component API or pattern
+- To introduce new design language, new component systems, or new motion patterns
+- To justify deviating from approved RTL, accessibility, or responsive decisions
+
+If UI/UX Pro Max recommends something that conflicts with an approved KOSHK decision, the approved KOSHK decision always wins. Record the conflict in `DECISION_LOG.md` if the recommendation requires owner review.
 
 ---
 
@@ -129,4 +157,4 @@ The following business rules from the Master Specification are inviolable. They 
 
 ---
 
-*Last updated: 2026-09-10 (Phase 03.5 Stage 1 — design documents registered, statuses corrected, DOCUMENTATION_FIRST principle added)*
+*Last updated: 2026-09-14 (Governance Remediation — document register updated to v3.5, UI/UX Pro Max advisory position added, DEC-044 finalized)*

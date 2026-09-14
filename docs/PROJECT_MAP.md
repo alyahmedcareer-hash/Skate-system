@@ -1,14 +1,14 @@
 # Project Map — KOSHK SKATE ERP
 
-**Version:** 1.5
+**Version:** 1.6
 **Purpose:** Navigation map for future AI agents. Read this BEFORE scanning the repository.
-**Last updated:** 2026-09-10 (Phase 03.5 Stage 1 — design system docs registered, component library paths planned)
+**Last updated:** 2026-09-14 (Governance Remediation — all Phase 03.5 components marked VERIFIED, stale PLANNED entries corrected)
 
 > [!IMPORTANT]
-> **PROJECT STATE: IN IMPLEMENTATION — Phase 03 FINAL GATE PASSED. Phase 03.5 Stage 1 COMPLETE.**
-> Phase 03 auth/users/skates files are committed and verified. Phase 03.5 Stage 1 documentation is committed.
-> Stage 2 (implementation) requires owner approval before starting.
-> Update status from PLANNED → VERIFIED as files are created.
+> **PROJECT STATE: Phase 03.5 COMPLETE ✅. Phase 04 (Customers) is NEXT.**
+> All Phase 01–03.5 files are committed and verified. 16 shared UI components are implemented.
+> Phase 04 requires a written + approved specification before any implementation begins (Rule 16).
+> Update status from PLANNED → VERIFIED as new files are created in Phase 04+.
 
 ---
 
@@ -18,69 +18,92 @@
 d:/Skate system/
 ├── .gitignore                   — VERIFIED
 ├── README.md                    — VERIFIED (Phase 02, Arabic, updated)
-├── KOSHK_SKATE_VISUAL_DESIGN_REFERENCE.md  — VERIFIED (source document)
+├── KOSHK_SKATE_VISUAL_DESIGN_REFERENCE.md  — VERIFIED (source document — VDR authority)
 ├── Skate_Rental_ERP_Master_Business_Product_Specification.md  — VERIFIED (source document)
 └── docs/                        — All project documentation
     ├── 00-governance/           — AI rules, process, DoD
-    │   ├── AI_AGENT_RULES.md      — UPDATED v2.0 (Phase 03.5 — UI rules + DOCUMENTATION_FIRST)
+    │   ├── AI_AGENT_RULES.md      — UPDATED v3.0 (Governance Remediation 2026-09-14 — Rules 18–22 + UI-011)
     │   ├── AI_AGENT_WORKFLOW_AR.md — VERIFIED
-    │   ├── SOURCE_OF_TRUTH.md     — UPDATED v2.0 (Phase 03.5)
+    │   ├── SOURCE_OF_TRUTH.md     — UPDATED v2.1 (Governance Remediation — UI/UX Pro Max positioned, register updated)
     │   ├── DEFINITION_OF_DONE.md  — UPDATED v2.0 (Phase 03.5 — UI/UX DoD expanded)
     │   ├── CHANGE_REQUEST_PROCESS.md — VERIFIED
     │   └── DOCUMENTATION_RULES.md — VERIFIED
-    ├── architecture/            — Technical architecture docs (VERIFIED, updated Phase 02)
+    ├── architecture/            — Technical architecture docs (VERIFIED, updated Phase 02; FRONTEND_ARCHITECTURE updated Governance Remediation)
     ├── design/                  — Visual design and component library documentation
     │   ├── VISUAL_DESIGN_REFERENCE.md — VERIFIED (copy of root-level VDR)
-    │   ├── DESIGN_SYSTEM.md       — CREATED Phase 03.5 Stage 1 — authoritative design system
-    │   └── COMPONENT_LIBRARY.md   — CREATED Phase 03.5 Stage 1 — component developer reference
+    │   ├── DESIGN_SYSTEM.md       — VERIFIED Phase 03.5 — authoritative design system (warning-text updated DEC-041)
+    │   └── COMPONENT_LIBRARY.md   — UPDATED Governance Remediation — file structure corrected to actual implementation
     ├── modules/                 — Per-module documentation
     │   ├── AUTH.md              — VERIFIED (Phase 02)
     │   ├── USERS_PERMISSIONS.md — VERIFIED (Phase 02)
-    │   └── SKATES.md            — UPDATED (Phase 03 pre-implementation 2026-09-10 — was stub)
+    │   └── SKATES.md            — VERIFIED (Phase 03 — updated pre-implementation 2026-09-10)
     ├── phases/                  — Phase plans
     │   ├── PHASE_02_AUTHENTICATION_AND_PERMISSIONS.md — VERIFIED (full spec, Phase 02 Final Gate)
-    │   ├── PHASE_03_SKATES_MODULE.md — UPDATED (full spec written 2026-09-10)
-    │   └── PHASE_035_UI_DESIGN_SYSTEM.md — CREATED Phase 03.5 Stage 1 — full phase spec
+    │   ├── PHASE_03_SKATES_MODULE.md — VERIFIED (full spec written 2026-09-10)
+    │   ├── PHASE_035_UI_DESIGN_SYSTEM.md — COMPLETE ✅ (updated Governance Remediation 2026-09-14)
+    │   └── PHASE_04_CUSTOMERS_MODULE.md — PLANNING (stub — requires owner approval before implementation)
     ├── quality/                 — QA strategy and test matrix (VERIFIED)
-    ├── decisions/               — Decision log (40 decisions through DEC-040)
+    ├── decisions/               — Decision log (44 decisions through DEC-044)
     ├── product/                 — Master Business Spec copy (VERIFIED)
-    ├── PROJECT_MAP.md           — THIS FILE (v1.5)
-    ├── PROJECT_STATE.md         — Current project status (v2.7 — Phase 03.5 Stage 1)
-    ├── CHANGELOG.md             — Change history (Phase 03.5 Stage 1 entry added)
+    ├── PROJECT_MAP.md           — THIS FILE (v1.6)
+    ├── PROJECT_STATE.md         — Current project status (v3.5 — Phase 03.5 Foundation Fixes + Governance Remediation)
+    ├── CHANGELOG.md             — Change history (updated through Phase 03.5 Foundation Fixes)
     ├── RELEASE_HISTORY.md       — Release history
     └── INITIAL_PROJECT_AUDIT.md — Initial audit report
 ├── apps/                        — Applications
-│   ├── web/                     — Frontend (VERIFIED — Phase 02)
+│   ├── web/                     — Frontend (VERIFIED — Phase 03.5 COMPLETE)
 │   │   ├── index.html             — VERIFIED (lang=ar dir=rtl, Cairo font)
 │   │   ├── .env.example           — VERIFIED
-│   │   ├── package.json           — VERIFIED (react-router-dom added)
+│   │   ├── package.json           — VERIFIED (react-router-dom, lucide-react added)
 │   │   ├── vite.config.ts         — VERIFIED
 │   │   ├── tsconfig.json          — VERIFIED
 │   │   └── src/
-│   │       ├── main.tsx             — VERIFIED (wrapped BrowserRouter + AuthProvider)
-│   │       ├── App.tsx              — VERIFIED (full routing: /login + protected shell)
+│   │       ├── main.tsx             — VERIFIED (Phase 03.5: StrictMode → ErrorBoundary → BrowserRouter → AuthProvider → ToastProvider → App)
+│   │       ├── App.tsx              — VERIFIED (Phase 03.5: full RTL app shell with Sidebar + Topbar; Sidebar=right-anchored; collapse+mobile drawer; Lucide icons; all routes)
 │   │       ├── styles/
-│   │       │   ├── design-system.css — VERIFIED (full CSS token system)
-│   │       │   └── index.css         — VERIFIED (global RTL reset)
+│   │       │   ├── design-system.css — VERIFIED (Phase 03.5: full token system; warning-text updated DEC-041)
+│   │       │   └── index.css         — VERIFIED (global RTL reset; gray token aliases fixed SYS-001)
 │   │       ├── services/
 │   │       │   └── api.ts            — VERIFIED (auth-aware: Bearer injection + 401 retry)
 │   │       ├── contexts/
 │   │       │   └── AuthContext.tsx   — VERIFIED (Phase 02: in-memory token, silent refresh)
 │   │       ├── hooks/
 │   │       │   └── usePermission.ts  — VERIFIED (Phase 02)
+│   │       ├── utils/
+│   │       │   └── currency.ts       — VERIFIED (Phase 03.5: formatCurrency() — EGP / ج.م standard, DEC-042)
 │   │       ├── components/
 │   │       │   ├── ProtectedRoute.tsx — VERIFIED (Phase 02)
-│   │       │   └── PermissionGate.tsx — VERIFIED (Phase 02)
+│   │       │   ├── PermissionGate.tsx — VERIFIED (Phase 02)
+│   │       │   └── ui/                — VERIFIED (Phase 03.5 — 16 shared components)
+│   │       │       ├── Button.tsx        — VERIFIED
+│   │       │       ├── FormFields.tsx    — VERIFIED (Input, Select, Textarea, CheckboxField)
+│   │       │       ├── Modal.tsx         — VERIFIED (with exit animation AN-005)
+│   │       │       ├── Badge.tsx         — VERIFIED (DEC-043 semantic status API)
+│   │       │       ├── Card.tsx          — VERIFIED
+│   │       │       ├── DataTable.tsx     — VERIFIED
+│   │       │       ├── SearchBar.tsx     — VERIFIED
+│   │       │       ├── EmptyState.tsx    — VERIFIED
+│   │       │       ├── Loading.tsx       — VERIFIED (LoadingSpinner, LoadingSkeleton, PageLoader)
+│   │       │       ├── Toast.tsx         — VERIFIED (ToastProvider + useToast hook)
+│   │       │       ├── ConfirmDialog.tsx — VERIFIED
+│   │       │       ├── Alert.tsx         — VERIFIED (dismiss touch target 44px SYS-017)
+│   │       │       ├── Icon.tsx          — VERIFIED
+│   │       │       ├── Pagination.tsx    — VERIFIED
+│   │       │       ├── ErrorBoundary.tsx — VERIFIED (SYS-003)
+│   │       │       └── index.ts          — VERIFIED (barrel export)
 │   │       └── modules/
 │   │           ├── auth/
 │   │           │   ├── auth.types.ts  — VERIFIED (Phase 02)
 │   │           │   ├── auth.service.ts — VERIFIED (Phase 02)
-│   │           │   └── LoginPage.tsx  — VERIFIED (Phase 02, Arabic RTL)
-│   │           └── users/
-│   │               ├── users.service.ts — VERIFIED (Phase 02)
-│   │               ├── UsersPage.tsx    — VERIFIED (Phase 02)
-│   │               └── RolesPage.tsx    — VERIFIED (Phase 02)
-│   └── api/                     — Backend (VERIFIED — Phase 02)
+│   │           │   └── LoginPage.tsx  — VERIFIED (Phase 03.5: split-screen desktop + shared components)
+│   │           ├── users/
+│   │           │   ├── users.service.ts — VERIFIED (Phase 02)
+│   │           │   ├── UsersPage.tsx    — VERIFIED (Phase 03.5: migrated to DataTable + design system)
+│   │           │   └── RolesPage.tsx    — VERIFIED (Phase 03.5: migrated to design system)
+│   │           └── skates/
+│   │               ├── skates.service.ts — VERIFIED (Phase 03)
+│   │               └── SkatesPage.tsx    — VERIFIED (Phase 03.5: migrated to Card + design system + CheckboxField)
+│   └── api/                     — Backend (VERIFIED — Phase 03 COMPLETE)
 │       ├── .env.example           — VERIFIED (updated Phase 02)
 │       ├── package.json           — VERIFIED (test, db:seed scripts added)
 │       ├── tsconfig.json          — VERIFIED
@@ -122,54 +145,59 @@ d:/Skate system/
 │               │   ├── users.routes.ts  — VERIFIED (Phase 02)
 │               │   ├── roles.service.ts — VERIFIED (Phase 02)
 │               │   └── roles.routes.ts  — VERIFIED (Phase 02)
-│               └── skates/              — [PHASE 03 — PLANNED]
-│                   ├── skates.types.ts  — PLANNED
-│                   ├── skates.service.ts — PLANNED
-│                   └── skates.routes.ts  — PLANNED
-├── tests/                       — Integration tests (top-level placeholder)
+│       └── skates/              — [PHASE 03 — VERIFIED ✅]
+│           ├── skates.types.ts  — VERIFIED (Phase 03)
+│           ├── skates.service.ts — VERIFIED (Phase 03)
+│           └── skates.routes.ts  — VERIFIED (Phase 03)
+├── tests/                       — Integration tests (top-level placeholder; actual tests in apps/api/src/tests/)
 ├── scripts/                     — PLACEHOLDER
 ├── KOSHK_SKATE_VISUAL_DESIGN_REFERENCE.md  — VERIFIED (source document)
 └── Skate_Rental_ERP_Master_Business_Product_Specification.md  — VERIFIED (source document)
 
-Planned/verified web modules (Phase 03+):
+> [!NOTE]
+> The App Shell (Sidebar and Topbar) is implemented as internal functions within `App.tsx`.
+> There is NO `components/layout/` directory. See `function Sidebar()` (~line 97) and
+> `function Topbar()` (~line 701) inside `apps/web/src/App.tsx`.
+
+Verified web modules (Phase 03.5 COMPLETE):
 
 ```
 apps/web/src/
 ├── components/
 │   ├── ProtectedRoute.tsx  — VERIFIED (Phase 02)
 │   ├── PermissionGate.tsx  — VERIFIED (Phase 02)
-│   └── ui/                 — [Phase 03.5 Stage 2 — PLANNED] Shared UI component library
-│       ├── Button.tsx        — PLANNED
-│       ├── Input.tsx         — PLANNED
-│       ├── Select.tsx        — PLANNED
-│       ├── Textarea.tsx      — PLANNED
-│       ├── Modal.tsx         — PLANNED
-│       ├── Badge.tsx         — PLANNED
-│       ├── Card.tsx          — PLANNED
-│       ├── DataTable.tsx     — PLANNED
-│       ├── SearchBar.tsx     — PLANNED
-│       ├── EmptyState.tsx    — PLANNED
-│       ├── LoadingSpinner.tsx — PLANNED
-│       ├── LoadingSkeleton.tsx — PLANNED
-│       ├── Toast.tsx         — PLANNED
-│       ├── ToastProvider.tsx — PLANNED
-│       ├── ConfirmDialog.tsx — PLANNED
-│       ├── Alert.tsx         — PLANNED
-│       ├── Icon.tsx          — PLANNED
-│       ├── Pagination.tsx    — PLANNED
-│       └── index.ts          — PLANNED (barrel export)
-├── modules/
-    ├── auth/               — VERIFIED (Phase 02)
-    ├── users/              — VERIFIED (Phase 02)
-    ├── skates/             — VERIFIED (Phase 03)
-    ├── customers/          — [PHASE 04]
+│   └── ui/                 — VERIFIED (Phase 03.5 — all 16 components implemented)
+│       ├── Button.tsx        — VERIFIED
+│       ├── FormFields.tsx    — VERIFIED (Input, Select, Textarea, CheckboxField)
+│       ├── Modal.tsx         — VERIFIED
+│       ├── Badge.tsx         — VERIFIED (DEC-043: semantic status API)
+│       ├── Card.tsx          — VERIFIED
+│       ├── DataTable.tsx     — VERIFIED
+│       ├── SearchBar.tsx     — VERIFIED
+│       ├── EmptyState.tsx    — VERIFIED
+│       ├── Loading.tsx       — VERIFIED (LoadingSpinner + LoadingSkeleton + PageLoader)
+│       ├── Toast.tsx         — VERIFIED (ToastProvider + useToast — single file)
+│       ├── ConfirmDialog.tsx — VERIFIED
+│       ├── Alert.tsx         — VERIFIED
+│       ├── Icon.tsx          — VERIFIED
+│       ├── Pagination.tsx    — VERIFIED
+│       ├── ErrorBoundary.tsx — VERIFIED (SYS-003)
+│       └── index.ts          — VERIFIED (barrel export)
+├── utils/
+│   └── currency.ts         — VERIFIED (formatCurrency() — EGP/ج.م standard, DEC-042)
+└── modules/
+    ├── auth/               — VERIFIED (Phase 02 + 03.5 redesign)
+    ├── users/              — VERIFIED (Phase 02 + 03.5 migration)
+    ├── skates/             — VERIFIED (Phase 03 + 03.5 migration)
+    ├── customers/          — [PHASE 04 — PLANNING]
     └── ...
 ```
 
-Planned API migrations (Phase 03+):
+Verified API migrations:
 ```
 apps/api/src/db/migrations/
-└── 0001_*.sql                   — [PHASE 03 — PLANNED] skates table
+├── 0000_cloudy_the_renegades.sql — VERIFIED (Phase 02: 6 tables — users, roles, permissions, user_roles, role_permissions, refresh_tokens)
+└── 0001_*.sql                   — VERIFIED (Phase 03: skates table)
 ```
 
 ---

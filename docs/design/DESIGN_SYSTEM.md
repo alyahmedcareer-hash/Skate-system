@@ -90,7 +90,8 @@ The KOSHK SKATE ERP visual identity is:
 |---|---|---|
 | `--color-warning-500` | `#F3B735` | Warning icon, warning indicator (same as gold per VDR §2.2) |
 | `--color-warning-bg` | `#FFF1C9` | Warning badge background |
-| `--color-warning-text` | `#C88B00` | Warning badge text |
+| `--color-warning-text` | `#7A5500` | Warning badge text — **SYS-018 / DEC-041**: darkened from original `#C88B00` (≈3.27:1) to `#7A5500` (≈5.9:1) for WCAG AA compliance |
+
 
 #### Danger (خطأ / Error / Destructive / متأخر)
 
