@@ -14,7 +14,7 @@
 
 import { useState, useEffect } from 'react'
 import { rolesService, type RoleDTO } from './users.service'
-import { Alert, Card, PageLoader } from '../../components/ui'
+import { Alert, Badge, Card, PageLoader } from '../../components/ui'
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<RoleDTO[]>([])
@@ -73,53 +73,29 @@ export default function RolesPage() {
                     <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, color: 'var(--color-navy-800)', margin: 0 }}>
                       {role.nameAr}
                     </h2>
+                    {/* D-005: replaced raw <span> (non-token 0.65rem, gold-100/gold-600 inline) with <Badge status="system"> */}
                     {role.isSystem && (
-                      <span style={{
-                        padding: 'var(--space-1) var(--space-2)',
-                        backgroundColor: 'var(--color-gold-100)',
-                        color: 'var(--color-gold-600)',
-                        borderRadius: 'var(--radius-full)',
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                      }}>
-                        نظامي
-                      </span>
+                      <Badge status="system">نظامي</Badge>
                     )}
                   </div>
                   <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', margin: 'var(--space-1) 0 0' }}>
                     {role.name}
                   </p>
                 </div>
-                <span style={{
-                  padding: 'var(--space-1) var(--space-3)',
-                  backgroundColor: 'var(--color-navy-50)',
-                  color: 'var(--color-navy-700)',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: 'var(--font-size-xs)',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}>
+                {/* D-006: replaced raw <span> (navy-50/navy-700 inline) with <Badge status="role"> */}
+                <Badge status="role" className="roles-count-badge">
                   {role.permissions.length} صلاحية
-                </span>
+                </Badge>
               </div>
 
               {role.permissions.length > 0 ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                  {/* D-007: replaced raw spans (0.7rem/radius-base) with Badge variant="neutral" (xs font, radius-full pill) */}
                   {role.permissions.map(p => (
-                    <span
-                      key={p.id}
-                      title={p.key}
-                      style={{
-                        padding: 'var(--space-1) var(--space-2)',
-                        backgroundColor: 'var(--color-neutral-bg)',
-                        color: 'var(--color-text-secondary)',
-                        borderRadius: 'var(--radius-base)',
-                        fontSize: '0.7rem',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {p.labelAr}
+                    <span key={p.id} title={p.key} style={{ display: 'contents' }}>
+                      <Badge variant="neutral" className="permission-chip">
+                        {p.labelAr}
+                      </Badge>
                     </span>
                   ))}
                 </div>

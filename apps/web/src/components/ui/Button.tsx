@@ -95,7 +95,8 @@ export function Button({
         }
 
         /* Sizes */
-        .btn-sm   { height: 32px; font-size: var(--font-size-xs);  padding: 0 0.875rem; min-height: 32px; }
+        /* D-001: btn-sm visual height stays 32px but min-height raised to 44px for WCAG 2.5.5 touch-target compliance */
+        .btn-sm   { height: 32px; font-size: var(--font-size-xs);  padding: 0 0.875rem; min-height: 44px; }
         .btn-base { height: 40px; font-size: var(--font-size-sm);  padding: 0 1.125rem; min-height: 44px; }
         .btn-lg   { height: 44px; font-size: var(--font-size-base); padding: 0 1.5rem;  min-height: 44px; }
         .btn-full-width { width: 100%; }

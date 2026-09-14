@@ -6,6 +6,41 @@
 
 ## [Unreleased]
 
+### Phase 03.5 — Desktop UI Consistency Audit Fixes (2026-09-14)
+
+**Desktop UI Consistency Audit — 9 findings resolved**
+
+Owner decisions applied:
+- Currency: EGP / `ج.م` symbol / Western Arabic numerals (`1,250 ج.م`)
+- Badge API: semantic-status approach — `status="role"` + `status="system"` added to `Badge.tsx`
+
+#### Added
+- `apps/web/src/utils/currency.ts` (D-009): New `formatCurrency()` shared utility — EGP, Western Arabic numerals (`en-US` locale), `ج.م` suffix. Single source of truth for all ERP modules.
+- `Badge.tsx`: New `BadgeStatus` values `'role'` (navy-50/navy-700) and `'system'` (maps to warning/gold variant) — approved semantic-status approach.
+- `Badge.tsx`: New `BadgeVariant` `'role'` with `--color-navy-50` bg / `--color-navy-700` text.
+
+#### Fixed
+- `Button.tsx` (D-001): `btn-sm` `min-height` raised from 32px → 44px for WCAG 2.5.5 touch-target compliance on touch-capable desktops. Visual 32px height unchanged.
+- `Modal.tsx` (D-003): `titleId` replaced `Math.random()` with React 18 `useId()` — stable, hydration-safe `aria-labelledby` relationship on all modals.
+- `SkatesPage.tsx` (D-004): Removed inline `{ backgroundColor: gold-500, color: navy-900 }` override on EditSkateModal submit button. Standard `variant="primary"` (navy-800) now applies consistently.
+- `SkatesPage.tsx` (D-009): Purchase cost display replaced `toLocaleString('ar-SA')` with `formatCurrency()` — now shows `1,000 ج.م` instead of Eastern Arabic numerals `١٬٠٠٠ ر.س`.
+- `RolesPage.tsx` (D-005): System badge (`نظامي`) replaced raw `<span>` (non-token 0.65rem, gold-100/gold-600 inline) with `<Badge status="system">`.
+- `RolesPage.tsx` (D-006): Permission count badge replaced raw `<span>` (navy-50/navy-700 inline) with `<Badge status="role">`.
+- `RolesPage.tsx` (D-007): Permission chips replaced raw `<span>` (non-token 0.7rem, `border-radius: var(--radius-base)` — rectangular) with `<Badge variant="neutral">` — now pill-shaped (`--radius-full`) and `var(--font-size-xs)`.
+- `UsersPage.tsx` (D-002): Role-name pills in desktop table AND mobile card list replaced raw `<span>` (inline navy-50/navy-700, inconsistent padding `1px`/`2px`) with `<Badge status="role">`.
+- `UsersPage.tsx` (D-008): Desktop table empty state `<td>` plain text and mobile card empty state raw `<div>` both replaced with shared `<EmptyState icon={Users}>` component.
+
+#### Verified
+- TypeScript: `npx tsc --noEmit` → 0 errors
+- Build: `npm run build` → 0 errors, 361KB bundle
+- API tests: `npm test` → 34/34 PASS
+- Manual browser verification at 375px and 1200px — all 9 fixes PASS
+- Currency: `1,000 ج.م` (Western numerals, correct symbol) ✅
+- Badges: role pills navy-blue, system badge amber, permission chips pill-shaped ✅
+- EditSkateModal save button: navy primary (no gold override) ✅
+- btn-sm: touch target 44px min, visual size unchanged ✅
+- Modal aria-labelledby stable across re-renders ✅
+
 ### Phase 03.5 — Mobile UX Audit Fixes (2026-09-14)
 
 **Mobile UX Audit Bug Fixes — 7 items implemented from pre-Phase-04 audit report**

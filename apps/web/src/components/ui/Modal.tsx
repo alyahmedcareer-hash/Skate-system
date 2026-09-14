@@ -6,7 +6,7 @@
  * UI-005: No native confirm()/alert(). Use Modal instead.
  */
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useId, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
 type ModalSize = 'sm' | 'base' | 'lg'
@@ -39,7 +39,9 @@ export function Modal({
   closeOnBackdrop = true,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
-  const titleId = `modal-title-${Math.random().toString(36).slice(2, 8)}`
+  // D-003: useId() generates a stable, hydration-safe ID — replaces Math.random()
+  const baseId = useId()
+  const titleId = `modal-title-${baseId.replace(/:/g, '')}`
 
   // Keyboard dismiss
   useEffect(() => {

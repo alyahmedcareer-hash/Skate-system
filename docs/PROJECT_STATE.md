@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 3.0
-**Last updated:** 2026-09-14 (Phase 03.5 Mobile UX Audit Fixes — 7 items implemented)
-**Updated by:** AI Agent (Phase 03.5 Mobile UX Audit Fix)
+**Version:** 3.1
+**Last updated:** 2026-09-14 (Desktop UI Consistency Audit Fixes — D-001 through D-009 implemented)
+**Updated by:** AI Agent (Desktop UI Audit Fix)
 
 ---
 
@@ -10,14 +10,14 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | IN IMPLEMENTATION — Phase 03.5 Mobile UX Audit Fixes COMPLETE. Ready for Phase 04. |
-| **Current Phase** | Phase 03.5 (Mobile UX Audit Fixes) — COMPLETE |
-| **Current Milestone** | Phase 03.5 Mobile UX Audit: 7 WCAG/UX bugs fixed (M-001–M-017). SearchBar overflow, touch targets (44px), modal focus trap, drawer aria-modal, SkatesPage design-system compliance, RolesPage header alignment. 0 TS errors, 34/34 tests pass, build 361KB. |
-| **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Audit Fixes) |
+| **Overall Status** | IN IMPLEMENTATION — Desktop UI Consistency Audit Fixes COMPLETE. Ready for Phase 04. |
+| **Current Phase** | Phase 03.5 (Desktop UI Consistency Audit) — COMPLETE |
+| **Current Milestone** | Phase 03.5 Desktop UI Audit: 9 findings resolved (D-001–D-009). Badge `role`/`system` statuses, `formatCurrency()` utility, `btn-sm` WCAG touch target, Modal `useId()`, RolesPage/UsersPage badge compliance, empty state standardisation. 0 TS errors, 34/34 tests pass, build 361KB. |
+| **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Audit Fixes + Desktop UI Consistency) |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-14 — Mobile UX Audit Fixes: `tsc --noEmit` 0 errors ✅, `npm run build` 361KB ✅, `npm test` 34/34 PASS ✅, manual browser 375px/390px/430px/768px/1200px all PASS ✅ |
-| **Last Git Commit** | Pending commit of Mobile UX Audit Fixes |
+| **Last Verification** | 2026-09-14 — Desktop UI Audit Fixes: `tsc --noEmit` 0 errors ✅, `npm run build` 361KB ✅, `npm test` 34/34 PASS ✅, browser 375px + 1200px all PASS ✅ |
+| **Last Git Commit** | Pending commit of Desktop UI Consistency Audit Fixes |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Begin Phase 04 (Customers Module) |
 

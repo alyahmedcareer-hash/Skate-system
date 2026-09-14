@@ -50,6 +50,7 @@ import {
   Textarea,
   type BadgeStatus,
 } from '../../components/ui'
+import { formatCurrency } from '../../utils/currency'
 
 // ---------------------------------------------------------------------------
 // Status badge — uses shared Badge with status → semantic color mapping
@@ -278,7 +279,8 @@ function EditSkateModal({ skate, onClose, onUpdated }: { skate: SkateDTO; onClos
     <Modal isOpen onClose={onClose} title="تعديل الزلاجة" size="base"
       footer={
         <>
-          <Button type="submit" form="edit-skate-form" variant="primary" loading={saving} id="edit-skate-submit-btn" style={{ backgroundColor: 'var(--color-gold-500)', color: 'var(--color-navy-900)' } as React.CSSProperties}>
+          {/* D-004: removed gold inline style — standard variant="primary" uses navy-800 */}
+          <Button type="submit" form="edit-skate-form" variant="primary" loading={saving} id="edit-skate-submit-btn">
             حفظ التعديلات
           </Button>
           <Button type="button" variant="secondary" onClick={onClose} id="edit-skate-cancel-btn">
@@ -652,7 +654,8 @@ function SkateCard({ skate, onEdit }: { skate: SkateDTO; onEdit: () => void }) {
         {skate.purchaseCost && (
           <div>
             <span style={{ color: 'var(--color-text-muted)' }}>التكلفة: </span>
-            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{parseFloat(skate.purchaseCost).toLocaleString('ar-SA')} ر.س</span>
+            {/* D-009: formatCurrency — EGP, Western numerals, ج.م suffix */}
+            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{formatCurrency(skate.purchaseCost)}</span>
           </div>
         )}
       </div>

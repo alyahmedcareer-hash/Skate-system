@@ -8,6 +8,11 @@
 
 import type { ReactNode } from 'react'
 
+/**
+ * Status values for role/system badges (D-002 / D-005 / D-006):
+ *   'role'   — role name pill, navy-50 bg / navy-700 text
+ *   'system' — system-defined marker (gold-adjacent), maps to warning variant
+ */
 export type BadgeStatus =
   | 'available'
   | 'rented'
@@ -17,8 +22,10 @@ export type BadgeStatus =
   | 'lost'
   | 'active'
   | 'inactive'
+  | 'role'    // D-002 / D-006: user role name pills
+  | 'system'  // D-005: نظامي — system-defined resource badge
 
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'role'
 
 const STATUS_VARIANT_MAP: Record<BadgeStatus, BadgeVariant> = {
   available:   'success',
@@ -29,6 +36,8 @@ const STATUS_VARIANT_MAP: Record<BadgeStatus, BadgeVariant> = {
   damaged:     'danger',
   lost:        'neutral',
   inactive:    'neutral',
+  role:        'role',    // D-002 / D-006: navy-50 bg / navy-700 text
+  system:      'warning', // D-005: gold-adjacent — system resources
 }
 
 const VARIANT_STYLES: Record<BadgeVariant, { bg: string; color: string }> = {
@@ -37,6 +46,7 @@ const VARIANT_STYLES: Record<BadgeVariant, { bg: string; color: string }> = {
   danger:  { bg: 'var(--color-danger-bg)',   color: 'var(--color-danger-text)'  },
   info:    { bg: 'var(--color-info-bg)',     color: 'var(--color-info-text)'    },
   neutral: { bg: 'var(--color-neutral-bg)',  color: 'var(--color-neutral-text)' },
+  role:    { bg: 'var(--color-navy-50)',     color: 'var(--color-navy-700)'     }, // D-002 / D-006
 }
 
 interface BadgeProps {

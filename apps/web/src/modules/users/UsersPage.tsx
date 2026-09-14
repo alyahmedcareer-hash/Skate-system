@@ -18,7 +18,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { UserPlus } from 'lucide-react'
+import { UserPlus, Users } from 'lucide-react'
 import { usersService, rolesService, type UserDTO, type RoleDTO } from './users.service'
 import { PermissionGate } from '../../components/PermissionGate'
 import {
@@ -27,6 +27,7 @@ import {
   Alert,
   Modal,
   ConfirmDialog,
+  EmptyState,
   Input,
   PageLoader,
   useToast,
@@ -165,8 +166,13 @@ export default function UsersPage() {
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>
-                        لا يوجد مستخدمون بعد
+                      <td colSpan={5}>
+                        {/* D-008: EmptyState component instead of raw div with text */}
+                        <EmptyState
+                          icon={Users}
+                          title="لا يوجد مستخدمون"
+                          description="لم يتم إضافة أي مستخدمين بعد"
+                        />
                       </td>
                     </tr>
                   ) : (
@@ -179,13 +185,12 @@ export default function UsersPage() {
                           <span style={{ direction: 'ltr', display: 'inline-block', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-xs)' }}>{user.email}</span>
                         </td>
                         <td style={{ padding: 'var(--space-4)', verticalAlign: 'middle' }}>
-                          <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
-                            {user.roles.map(r => (
-                              <span key={r.id} style={{ padding: '1px var(--space-2)', backgroundColor: 'var(--color-navy-50)', color: 'var(--color-navy-700)', borderRadius: 'var(--radius-full)', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
-                                {r.nameAr}
-                              </span>
-                            ))}
-                          </div>
+                          {/* D-002: replaced raw <span> (inline navy-50/navy-700 style) with shared <Badge status="role"> */}
+                        <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                          {user.roles.map(r => (
+                            <Badge key={r.id} status="role">{r.nameAr}</Badge>
+                          ))}
+                        </div>
                         </td>
                         <td style={{ padding: 'var(--space-4)', verticalAlign: 'middle' }}>
                           <Badge status={user.isActive ? 'active' : 'inactive'}>
@@ -221,12 +226,13 @@ export default function UsersPage() {
                 backgroundColor: 'var(--color-white)',
                 borderRadius: 'var(--radius-lg)',
                 border: '1px solid var(--color-border)',
-                padding: 'var(--space-8)',
-                textAlign: 'center',
-                color: 'var(--color-text-muted)',
-                fontSize: 'var(--font-size-sm)',
               }}>
-                لا يوجد مستخدمون بعد
+                {/* D-008: EmptyState component instead of raw div with text */}
+                <EmptyState
+                  icon={Users}
+                  title="لا يوجد مستخدمون"
+                  description="لم يتم إضافة أي مستخدمين بعد"
+                />
               </div>
             ) : (
               users.map(user => (
@@ -268,19 +274,11 @@ export default function UsersPage() {
                   </div>
 
                   {/* Roles */}
+                  {/* D-002: replaced raw <span> (inline navy-50/navy-700) with shared <Badge status="role"> */}
                   {user.roles.length > 0 && (
                     <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
                       {user.roles.map(r => (
-                        <span key={r.id} style={{
-                          padding: '2px var(--space-2)',
-                          backgroundColor: 'var(--color-navy-50)',
-                          color: 'var(--color-navy-700)',
-                          borderRadius: 'var(--radius-full)',
-                          fontSize: 'var(--font-size-xs)',
-                          fontWeight: 600,
-                        }}>
-                          {r.nameAr}
-                        </span>
+                        <Badge key={r.id} status="role">{r.nameAr}</Badge>
                       ))}
                     </div>
                   )}
