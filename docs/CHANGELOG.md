@@ -6,6 +6,77 @@
 
 ## [Unreleased]
 
+### Phase 03.5 — Motion & Animation Final Cleanup AN-001–AN-011 (2026-09-14)
+
+**Motion Workstream CLOSED — All 11 approved findings implemented. AN-012 and AN-013 remain explicitly deferred.**
+
+#### Fixed
+
+- `ProtectedRoute.tsx` (AN-001): Replaced raw border-div spinner + local `@keyframes spin` with shared `<PageLoader>` component.
+  - Token fix: `--color-page-bg` now used instead of non-existent `--color-gray-50`.
+  - Loading label "جارٍ التحقق من الجلسة..." preserved.
+  - Local `@keyframes spin` declaration eliminated (already in design-system.css).
+
+- `design-system.css` (AN-002 + AN-003): Centralised four animation keyframes that were declared locally in component style blocks.
+  - `fadeIn` / `fadeOut` — moved from `Modal.tsx` local `<style>` to the new **FADE ANIMATIONS** section.
+  - `drawer-slide-in` / `drawer-slide-out` — moved from `App.tsx` local `<style>` to the new **DRAWER / PANEL SLIDE ANIMATIONS** section.
+  - Both Modal.tsx and App.tsx `<style>` blocks now reference the centralized definitions (comments added).
+
+- `Modal.tsx` (AN-002): Removed local `@keyframes fadeIn` and `@keyframes fadeOut` — now consumed from design-system.css.
+  - `modal-sheet-enter` / `modal-sheet-exit` keyframes kept in Modal.tsx (they are Modal-specific, not shared).
+
+- `LoginPage.tsx` (AN-004): Aligned page-enter animation timing with `--transition-slow` token (300ms).
+  - Was: `animation: page-enter 0.35s ease-out` (hardcoded, no easing token).
+  - Now: `animation: page-enter var(--transition-slow)` — consistent with all other design-system transition uses.
+
+- `App.tsx` (AN-003 + AN-008 + AN-009 + AN-010): Multiple improvements:
+  - AN-003: Removed local `@keyframes drawer-slide-in`, `drawer-slide-out`, and `fadeOut` — now consumed from design-system.css via comment.
+  - AN-008: Added `.topbar-mobile-menu:active` — `background-color: var(--color-neutral-bg)` press state. Visible on touch where `:hover` doesn't fire before `:active`. Touch target ≥44px maintained.
+  - AN-009: Added `.topbar-icon-btn:active` — same token. Bell/notification button now has tactile press feedback.
+  - AN-010: Added `.nav-item:active:not(.nav-item--active)` — `rgba(255,255,255,0.10)` press state (slightly brighter than hover). Preserves current-route active styling.
+
+- `Toast.tsx` (AN-007): Wired the existing `toast-slide-out` keyframe (defined in design-system.css since initial design-system build) into the toast lifecycle — it was declared but never triggered.
+  - Added `exitingIds: ReadonlySet<string>` state to `ToastProvider`.
+  - `startDismiss(id)` adds id to exitingIds, then after `TOAST_EXIT_MS` (200ms) removes it from both `toasts` and `exitingIds`.
+  - Auto-dismiss `setTimeout` now calls `startDismiss` at `duration - TOAST_EXIT_MS` ms, so exit animation completes within the original duration window.
+  - Manual dismiss (X button) also calls `startDismiss`; button is disabled during exit.
+  - `ToastItemComponent` applies `.toast-item--exiting` class which triggers `animation: toast-slide-out 200ms ease-in forwards`.
+  - `pointer-events: none` on exiting items prevents interaction during animation.
+  - `prefers-reduced-motion` handled globally by design-system.css `0.01ms` override — no per-component work needed.
+
+- `Card.tsx` (AN-011): Separated hover elevation from cursor affordance.
+  - `.card--hover:hover` — retains `box-shadow` + `translateY(-1px)` elevation for all hover cards.
+  - `cursor: pointer` **removed** from `.card--hover:hover`.
+  - New `.card--clickable { cursor: pointer }` — applied **only** when `onClick` prop is provided (i.e., `isClickable = true`).
+  - Non-clickable cards with `hover=true` (e.g., SkateCard which uses `Card hover as="article"`) correctly show default cursor.
+  - SkateCard `edit` button still shows `cursor: pointer` because it is a `<button>`.
+
+#### Deferred (explicitly — permanently out of scope for Motion workstream)
+- AN-012 (EmptyState entrance animation) — deferred; owner decision pending.
+- AN-013 (Alert entrance animation) — deferred; owner decision pending.
+
+#### Previously Implemented (same workstream, prior commit)
+- AN-005: Modal exit animation (desktop + mobile bottom-sheet).
+- AN-006: Mobile drawer exit animation.
+- AN-014: Sidebar collapse label fade.
+
+#### Verified
+- TypeScript: `npx tsc --noEmit` → 0 errors ✅
+- Build: `npm run build` → 369KB (clean) ✅
+- Browser — 10/10 manual tests PASS ✅:
+  - Modal enter animation (desktop)
+  - Modal exit animation — X, backdrop, Escape (desktop) — AN-005 no regression
+  - Toast slide-in + slide-out (auto-dismiss + manual X) — AN-007
+  - Bell button :active press state — AN-009
+  - Sidebar label fade on collapse/expand — AN-014 no regression
+  - Skate card: no pointer cursor on card body; pointer on edit button — AN-011
+  - Hamburger :active press state at 375px — AN-008
+  - Mobile drawer exit animation — AN-006 no regression
+  - Nav item :active press state in mobile drawer — AN-010
+  - No horizontal overflow at 375px
+
+---
+
 ### Phase 03.5 — Motion & Animation Audit AN-005, AN-006, AN-014 (2026-09-14)
 
 **Motion & Animation UX Audit — 3 owner-approved findings implemented**

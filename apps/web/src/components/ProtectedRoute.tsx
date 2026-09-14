@@ -5,10 +5,15 @@
  * Wraps routes that require authentication.
  * If not authenticated: redirects to /login.
  * While loading (checking session): shows a loading spinner.
+ *
+ * AN-001 (Motion Audit 2026-09-14): Replaced raw border-div spinner + local
+ *   @keyframes spin with the shared <PageLoader> component. Token fix:
+ *   --color-page-bg replaces non-existent --color-gray-50.
  */
 
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { PageLoader } from './ui'
 import type { ReactNode } from 'react'
 
 interface ProtectedRouteProps {
@@ -26,25 +31,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '100vh',
-          backgroundColor: 'var(--color-gray-50)',
-          flexDirection: 'column',
-          gap: 'var(--space-4)',
+          backgroundColor: 'var(--color-page-bg)',
         }}
       >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: '50%',
-            border: '4px solid var(--color-navy-100)',
-            borderTopColor: 'var(--color-navy-700)',
-            animation: 'spin 0.8s linear infinite',
-          }}
-        />
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>
-          جارٍ التحقق من الجلسة...
-        </p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <PageLoader label="جارٍ التحقق من الجلسة..." />
       </div>
     )
   }

@@ -517,6 +517,12 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
           color: rgba(255,255,255,0.9);
         }
 
+        /* AN-010: press/active state — slightly stronger than hover for touch feedback */
+        .nav-item:active:not(.nav-item--active) {
+          background-color: rgba(255,255,255,0.10);
+          color: rgba(255,255,255,0.95);
+        }
+
         .nav-item:focus-visible { outline: 2px solid var(--color-gold-500); outline-offset: -2px; }
 
         .nav-item-icon {
@@ -636,19 +642,8 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
           padding-right: env(safe-area-inset-right, 0);
         }
 
-        @keyframes drawer-slide-in {
-          from { transform: translateX(100%); }
-          to   { transform: translateX(0); }
-        }
-
-        /* AN-006: drawer exit — slides back off to the right (RTL-correct) */
-        @keyframes drawer-slide-out {
-          from { transform: translateX(0); }
-          to   { transform: translateX(100%); }
-        }
-
-        /* AN-006: backdrop exit — fades out at --transition-base */
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        /* AN-003: drawer-slide-in, drawer-slide-out, fadeOut keyframes are defined
+           in design-system.css (centralised motion section). */
 
         .sidebar-mobile-backdrop--closing {
           animation: fadeOut var(--transition-base) forwards;
@@ -784,6 +779,8 @@ function Topbar({ pageTitle, onMobileMenuOpen, hamburgerRef }: TopbarProps) {
           transition: background-color var(--transition-fast), color var(--transition-fast);
         }
         .topbar-icon-btn:hover { background-color: var(--color-page-bg); color: var(--color-navy-800); }
+        /* AN-009: press/active state — slightly stronger than hover; visible on touch */
+        .topbar-icon-btn:active { background-color: var(--color-neutral-bg); color: var(--color-navy-800); }
         .topbar-icon-btn:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
 
         .topbar-role-badge {
@@ -809,6 +806,8 @@ function Topbar({ pageTitle, onMobileMenuOpen, hamburgerRef }: TopbarProps) {
           flex-shrink: 0;
         }
         .topbar-mobile-menu:hover { background-color: var(--color-page-bg); color: var(--color-navy-800); }
+        /* AN-008: press/active state for hamburger — visible on touch (hover doesn’t fire before :active on mobile) */
+        .topbar-mobile-menu:active { background-color: var(--color-neutral-bg); color: var(--color-navy-800); }
         .topbar-mobile-menu:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
 
         @media (max-width: 767px) {

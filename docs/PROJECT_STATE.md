@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 3.3
-**Last updated:** 2026-09-14 (Motion & Animation Audit — AN-005, AN-006, AN-014 implemented)
-**Updated by:** AI Agent (Motion & Animation Audit)
+**Version:** 3.4
+**Last updated:** 2026-09-14 (Motion & Animation Cleanup — AN-001 through AN-011 implemented, workstream COMPLETE)
+**Updated by:** AI Agent (Motion & Animation Audit Final Cleanup)
 
 ---
 
@@ -10,14 +10,14 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | IN IMPLEMENTATION — Motion & Animation Audit AN-005/AN-006/AN-014 COMPLETE. Ready for Phase 04. |
-| **Current Phase** | Phase 03.5 (Motion & Animation Audit) — COMPLETE |
-| **Current Milestone** | Phase 03.5 Motion Audit: AN-005 (Modal exit animation), AN-006 (Mobile drawer exit animation), AN-014 (Sidebar label fade). All owner-approved audit items resolved. Group A + Group B deferred to owner decision (AN-012, AN-013 explicitly deferred). 0 TS errors, build 368KB. |
-| **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Audit Fixes + Desktop UI Consistency + Motion Audit) |
+| **Overall Status** | MOTION WORKSTREAM COMPLETE — AN-001–AN-011 implemented; AN-012/AN-013 deferred. Ready for Phase 04. |
+| **Current Phase** | Phase 03.5 (Motion & Animation Audit) — COMPLETE (workstream closed) |
+| **Current Milestone** | Motion Cleanup: AN-001 (ProtectedRoute → PageLoader), AN-002 (fadeIn/fadeOut to design-system.css), AN-003 (drawer keyframes to design-system.css), AN-004 (LoginPage animation token fix), AN-007 (Toast exit animation), AN-008 (hamburger :active), AN-009 (bell :active), AN-010 (nav :active), AN-011 (Card cursor split). Combined with prior AN-005/AN-006/AN-014, all 11 approved findings resolved. |
+| **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Audit Fixes + Desktop UI + Motion) — FULLY COMPLETE |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-14 — AN-005/AN-006/AN-014: `tsc --noEmit` 0 errors ✅, `npm run build` 368KB ✅, browser 10/10 motion tests PASS ✅ (modal enter/exit, backdrop, Escape, sidebar label fade, mobile drawer enter/exit, bottom sheet enter/exit, no overflow, focus restoration) |
-| **Last Git Commit** | `9f0816b` — fix(phase-03.5): desktop UI audit D-010, D-012, D-014 |
+| **Last Verification** | 2026-09-14 — Motion Cleanup: `tsc --noEmit` 0 errors ✅, `npm run build` 369KB ✅, browser 10/10 PASS ✅ (modal enter/exit, toast enter/exit, bell press, sidebar label fade, card cursor, hamburger press, drawer enter/exit, nav press, no overflow, RTL) |
+| **Last Git Commit** | `b1b3ceb` — fix(phase-03.5): motion audit AN-005 AN-006 AN-014 |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Begin Phase 04 (Customers Module) |
 

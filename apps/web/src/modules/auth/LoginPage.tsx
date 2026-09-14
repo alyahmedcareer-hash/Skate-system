@@ -262,7 +262,8 @@ export default function LoginPage() {
           display: flex;
           flex-direction: column;
           gap: var(--space-6);
-          animation: page-enter 0.35s ease-out;
+          /* AN-004: use the approved --transition-slow token (300ms) — was hardcoded 0.35s */
+          animation: page-enter var(--transition-slow);
         }
 
         .login-mobile-logo { display: none; align-items: center; justify-content: center; }

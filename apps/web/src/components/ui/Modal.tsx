@@ -178,14 +178,13 @@ export function Modal({
           animation: fadeIn var(--transition-base);
         }
 
-        /* AN-005: backdrop exit — fades out at --transition-base (200ms) */
+        /* AN-005: backdrop exit — fades out at --transition-base */
         .modal-backdrop--closing {
           animation: fadeOut var(--transition-base) forwards;
           pointer-events: none;
         }
 
-        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        /* fadeIn/fadeOut keyframes are defined in design-system.css (AN-002) */
 
         /* ── Container (desktop) ── */
         .modal-container {
@@ -297,6 +296,7 @@ export function Modal({
             animation: modal-sheet-exit var(--transition-slow) forwards;
           }
 
+          /* AN-005: mobile bottom-sheet enter/exit keyframes — Modal-specific, not in design-system.css */
           @keyframes modal-sheet-enter {
             from { transform: translateY(100%); }
             to   { transform: translateY(0); }

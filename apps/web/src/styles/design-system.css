@@ -236,3 +236,23 @@
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* -----------------------------------------------------------------------------
+   FADE ANIMATIONS (AN-002 — moved from Modal.tsx local style)
+   ----------------------------------------------------------------------------- */
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* -----------------------------------------------------------------------------
+   DRAWER / PANEL SLIDE ANIMATIONS (AN-003 — moved from App.tsx local style)
+   RTL-correct: drawer is on the right edge, slides to/from translateX(100%).
+   ----------------------------------------------------------------------------- */
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes drawer-slide-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}

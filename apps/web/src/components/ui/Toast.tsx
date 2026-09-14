@@ -5,6 +5,21 @@
  * Non-blocking feedback system. Replaces all alert() usage.
  * UI-005: alert() is permanently prohibited. Use showToast() instead.
  *
+ * AN-007 (Motion Audit 2026-09-14): Wired the existing toast-slide-out animation
+ *   into the Toast lifecycle. Previously the @keyframes toast-slide-out was declared
+ *   in design-system.css but never applied — toasts disappeared instantly on dismiss.
+ *
+ *   Implementation:
+ *   - ToastProvider maintains an `exitingIds` Set<string> of toasts in exit animation.
+ *   - `startDismiss(id)` adds the id to exitingIds, then after TOAST_EXIT_MS removes
+ *     it from the toasts array and clears the id from exitingIds.
+ *   - Auto-dismiss timers now call startDismiss (triggering animation) rather than
+ *     immediately filtering. The timer fires TOAST_EXIT_MS ms EARLIER to compensate.
+ *   - Manual dismiss (X button) also calls startDismiss.
+ *   - ToastItem applies .toast-item--exiting class when its ID is in exitingIds,
+ *     which triggers the toast-slide-out keyframe (defined in design-system.css).
+ *   - prefers-reduced-motion: handled globally in design-system.css (0.01ms duration).
+ *
  * Usage:
  *   const { showToast } = useToast()
  *   showToast({ type: 'success', title: 'تم الحفظ بنجاح' })
@@ -59,12 +74,36 @@ const DEFAULT_DURATIONS: Record<ToastType, number> = {
   error:   0,      // persistent — user must dismiss
 }
 
+// AN-007: must match the toast-slide-out animation duration in design-system.css.
+const TOAST_EXIT_MS = 200
+
 /* =============================================================================
    ToastProvider
    ============================================================================= */
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  // AN-007: tracks ids currently playing their exit animation.
+  const [exitingIds, setExitingIds] = useState<ReadonlySet<string>>(new Set())
+
+  /**
+   * AN-007: triggers the slide-out animation then removes the toast.
+   * Safe to call multiple times on the same id (no-op if already exiting).
+   */
+  const startDismiss = useCallback((id: string) => {
+    setExitingIds(prev => {
+      if (prev.has(id)) return prev  // already exiting — no-op
+      return new Set([...prev, id])
+    })
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id))
+      setExitingIds(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }, TOAST_EXIT_MS)
+  }, [])
 
   const showToast = useCallback((options: ShowToastOptions) => {
     const id = Math.random().toString(36).slice(2, 10)
@@ -74,20 +113,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       return next.slice(-3) // max 3 visible
     })
     if (duration > 0) {
-      setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id))
-      }, duration)
+      // AN-007: fire startDismiss at the right time so the exit animation
+      // completes within the original duration window.
+      setTimeout(() => startDismiss(id), Math.max(0, duration - TOAST_EXIT_MS))
     }
-  }, [])
-
-  const dismiss = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
-  }, [])
+  }, [startDismiss])
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      <ToastContainer toasts={toasts} exitingIds={exitingIds} onDismiss={startDismiss} />
     </ToastContext.Provider>
   )
 }
@@ -115,7 +150,15 @@ const TOAST_CONFIG: Record<ToastType, {
   info:    { bg: 'var(--color-info-bg)',    border: 'var(--color-info-500)',    textColor: 'var(--color-info-text)',    icon: Info         },
 }
 
-function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: string) => void }) {
+function ToastContainer({
+  toasts,
+  exitingIds,
+  onDismiss,
+}: {
+  toasts: ToastItem[]
+  exitingIds: ReadonlySet<string>
+  onDismiss: (id: string) => void
+}) {
   return (
     <>
       <div
@@ -136,7 +179,12 @@ function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss:
         }}
       >
         {toasts.map(toast => (
-          <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
+          <ToastItemComponent
+            key={toast.id}
+            toast={toast}
+            isExiting={exitingIds.has(toast.id)}
+            onDismiss={onDismiss}
+          />
         ))}
       </div>
       <style>{`
@@ -152,6 +200,11 @@ function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss:
           animation: toast-slide-in 250ms ease-out;
           pointer-events: all;
         }
+        /* AN-007: exit animation — toast-slide-out is defined in design-system.css */
+        .toast-item--exiting {
+          animation: toast-slide-out ${TOAST_EXIT_MS}ms ease-in forwards;
+          pointer-events: none;
+        }
         .toast-dismiss {
           display: flex; align-items: center; justify-content: center;
           background: none; border: none; cursor: pointer;
@@ -160,18 +213,27 @@ function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss:
           flex-shrink: 0;
         }
         .toast-dismiss:hover { opacity: 1; }
+        .toast-dismiss:disabled { cursor: not-allowed; }
       `}</style>
     </>
   )
 }
 
-function ToastItem({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: string) => void }) {
+function ToastItemComponent({
+  toast,
+  isExiting,
+  onDismiss,
+}: {
+  toast: ToastItem
+  isExiting: boolean
+  onDismiss: (id: string) => void
+}) {
   const config = TOAST_CONFIG[toast.type]
   const IconComponent = config.icon
 
   return (
     <div
-      className="toast-item"
+      className={`toast-item${isExiting ? ' toast-item--exiting' : ''}`}
       style={{
         backgroundColor: config.bg,
         borderColor: config.border,
@@ -193,6 +255,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: str
         className="toast-dismiss"
         onClick={() => onDismiss(toast.id)}
         aria-label="إغلاق الإشعار"
+        disabled={isExiting}
       >
         <X size={14} color="var(--color-text-muted)" aria-hidden="true" />
       </button>

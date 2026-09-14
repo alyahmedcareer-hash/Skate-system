@@ -3,6 +3,10 @@
  * Phase 03.5 — Design System
  *
  * Standard white surface container.
+ *
+ * AN-011 (Motion Audit 2026-09-14): Separated card--hover (shadow/transform only)
+ *   from card--clickable (cursor:pointer). Non-clickable hovered cards no longer
+ *   show cursor:pointer — false affordance removed.
  */
 
 import type { ReactNode } from 'react'
@@ -32,7 +36,13 @@ export function Card({
   return (
     <>
       <Tag
-        className={['card', hover || isClickable ? 'card--hover' : '', className].filter(Boolean).join(' ')}
+        className={[
+          'card',
+          hover || isClickable ? 'card--hover' : '',
+          // AN-011: cursor:pointer only when the card is truly interactive
+          isClickable ? 'card--clickable' : '',
+          className,
+        ].filter(Boolean).join(' ')}
         style={{ padding: paddingValue }}
         onClick={onClick}
         role={isClickable ? 'button' : undefined}
@@ -51,11 +61,13 @@ export function Card({
           border: 1px solid var(--color-border);
           transition: box-shadow var(--transition-fast), transform var(--transition-fast);
         }
+        /* AN-011: hover elevation applies to both hover-only AND clickable cards */
         .card--hover:hover {
           box-shadow: var(--shadow-md);
           transform: translateY(-1px);
-          cursor: pointer;
         }
+        /* AN-011: cursor:pointer only for cards that have an onClick handler */
+        .card--clickable { cursor: pointer; }
         .card:focus-visible {
           outline: 2px solid var(--color-border-focus);
           outline-offset: 2px;
