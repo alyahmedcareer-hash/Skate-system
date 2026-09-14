@@ -6,6 +6,59 @@
 
 ## [Unreleased]
 
+### Phase 03.5 — Motion & Animation Audit AN-005, AN-006, AN-014 (2026-09-14)
+
+**Motion & Animation UX Audit — 3 owner-approved findings implemented**
+
+#### Fixed
+
+- `Modal.tsx` (AN-005): Added exit animation via three-state lifecycle (`'hidden'` → `'visible'` → `'closing'` → `'hidden'`).
+  - Desktop exit: `modal-exit` keyframe (opacity + `translateY(0→8px)`) at `--transition-slow` (300ms).
+  - Mobile bottom-sheet exit: `modal-sheet-exit` keyframe (`translateY(0→100%)`) at `--transition-slow` (300ms).
+  - Backdrop exit: `fadeOut` at `--transition-base` (200ms) — faster than container.
+  - `pointer-events:none` on backdrop + container during closing — prevents mid-animation interaction.
+  - Close button disabled during closing; Escape / backdrop-click ignored during closing.
+  - Scroll lock persists through exit animation (released only on `'hidden'`).
+  - All existing Modal APIs (`isOpen`, `onClose`, `title`, `children`, `footer`, `size`, `hideCloseButton`, `closeOnBackdrop`) preserved without change.
+  - `fadeIn` / `fadeOut` keyframes now co-located in `Modal.tsx` `<style>` (alongside existing enter counterparts).
+
+- `App.tsx` — AppShell (AN-006): Added `isDrawerClosing` state; mobile drawer now animates OUT before unmounting.
+  - `handleMobileClose` guarded with `if (isDrawerClosing) return` to prevent double-trigger.
+  - `drawer-slide-out` keyframe added (`translateX(0→100%)` — RTL correct) at `--transition-slow` (300ms).
+  - Backdrop `fadeOut` at `--transition-base` (200ms).
+  - `.sidebar-mobile-backdrop--closing` and `.sidebar-mobile-drawer--closing` CSS classes apply `pointer-events:none`.
+  - Resize-to-desktop immediately clears both `mobileOpen` and `isDrawerClosing` (no exit animation on resize).
+  - Focus restoration to hamburger button preserved; keyboard/focus/RTL/z-index behavior unchanged.
+  - `isDrawerClosing` prop forwarded to `<Sidebar>` component via `SidebarProps`.
+
+- `App.tsx` — Sidebar (AN-014): Navigation labels now fade correctly on sidebar collapse/expand.
+  - `nav-item-label` and logout button label spans always rendered (removed `{!collapsed && ...}` conditional).
+  - **Collapsing**: labels fade out immediately at `--transition-fast` (150ms, 0ms delay) — disappear before sidebar width shrinks.
+  - **Expanding**: labels fade in with 150ms delay, then 150ms fade (`--transition-fast`) — appear after space has opened.
+  - CSS handles entirely: `.nav-item-label { opacity:1; transition: opacity 150ms 150ms }` + `.sidebar--collapsed .nav-item-label { opacity:0; pointer-events:none; transition: opacity 150ms 0ms }`.
+  - Clipping by `overflow:hidden` + `white-space:nowrap` on nav-item handles text hiding at collapsed width.
+
+#### Deferred (explicitly — not in scope of this implementation)
+- AN-012 (EmptyState entrance animation): Deferred — owner decision pending.
+- AN-013 (Alert entrance animation): Deferred — owner decision pending.
+
+#### Verified
+- TypeScript: `npx tsc --noEmit` → 0 errors ✅
+- Build: `npm run build` → 368KB (clean) ✅
+- Browser — 10/10 manual tests PASS ✅:
+  - Modal enter animation (desktop)
+  - Modal exit animation via X button (desktop)
+  - Modal exit animation via backdrop click (desktop)
+  - Modal exit animation via Escape key (desktop)
+  - Sidebar label fade on collapse and expand (desktop, AN-014)
+  - Mobile drawer enter animation (RTL correct)
+  - Mobile drawer exit animation (RTL correct, AN-006)
+  - Mobile bottom-sheet enter + exit animation (AN-005)
+  - No horizontal overflow at 375px
+  - Focus restoration to hamburger after drawer close
+
+---
+
 ### Phase 03.5 — Desktop UI Consistency Audit D-010 & D-012 (2026-09-14)
 
 **Desktop UI Consistency Audit — D-010 and D-012 implemented**

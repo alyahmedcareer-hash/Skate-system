@@ -4,9 +4,21 @@
  *
  * Reusable dialog shell. Handles backdrop, focus trap, keyboard dismiss, RTL.
  * UI-005: No native confirm()/alert(). Use Modal instead.
+ *
+ * AN-005 (Motion & Animation Audit — 2026-09-14): Exit animation added.
+ *   - Three-state lifecycle: 'hidden' → 'visible' → 'closing' → 'hidden'.
+ *   - Desktop exit : modal-exit (opacity + translateY 8px) at --transition-slow (300ms).
+ *   - Mobile exit  : modal-sheet-exit (translateY 0 → 100%) at --transition-slow (300ms).
+ *   - Backdrop exit: fadeOut at --transition-base (200ms) — faster than container.
+ *   - pointer-events:none on backdrop + container during closing prevents mid-animation
+ *     interaction. Close button disabled during closing.
+ *   - Scroll lock persists through the exit animation (released only on 'hidden').
+ *   - Escape / backdrop-click / X button disabled during closing to prevent double-trigger.
+ *   - All existing Modal APIs (isOpen, onClose, title, children, footer, size,
+ *     hideCloseButton, closeOnBackdrop) preserved without change.
  */
 
-import { useEffect, useRef, useId, type ReactNode } from 'react'
+import { useEffect, useRef, useId, useState, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
 type ModalSize = 'sm' | 'base' | 'lg'
@@ -28,6 +40,18 @@ const SIZE_WIDTHS: Record<ModalSize, string> = {
   lg:   '640px',
 }
 
+/**
+ * AN-005 — Internal animation state machine:
+ *   'hidden'  — not rendered (return null)
+ *   'visible' — fully visible, all interactions enabled
+ *   'closing' — exit animation playing; interactions disabled, element still in DOM
+ */
+type ModalState = 'hidden' | 'visible' | 'closing'
+
+// Must match the CSS token values used in the exit keyframes.
+const MODAL_EXIT_MS = 300   // --transition-slow: modal-exit / modal-sheet-exit
+// (Backdrop uses --transition-base, 200ms, handled purely in CSS via animation duration)
+
 export function Modal({
   isOpen,
   onClose,
@@ -43,36 +67,65 @@ export function Modal({
   const baseId = useId()
   const titleId = `modal-title-${baseId.replace(/:/g, '')}`
 
-  // Keyboard dismiss
+  // AN-005: Three-state animation lifecycle (initialised from the isOpen prop).
+  const [modalState, setModalState] = useState<ModalState>(isOpen ? 'visible' : 'hidden')
+
+  // Effect 1 — watch the external isOpen prop and drive state transitions.
   useEffect(() => {
-    if (!isOpen) return
+    if (isOpen) {
+      // Opening (or rapid re-open mid-close): immediately go to 'visible'.
+      setModalState('visible')
+    } else {
+      // Closing: 'visible' → 'closing'. Ignore if already 'closing' or 'hidden'.
+      setModalState(prev => (prev === 'visible' ? 'closing' : prev))
+    }
+  }, [isOpen])
+
+  // Effect 2 — when 'closing' starts, set a timer to reach 'hidden' after the
+  // exit animation completes. Cleanup cancels the timer if isOpen flips back.
+  useEffect(() => {
+    if (modalState !== 'closing') return
+    const timer = setTimeout(() => setModalState('hidden'), MODAL_EXIT_MS)
+    return () => clearTimeout(timer)
+  }, [modalState])
+
+  const isClosing = modalState === 'closing'
+
+  // Keyboard dismiss — only active while fully visible (not during closing).
+  useEffect(() => {
+    if (modalState !== 'visible') return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [modalState, onClose])
 
-  // Focus first focusable element on open
+  // Focus first focusable element when modal opens (not during closing animation).
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || isClosing) return
     const focusable = dialogRef.current?.querySelector<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     )
     focusable?.focus()
-    // Lock scroll
+  }, [isOpen, isClosing])
+
+  // Scroll lock — maintained throughout the animation, released only on 'hidden'.
+  useEffect(() => {
+    if (modalState === 'hidden') return
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
-  }, [isOpen])
+  }, [modalState])
 
-  if (!isOpen) return null
+  // Fully hidden — nothing to render.
+  if (modalState === 'hidden') return null
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="modal-backdrop"
-        onClick={closeOnBackdrop ? onClose : undefined}
+        className={`modal-backdrop${isClosing ? ' modal-backdrop--closing' : ''}`}
+        onClick={(!isClosing && closeOnBackdrop) ? onClose : undefined}
         aria-hidden="true"
       />
 
@@ -82,7 +135,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="modal-container"
+        className={`modal-container${isClosing ? ' modal-container--closing' : ''}`}
         style={{ maxWidth: SIZE_WIDTHS[size] }}
       >
         {/* Header */}
@@ -91,9 +144,10 @@ export function Modal({
           {!hideCloseButton && (
             <button
               type="button"
-              onClick={onClose}
+              onClick={!isClosing ? onClose : undefined}
               className="modal-close-btn"
               aria-label="إغلاق"
+              disabled={isClosing}
             >
               <X size={18} aria-hidden="true" />
             </button>
@@ -115,6 +169,7 @@ export function Modal({
       </div>
 
       <style>{`
+        /* ── Backdrop ── */
         .modal-backdrop {
           position: fixed;
           inset: 0;
@@ -123,8 +178,16 @@ export function Modal({
           animation: fadeIn var(--transition-base);
         }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* AN-005: backdrop exit — fades out at --transition-base (200ms) */
+        .modal-backdrop--closing {
+          animation: fadeOut var(--transition-base) forwards;
+          pointer-events: none;
+        }
 
+        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        /* ── Container (desktop) ── */
         .modal-container {
           position: fixed;
           top: 50%;
@@ -141,11 +204,23 @@ export function Modal({
           animation: modal-enter var(--transition-slow);
         }
 
+        /* AN-005: desktop container exit — fades + drifts down at --transition-slow (300ms) */
+        .modal-container--closing {
+          animation: modal-exit var(--transition-slow) forwards;
+          pointer-events: none;
+        }
+
         @keyframes modal-enter {
           from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)); }
           to   { opacity: 1; transform: translate(-50%, -50%); }
         }
 
+        @keyframes modal-exit {
+          from { opacity: 1; transform: translate(-50%, -50%); }
+          to   { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); }
+        }
+
+        /* ── Header ── */
         .modal-header {
           display: flex;
           align-items: center;
@@ -181,7 +256,9 @@ export function Modal({
 
         .modal-close-btn:hover { background-color: var(--color-neutral-bg); color: var(--color-text-primary); }
         .modal-close-btn:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+        .modal-close-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+        /* ── Divider / Body / Footer ── */
         .modal-divider { height: 1px; background-color: var(--color-border); }
 
         .modal-body { padding: var(--space-6); }
@@ -195,6 +272,7 @@ export function Modal({
           flex-direction: row-reverse;
         }
 
+        /* ── Mobile — bottom sheet ── */
         @media (max-width: 639px) {
           .modal-container {
             position: fixed;
@@ -214,9 +292,19 @@ export function Modal({
             animation: modal-sheet-enter var(--transition-slow);
           }
 
+          /* AN-005: mobile bottom-sheet exit — slides back down */
+          .modal-container--closing {
+            animation: modal-sheet-exit var(--transition-slow) forwards;
+          }
+
           @keyframes modal-sheet-enter {
             from { transform: translateY(100%); }
             to   { transform: translateY(0); }
+          }
+
+          @keyframes modal-sheet-exit {
+            from { transform: translateY(0); }
+            to   { transform: translateY(100%); }
           }
 
           .modal-body {

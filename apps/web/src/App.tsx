@@ -90,9 +90,11 @@ interface SidebarProps {
   isMobile?: boolean
   /** Ref to the hamburger button — used by M-017 focus trap to restore focus on close */
   hamburgerRef?: React.RefObject<HTMLButtonElement | null>
+  /** AN-006: true while the drawer exit animation is playing — applies --closing CSS classes */
+  isDrawerClosing?: boolean
 }
 
-function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLogout, isMobile = false, hamburgerRef }: SidebarProps) {
+function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLogout, isMobile = false, hamburgerRef, isDrawerClosing = false }: SidebarProps) {
   // M-017: ref for the drawer container — used by focus trap
   const drawerRef = useRef<HTMLDivElement>(null)
 
@@ -157,7 +159,8 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
       onClick={mobileOpen ? onMobileClose : undefined}
     >
       <Icon size={18} aria-hidden="true" className="nav-item-icon" />
-      {!collapsed && <span className="nav-item-label">{label}</span>}
+      {/* AN-014: always render label — CSS opacity handles the collapsed fade */}
+      <span className="nav-item-label">{label}</span>
     </NavLink>
   )
 
@@ -243,7 +246,8 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
           aria-label="تسجيل الخروج"
         >
           <LogOut size={18} aria-hidden="true" className="nav-item-icon" />
-          {!collapsed && <span className="nav-item-label">تسجيل الخروج</span>}
+          {/* AN-014: always render label — CSS opacity handles the collapsed fade */}
+          <span className="nav-item-label">تسجيل الخروج</span>
         </button>
       </div>
     </aside>
@@ -259,15 +263,16 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
       {/* Mobile overlay + drawer */}
       {mobileOpen && (
         <>
+          {/* AN-006: --closing class triggers drawer-slide-out / fadeOut CSS animations */}
           <div
-            className="sidebar-mobile-backdrop"
+            className={`sidebar-mobile-backdrop${isDrawerClosing ? ' sidebar-mobile-backdrop--closing' : ''}`}
             onClick={onMobileClose}
             aria-hidden="true"
           />
           {/* M-017: aria-modal + role=dialog for screen readers; drawerRef for focus trap */}
           <div
             ref={drawerRef}
-            className="sidebar-mobile-drawer"
+            className={`sidebar-mobile-drawer${isDrawerClosing ? ' sidebar-mobile-drawer--closing' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label="القائمة الرئيسية"
@@ -525,6 +530,16 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          /* AN-014: fade IN with a delay — text appears after the sidebar width has grown */
+          opacity: 1;
+          transition: opacity var(--transition-fast) 150ms;
+        }
+
+        /* AN-014: fade OUT immediately — text disappears before the space shrinks */
+        .sidebar--collapsed .nav-item-label {
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity var(--transition-fast) 0ms;
         }
 
         /* ===== SECTION DIVIDER ===== */
@@ -624,6 +639,25 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
         @keyframes drawer-slide-in {
           from { transform: translateX(100%); }
           to   { transform: translateX(0); }
+        }
+
+        /* AN-006: drawer exit — slides back off to the right (RTL-correct) */
+        @keyframes drawer-slide-out {
+          from { transform: translateX(0); }
+          to   { transform: translateX(100%); }
+        }
+
+        /* AN-006: backdrop exit — fades out at --transition-base */
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        .sidebar-mobile-backdrop--closing {
+          animation: fadeOut var(--transition-base) forwards;
+          pointer-events: none;
+        }
+
+        .sidebar-mobile-drawer--closing {
+          animation: drawer-slide-out var(--transition-slow) forwards;
+          pointer-events: none;
         }
 
         .sidebar-mobile-close {
@@ -833,6 +867,8 @@ function AppShell({ children, pageTitle }: { children: ReactNode; pageTitle?: st
     return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
   })
   const [mobileOpen, setMobileOpen] = useState(false)
+  // AN-006: true while the drawer exit animation is playing (300ms window).
+  const [isDrawerClosing, setIsDrawerClosing] = useState(false)
 
   // M-017: ref to the hamburger button — passed to Topbar AND Sidebar so the
   // focus trap can restore focus when the drawer closes via any mechanism.
@@ -844,16 +880,25 @@ function AppShell({ children, pageTitle }: { children: ReactNode; pageTitle?: st
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next))
   }
 
-  // M-017: close drawer and restore focus to the hamburger trigger
+  // M-017 / AN-006: animate drawer out, then unmount and restore focus.
+  // Guard against double-triggering while the exit animation is already running.
   const handleMobileClose = () => {
-    setMobileOpen(false)
-    requestAnimationFrame(() => hamburgerRef.current?.focus())
+    if (isDrawerClosing) return
+    setIsDrawerClosing(true)
+    setTimeout(() => {
+      setMobileOpen(false)
+      setIsDrawerClosing(false)
+      requestAnimationFrame(() => hamburgerRef.current?.focus())
+    }, 300) // matches --transition-slow (drawer-slide-out duration)
   }
 
-  // Close mobile drawer on resize to desktop
+  // Close mobile drawer on resize to desktop (instant — no animation needed).
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) setMobileOpen(false)
+      if (window.innerWidth >= 768) {
+        setMobileOpen(false)
+        setIsDrawerClosing(false)
+      }
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -878,6 +923,7 @@ function AppShell({ children, pageTitle }: { children: ReactNode; pageTitle?: st
           onMobileClose={handleMobileClose}
           onLogout={handleLogout}
           hamburgerRef={hamburgerRef}
+          isDrawerClosing={isDrawerClosing}
         />
         <div
           className="app-content"
