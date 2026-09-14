@@ -64,6 +64,13 @@ export function SearchBar({
           min-width: 200px;
         }
 
+        /* M-003: at the filters-row column-collapse breakpoint (≤ 479px), release
+           the 200px minimum so the SearchBar stretches to available width without
+           causing horizontal overflow at 375–479px. */
+        @media (max-width: 479px) {
+          .searchbar { min-width: 0; width: 100%; }
+        }
+
         .searchbar:focus-within {
           border-color: var(--color-border-focus);
           box-shadow: 0 0 0 3px rgba(77, 106, 153, 0.15);

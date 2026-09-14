@@ -1,6 +1,13 @@
 /**
  * KOSHK SKATE ERP — Skates Management Page
- * Phase 03 — Skates / Asset Management
+ * Phase 03.5 — Skates / Asset Management
+ *
+ * Phase 04 Mobile UX Fix (M-001 / M-002 / M-009 / M-014 / M-020):
+ *   - Removed local Field component and inputStyle object (design system compliance)
+ *   - CreateSkateModal and EditSkateModal form fields now use shared Input, Select, Textarea
+ *   - Filter-row <select> replaced with field-control class + dedicated .skates-filter-select
+ *     layout class (removes inline width:'auto' that broke the <479px column mode fix)
+ *   - All business logic, validation, IDs, and data flow preserved exactly.
  *
  * Features:
  *   - List all skates with status badges (design reference §13, §31)
@@ -38,6 +45,9 @@ import {
   EmptyState,
   PageLoader,
   SearchBar,
+  Input,
+  Select,
+  Textarea,
   type BadgeStatus,
 } from '../../components/ui'
 
@@ -63,38 +73,17 @@ function StatusBadge({ status }: { status: SkateStatus }) {
 }
 
 // ---------------------------------------------------------------------------
-// Form field helper (local — for skates-specific complex form fields)
+// Shared option arrays — used by the shared Select component
 // ---------------------------------------------------------------------------
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 'var(--space-4)' }}>
-      <label style={{
-        display: 'block',
-        fontSize: 'var(--font-size-sm)',
-        fontWeight: 600,
-        color: 'var(--color-navy-800)',
-        marginBottom: 'var(--space-1)',
-      }}>
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
+const CONDITION_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'good', label: CONDITION_LABELS.good },
+  { value: 'fair', label: CONDITION_LABELS.fair },
+  { value: 'poor', label: CONDITION_LABELS.poor },
+]
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: 'var(--space-2) var(--space-3)',
-  border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-base)',
-  fontSize: 'var(--font-size-sm)',
-  fontFamily: "'Cairo', sans-serif",
-  color: 'var(--color-text-primary)',
-  backgroundColor: 'var(--color-white)',
-  boxSizing: 'border-box',
-  outline: 'none',
-}
+const ADMIN_STATUS_OPTIONS: Array<{ value: string; label: string }> =
+  ADMIN_SETTABLE_STATUSES.map(s => ({ value: s, label: STATUS_LABELS[s] }))
 
 // ---------------------------------------------------------------------------
 // Create Modal
@@ -148,103 +137,84 @@ function CreateSkateModal({ onClose, onCreated }: { onClose: () => void; onCreat
       }
     >
       <form id="create-skate-form" onSubmit={handleSubmit} noValidate>
-          <Field label="رمز الزلاجة (اختياري — يُولَّد تلقائياً إذا تُرك فارغاً)">
-            <input
-              id="create-skate-code"
-              style={inputStyle}
-              type="text"
-              placeholder="مثال: SK-025 (اتركه فارغاً للتوليد التلقائي)"
-              value={form.skateCode ?? ''}
-              onChange={e => set('skateCode', e.target.value)}
-            />
-          </Field>
+          {/* M-001/M-009: replaced local Field + inputStyle + raw <input> with shared <Input> */}
+          <Input
+            id="create-skate-code"
+            label="رمز الزلاجة (اختياري — يُولَّد تلقائياً إذا تُرك فارغاً)"
+            type="text"
+            placeholder="مثال: SK-025 (اتركه فارغاً للتوليد التلقائي)"
+            value={form.skateCode ?? ''}
+            onChange={e => set('skateCode', e.target.value)}
+          />
 
-          <Field label="المقاس *">
-            <input
-              id="create-skate-size"
-              style={inputStyle}
-              type="text"
-              placeholder="مثال: 42"
-              value={form.size}
-              onChange={e => set('size', e.target.value)}
-              required
-            />
-          </Field>
+          <Input
+            id="create-skate-size"
+            label="المقاس *"
+            type="text"
+            placeholder="مثال: 42"
+            value={form.size}
+            onChange={e => set('size', e.target.value)}
+            required
+          />
 
           {/* DEC-033: free-text input — no dropdown */}
-          <Field label="النوع">
-            <input
-              id="create-skate-type"
-              style={inputStyle}
-              type="text"
-              placeholder="نوع الزلاجة (اختياري)"
-              value={form.type ?? ''}
-              onChange={e => set('type', e.target.value)}
-            />
-          </Field>
+          <Input
+            id="create-skate-type"
+            label="النوع"
+            type="text"
+            placeholder="نوع الزلاجة (اختياري)"
+            value={form.type ?? ''}
+            onChange={e => set('type', e.target.value)}
+          />
 
           <div className="form-grid-2col">
-            <Field label="الحالة">
-              <select
-                id="create-skate-status"
-                style={inputStyle}
-                value={form.status}
-                onChange={e => set('status', e.target.value as SkateStatus)}
-              >
-                {ADMIN_SETTABLE_STATUSES.map(s => (
-                  <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                ))}
-              </select>
-            </Field>
+            {/* M-001/M-009: raw <select> → shared <Select> component */}
+            <Select
+              id="create-skate-status"
+              label="الحالة"
+              options={ADMIN_STATUS_OPTIONS}
+              value={form.status}
+              onChange={e => set('status', e.target.value as SkateStatus)}
+            />
 
-            <Field label="الحالة الفنية">
-              <select
-                id="create-skate-condition"
-                style={inputStyle}
-                value={form.condition}
-                onChange={e => set('condition', e.target.value as SkateCondition)}
-              >
-                {(['good', 'fair', 'poor'] as SkateCondition[]).map(c => (
-                  <option key={c} value={c}>{CONDITION_LABELS[c]}</option>
-                ))}
-              </select>
-            </Field>
+            <Select
+              id="create-skate-condition"
+              label="الحالة الفنية"
+              options={CONDITION_OPTIONS}
+              value={form.condition}
+              onChange={e => set('condition', e.target.value as SkateCondition)}
+            />
           </div>
 
           <div className="form-grid-2col">
-            <Field label="تاريخ الشراء">
-              <input
-                id="create-skate-purchase-date"
-                style={inputStyle}
-                type="date"
-                value={form.purchaseDate ?? ''}
-                onChange={e => set('purchaseDate', e.target.value || undefined)}
-              />
-            </Field>
+            <Input
+              id="create-skate-purchase-date"
+              label="تاريخ الشراء"
+              type="date"
+              value={form.purchaseDate ?? ''}
+              onChange={e => set('purchaseDate', e.target.value || undefined)}
+            />
 
-            <Field label="تكلفة الشراء (ر.س)">
-              <input
-                id="create-skate-purchase-cost"
-                style={inputStyle}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={form.purchaseCost ?? ''}
-                onChange={e => set('purchaseCost', e.target.value ? parseFloat(e.target.value) : undefined)}
-              />
-            </Field>
+            <Input
+              id="create-skate-purchase-cost"
+              label="تكلفة الشراء (ر.س)"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={form.purchaseCost ?? ''}
+              onChange={e => set('purchaseCost', e.target.value ? parseFloat(e.target.value) : undefined)}
+            />
           </div>
 
-          <Field label="ملاحظات">
-            <textarea
-              id="create-skate-notes"
-              style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
-              placeholder="ملاحظات إضافية (اختياري)"
-              value={form.notes ?? ''}
-              onChange={e => set('notes', e.target.value)}
-            />
-          </Field>
+          {/* M-001/M-009: raw <textarea> → shared <Textarea> component */}
+          <Textarea
+            id="create-skate-notes"
+            label="ملاحظات"
+            placeholder="ملاحظات إضافية (اختياري)"
+            value={form.notes ?? ''}
+            onChange={e => set('notes', e.target.value)}
+          />
 
           {error && <Alert variant="danger" style={{ marginBottom: 'var(--space-4)' } as React.CSSProperties}>{error}</Alert>}
       </form>
@@ -319,56 +289,102 @@ function EditSkateModal({ skate, onClose, onUpdated }: { skate: SkateDTO; onClos
     >
       <p style={{ marginTop: 0, marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>{skate.skateCode}</p>
       <form id="edit-skate-form" onSubmit={handleSubmit} noValidate>
-          <Field label="المقاس *">
-            <input id="edit-skate-size" style={inputStyle} type="text" value={form.size ?? ''} onChange={e => set('size', e.target.value)} required />
-          </Field>
+          {/* M-001/M-009: replaced local Field + inputStyle + raw <input> with shared <Input> */}
+          <Input
+            id="edit-skate-size"
+            label="المقاس *"
+            type="text"
+            value={form.size ?? ''}
+            onChange={e => set('size', e.target.value)}
+            required
+          />
 
           {/* DEC-033: free-text input */}
-          <Field label="النوع">
-            <input id="edit-skate-type" style={inputStyle} type="text" placeholder="نوع الزلاجة" value={form.type ?? ''} onChange={e => set('type', e.target.value)} />
-          </Field>
+          <Input
+            id="edit-skate-type"
+            label="النوع"
+            type="text"
+            placeholder="نوع الزلاجة"
+            value={form.type ?? ''}
+            onChange={e => set('type', e.target.value)}
+          />
 
           <div className="form-grid-2col">
-            <Field label="الحالة">
-              <select id="edit-skate-status" style={inputStyle} value={form.status} onChange={e => set('status', e.target.value as SkateStatus)}>
+            {/*
+             * DEC-031: status may include rented/reserved (read-only) for display.
+             * The shared Select component does not support disabled options, so we use
+             * the raw <select> with field-control CSS class to keep design-system styling
+             * while still rendering disabled option entries (M-001 exception).
+             */}
+            <div className="field-wrapper">
+              <label htmlFor="edit-skate-status" className="field-label">الحالة</label>
+              <select
+                id="edit-skate-status"
+                className="field-control"
+                value={form.status}
+                onChange={e => set('status', e.target.value as SkateStatus)}
+              >
                 {statusOptions.map(s => (
                   <option key={s} value={s} disabled={s === 'rented' || s === 'reserved'}>
                     {STATUS_LABELS[s]}{(s === 'rented' || s === 'reserved') ? ' (آلي فقط)' : ''}
                   </option>
                 ))}
               </select>
-            </Field>
-            <Field label="الحالة الفنية">
-              <select id="edit-skate-condition" style={inputStyle} value={form.condition} onChange={e => set('condition', e.target.value as SkateCondition)}>
-                {(['good', 'fair', 'poor'] as SkateCondition[]).map(c => (
-                  <option key={c} value={c}>{CONDITION_LABELS[c]}</option>
-                ))}
-              </select>
-            </Field>
+            </div>
+
+            <Select
+              id="edit-skate-condition"
+              label="الحالة الفنية"
+              options={CONDITION_OPTIONS}
+              value={form.condition}
+              onChange={e => set('condition', e.target.value as SkateCondition)}
+            />
           </div>
 
           <div className="form-grid-2col">
-            <Field label="تاريخ الشراء">
-              <input id="edit-skate-purchase-date" style={inputStyle} type="date" value={form.purchaseDate ?? ''} onChange={e => set('purchaseDate', e.target.value || null)} />
-            </Field>
-            <Field label="تكلفة الشراء (ر.س)">
-              <input id="edit-skate-purchase-cost" style={inputStyle} type="number" min="0" step="0.01" value={form.purchaseCost ?? ''} onChange={e => set('purchaseCost', e.target.value ? parseFloat(e.target.value) : null)} />
-            </Field>
+            <Input
+              id="edit-skate-purchase-date"
+              label="تاريخ الشراء"
+              type="date"
+              value={form.purchaseDate ?? ''}
+              onChange={e => set('purchaseDate', e.target.value || null)}
+            />
+            <Input
+              id="edit-skate-purchase-cost"
+              label="تكلفة الشراء (ر.س)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.purchaseCost ?? ''}
+              onChange={e => set('purchaseCost', e.target.value ? parseFloat(e.target.value) : null)}
+            />
           </div>
 
           {/* DEC-032: QR code and barcode are user-editable strings */}
           <div className="form-grid-2col">
-            <Field label="قيمة رمز QR">
-              <input id="edit-skate-qr" style={inputStyle} type="text" value={form.qrCode ?? ''} onChange={e => set('qrCode', e.target.value || null)} />
-            </Field>
-            <Field label="قيمة الباركود">
-              <input id="edit-skate-barcode" style={inputStyle} type="text" value={form.barcode ?? ''} onChange={e => set('barcode', e.target.value || null)} />
-            </Field>
+            <Input
+              id="edit-skate-qr"
+              label="قيمة رمز QR"
+              type="text"
+              value={form.qrCode ?? ''}
+              onChange={e => set('qrCode', e.target.value || null)}
+            />
+            <Input
+              id="edit-skate-barcode"
+              label="قيمة الباركود"
+              type="text"
+              value={form.barcode ?? ''}
+              onChange={e => set('barcode', e.target.value || null)}
+            />
           </div>
 
-          <Field label="ملاحظات">
-            <textarea id="edit-skate-notes" style={{ ...inputStyle, minHeight: 70, resize: 'vertical' }} value={form.notes ?? ''} onChange={e => set('notes', e.target.value)} />
-          </Field>
+          {/* M-001/M-009: raw <textarea> → shared <Textarea> component */}
+          <Textarea
+            id="edit-skate-notes"
+            label="ملاحظات"
+            value={form.notes ?? ''}
+            onChange={e => set('notes', e.target.value)}
+          />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
             <input
@@ -430,8 +446,8 @@ export default function SkatesPage() {
 
   useEffect(() => { load() }, [load])
 
-  const statusFilterOptions: Array<{ value: SkateStatus | 'all'; label: string }> = [
-    { value: 'all', label: 'جميع الحالات' },
+  const statusFilterOptions: Array<{ value: string; label: string }> = [
+    { value: 'all',         label: 'جميع الحالات' },
     { value: 'available',   label: STATUS_LABELS.available },
     { value: 'maintenance', label: STATUS_LABELS.maintenance },
     { value: 'damaged',     label: STATUS_LABELS.damaged },
@@ -472,12 +488,16 @@ export default function SkatesPage() {
           onClear={() => setSearch('')}
         />
 
-        {/* Status filter */}
+        {/*
+         * M-002/M-014: replaced raw <select> with inputStyle (width:'auto' broke
+         * the <479px column-mode CSS rule) with field-control class + dedicated
+         * .skates-filter-select class that handles flex-row vs stretch correctly.
+         */}
         <select
           id="skates-status-filter"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value as SkateStatus | 'all')}
-          style={{ ...inputStyle, flex: '0 0 auto', width: 'auto', minWidth: 160 }}
+          className="field-control skates-filter-select"
         >
           {statusFilterOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -547,6 +567,24 @@ export default function SkatesPage() {
           onUpdated={load}
         />
       )}
+
+      <style>{`
+        /*
+         * M-002/M-014: .skates-filter-select
+         * In the flex row: fixed 160px width (overrides field-control's width:100%).
+         * At <479px column mode: full width, no fixed basis.
+         */
+        .skates-filter-select {
+          flex: 0 0 auto;
+          width: 160px;
+        }
+        @media (max-width: 479px) {
+          .skates-filter-select {
+            flex: none;
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   )
 }

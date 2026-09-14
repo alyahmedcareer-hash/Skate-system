@@ -40,9 +40,12 @@ export default function RolesPage() {
 
   return (
     <div className="page-container">
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <h1 className="page-header-title">الأدوار والصلاحيات</h1>
-        <p className="page-header-subtitle">إدارة أدوار المستخدمين وصلاحياتهم</p>
+      {/* Page header — uses shared .page-header pattern (M-008) */}
+      <div className="page-header">
+        <div className="page-header-text">
+          <h1 className="page-header-title">الأدوار والصلاحيات</h1>
+          <p className="page-header-subtitle">إدارة أدوار المستخدمين وصلاحياتهم</p>
+        </div>
       </div>
 
       {error && (

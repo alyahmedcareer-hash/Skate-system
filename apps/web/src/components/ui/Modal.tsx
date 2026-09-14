@@ -160,13 +160,14 @@ export function Modal({
           flex: 1;
         }
 
+        /* M-005: enlarged from 36×36 → 44×44 px to meet WCAG 2.5.5 minimum touch target */
         .modal-close-btn {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
-          height: 36px;
-          min-width: 36px;
+          width: 44px;
+          height: 44px;
+          min-width: 44px;
           border: none;
           border-radius: var(--radius-base);
           background: transparent;

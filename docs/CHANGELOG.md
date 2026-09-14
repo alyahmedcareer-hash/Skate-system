@@ -6,6 +6,29 @@
 
 ## [Unreleased]
 
+### Phase 03.5 — Mobile UX Audit Fixes (2026-09-14)
+
+**Mobile UX Audit Bug Fixes — 7 items implemented from pre-Phase-04 audit report**
+
+#### Fixed
+- `SearchBar.tsx` (M-003): Added `@media (max-width: 479px) { min-width: 0; width: 100% }` so the search bar never causes horizontal overflow at 375–479px in the `.filters-row` column layout
+- `App.tsx` (M-004): Topbar notification/bell button enlarged from 36×36px → 44×44px (WCAG 2.5.5 minimum touch target)
+- `App.tsx` (M-017): Mobile drawer now has `role="dialog"` + `aria-modal="true"`. Added focus trap (Tab/Shift-Tab cycle within drawer, Escape closes and returns focus to hamburger). Hamburger button gets stable `id="topbar-mobile-menu-btn"` + ref for focus restoration. `AppShell` exposes `hamburgerRef` wired through both `Topbar` and `Sidebar`. Focus restored via `requestAnimationFrame` on all close paths (Escape, backdrop click, nav item click).
+- `Modal.tsx` (M-005): Modal X close button enlarged from 36×36px → 44×44px (WCAG 2.5.5 minimum touch target)
+- `RolesPage.tsx` (M-008): Header now uses shared `.page-header` / `.page-header-text` wrapper structure — consistent with `SkatesPage` and `UsersPage`. Removes inline style `marginBottom` in favor of the shared responsive pattern.
+- `SkatesPage.tsx` (M-001/M-009/M-020): Removed local `Field` component and `inputStyle` inline style object. `CreateSkateModal` and `EditSkateModal` form fields now use shared `<Input>`, `<Select>`, `<Textarea>` from `FormFields.tsx`. Edit status select retains raw `<select className="field-control">` for DEC-031 disabled-option requirement (rented/reserved shown as read-only).
+- `SkatesPage.tsx` (M-002/M-014): Filter-row status `<select>` inline `width:'auto'` removed. Now uses `className="field-control skates-filter-select"` with a dedicated CSS class (`flex: 0 0 auto; width: 160px` at desktop; `flex: none; width: 100%` at ≤479px). This fixes the CSS override priority issue where inline style prevented the `.filters-row` column mode from expanding the select.
+
+#### Verified
+- TypeScript: `npx tsc --noEmit` → 0 errors
+- Build: `npm run build` → 0 errors, 361KB bundle
+- API tests: `npm test` → 34/34 PASS
+- Manual browser verification at 375px, 390px, 430px, 768px, 1200px — all PASS
+- Mobile drawer: Escape closes + focus restored to hamburger ✅, Tab trapped inside drawer ✅, backdrop click closes ✅
+- Form controls: consistent 40px height in both Create and Edit modals ✅
+- Filter row column mode: SearchBar + select both full-width at 375px ✅
+- Roles page header: aligned with other pages ✅
+
 ### Phase 03.5 — Mobile / Phone View Review & Improvement (2026-09-11)
 
 **Mobile UX Audit & Implementation — all responsive improvements**
