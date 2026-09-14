@@ -539,7 +539,8 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
         .sidebar-mobile-backdrop {
           position: fixed; inset: 0;
           background-color: rgba(14,25,41,0.4);
-          z-index: var(--z-overlay);
+          /* fix(phase-03.5): backdrop must be BELOW the drawer — was var(--z-overlay)=400 which covered nav items */
+          z-index: var(--z-sidebar);
           animation: fadeIn var(--transition-base);
         }
 
@@ -547,7 +548,8 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
           position: fixed;
           top: 0; right: 0; bottom: 0;
           width: 80%; max-width: 320px;
-          z-index: var(--z-sidebar);
+          /* fix(phase-03.5): drawer must be ABOVE the backdrop — was var(--z-sidebar)=300 which put it under the backdrop */
+          z-index: var(--z-modal);
           box-shadow: var(--shadow-modal);
           animation: drawer-slide-in var(--transition-slow);
           display: flex;
@@ -579,9 +581,10 @@ function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose, onLog
         .sidebar-mobile-close:hover { color: var(--color-white); background: rgba(255,255,255,0.14); }
         .sidebar-mobile-close:focus-visible { outline: 2px solid var(--color-gold-500); outline-offset: 2px; }
 
-        /* Hide desktop sidebar on mobile */
+        /* Hide desktop sidebar on mobile — pointer-events:none is a defensive fix for iOS WebKit
+           fixed-position stacking context edge case where display:none alone may briefly allow taps */
         @media (max-width: 767px) {
-          .sidebar-desktop-wrapper { display: none; }
+          .sidebar-desktop-wrapper { display: none; pointer-events: none; }
         }
 
         /* Hide mobile drawer trigger on desktop */

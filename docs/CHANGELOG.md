@@ -49,6 +49,33 @@
 
 ---
 
+## [Phase 03.5 Corrective Fix — Mobile Drawer Navigation] — 2026-09-14
+
+### Bug Fixed
+
+**Root Cause:** Z-index inversion in the mobile sidebar drawer. The `.sidebar-mobile-backdrop` was assigned `--z-overlay` (400) while `.sidebar-mobile-drawer` was assigned `--z-sidebar` (300). Because the backdrop was stacked *above* the drawer, every tap on a drawer nav item was intercepted by the backdrop's `onClick={onMobileClose}` handler, closing the drawer without ever triggering React Router navigation. The result: the drawer closed but the page did not change.
+
+### Files Changed
+
+- **`apps/web/src/App.tsx`** — CSS block inside `Sidebar` component:
+  - `.sidebar-mobile-backdrop`: `z-index` changed from `var(--z-overlay)` (400) → `var(--z-sidebar)` (300)
+  - `.sidebar-mobile-drawer`: `z-index` changed from `var(--z-sidebar)` (300) → `var(--z-modal)` (500)
+  - Mobile media query for `.sidebar-desktop-wrapper`: added `pointer-events: none` alongside `display: none` as a defensive fix for iOS WebKit fixed-position stacking context edge cases
+
+### Verification
+
+- `npm run build` (apps/web): ✅ 0 TypeScript errors, clean bundle
+- `npm test` (apps/api): ✅ 34/34 pass — zero regressions
+- 375px (iPhone SE): nav tap navigates + drawer closes ✅, backdrop dismiss ✅, X button dismiss ✅
+- 390px (iPhone 14): nav tap navigates + drawer closes ✅
+- 430px (iPhone 14 Pro Max): nav tap navigates + drawer closes ✅
+- 768px (tablet breakpoint): fixed desktop sidebar visible, direct nav works ✅
+- 1200px (desktop): sidebar nav works, collapse toggle works ✅
+- RTL: sidebar on right, text right-aligned ✅
+- Console errors: none ✅
+
+---
+
 ## [Phase 03.5 Corrective Fix] — 2026-09-11 — Sidebar Expand Control Restored
 
 ### Bug Fixed
