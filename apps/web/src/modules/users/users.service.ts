@@ -1,6 +1,7 @@
 /**
  * KOSHK SKATE ERP — Users Service (Frontend)
  * Phase 02 — Authentication & Permissions
+ * Phase 02 Remediation — added listPermissions, rolesService.update (GAP-RBAC-019)
  */
 
 import api from '../../services/api'
@@ -42,9 +43,15 @@ export const usersService = {
 // Roles API
 export const rolesService = {
   list: () => api.get<{ success: boolean; data: RoleDTO[] }>('/api/v1/roles').then(r => r.data),
+  get: (id: number) => api.get<{ success: boolean; data: RoleDTO }>(`/api/v1/roles/${id}`).then(r => r.data),
   create: (body: { name: string; nameAr: string }) =>
     api.post<{ success: boolean; data: RoleDTO }>('/api/v1/roles', body).then(r => r.data),
+  // Route: GET /api/v1/roles/permissions (static path declared before /:id in roles.routes.ts)
+  update: (id: number, body: { name?: string; nameAr?: string }) =>
+    api.patch<{ success: boolean; data: RoleDTO }>(`/api/v1/roles/${id}`, body).then(r => r.data),
   setPermissions: (id: number, permissionIds: number[]) =>
     api.put<{ success: boolean; data: RoleDTO }>(`/api/v1/roles/${id}/permissions`, { permissionIds }).then(r => r.data),
   delete: (id: number) => api.delete<{ success: boolean }>(`/api/v1/roles/${id}`),
+  listPermissions: () =>
+    api.get<{ success: boolean; data: PermissionDTO[] }>('/api/v1/roles/permissions').then(r => r.data),
 }

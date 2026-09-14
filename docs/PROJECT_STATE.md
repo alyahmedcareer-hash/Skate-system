@@ -10,14 +10,14 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | FOUNDATION FIXES COMPLETE — SYS-001..SYS-018 (6 items) implemented. Phase 04 cleared to begin. |
-| **Current Phase** | Phase 03.5 — ALL workstreams COMPLETE (Design System, Mobile UX, Desktop UI, Motion, Foundation Fixes) |
-| **Current Milestone** | System-wide UI Consistency Foundation Fixes: SYS-001 (color token fix), SYS-003 (ErrorBoundary), SYS-004 (UsersPage DataTable), SYS-010 (CheckboxField in EditSkateModal), SYS-017 (Alert dismiss touch target), SYS-018 (warning badge WCAG AA contrast). |
-| **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Desktop UI + Motion + Foundation Fixes) — FULLY COMPLETE |
+| **Overall Status** | RBAC REMEDIATION COMPLETE — Phase 02 gaps closed (OD-RBAC-001/002/003). Phase 04 cleared to begin. |
+| **Current Phase** | Phase 02 Remediation COMPLETE. Phase 03.5 ALL workstreams COMPLETE. |
+| **Current Milestone** | RBAC Remediation: Role Management UI, backend guards, 15 new integration tests. |
+| **Last Completed Phase** | Phase 02 Remediation (RBAC) — 2026-09-14 |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-14 — Foundation Fixes: `tsc -b` 0 errors ✅, `npm run build` 374KB ✅, `npm test` 34/34 ✅ |
-| **Last Git Commit** | `b907372` — fix(phase-03.5): system-wide UI consistency foundation fixes SYS-001 SYS-003 SYS-004 SYS-010 SYS-017 SYS-018 |
+| **Last Verification** | 2026-09-14 — RBAC Remediation: `tsc -b` 0 errors ✅ (API + Web), `npm test` 49/49 ✅, `npm run build` 387KB ✅ |
+| **Last Git Commit** | Pending commit: feat(rbac): complete roles & permissions management Phase 02 remediation |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Begin Phase 04 (Customers Module) |
 
@@ -73,7 +73,7 @@
 | Module | Frontend | Backend | Database | API | Tests | Docs |
 |---|---|---|---|---|---|---|
 | Auth | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (18/18) ✅ | VERIFIED ✅ |
-| Users/Permissions | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (18/18) ✅ | VERIFIED ✅ |
+| Users/Permissions | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ | IMPLEMENTED ✅ (permissions endpoint wired) | VERIFIED (49/49) ✅ | VERIFIED ✅ |
 | Dashboard | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Skates | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (16/16) ✅ | VERIFIED ✅ |
 | Customers | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | STUB (Phase 04) |

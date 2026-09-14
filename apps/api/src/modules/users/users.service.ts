@@ -1,14 +1,17 @@
 /**
  * KOSHK SKATE ERP — Users Service
  * Phase 02 — Authentication & Permissions
+ * Phase 02 Remediation — RBAC Gap fixes (GAP-RBAC-018)
  *
  * Handles user CRUD operations.
  * Password is always bcrypt-hashed (min 12 rounds).
  * No hard delete: use is_active = false for deactivation (DEC-009 principle).
+ *
+ * GAP-RBAC-018: createUser() and updateUser() now validate that provided roleIds exist.
  */
 
 import bcrypt from 'bcryptjs'
-import { eq, ne } from 'drizzle-orm'
+import { eq, ne, inArray } from 'drizzle-orm'
 import { db } from '../../db/connection.js'
 import { users, roles, userRoles } from '../../db/schema/index.js'
 import { NotFoundError, ConflictError, ValidationError } from '../../utils/errors.js'
@@ -90,8 +93,15 @@ export async function createUser(body: CreateUserRequest): Promise<UserDTO> {
 
   const newUserId = result.insertId
 
-  // Assign roles
+  // GAP-RBAC-018: Validate roleIds exist in DB before inserting
   if (roleIds?.length) {
+    const foundRoles = await db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(inArray(roles.id, roleIds))
+    if (foundRoles.length !== roleIds.length) {
+      throw new ValidationError('بعض الأدوار المحددة غير موجودة')
+    }
     await db.insert(userRoles).values(roleIds.map(roleId => ({ userId: newUserId, roleId })))
   }
 
@@ -140,8 +150,17 @@ export async function updateUser(id: number, body: UpdateUserRequest): Promise<U
     await db.update(users).set(updates).where(eq(users.id, id))
   }
 
-  // Update roles if provided
+  // Update roles if provided (GAP-RBAC-018: validate roleIds exist)
   if (body.roleIds !== undefined) {
+    if (body.roleIds.length > 0) {
+      const foundRoles = await db
+        .select({ id: roles.id })
+        .from(roles)
+        .where(inArray(roles.id, body.roleIds))
+      if (foundRoles.length !== body.roleIds.length) {
+        throw new ValidationError('بعض الأدوار المحددة غير موجودة')
+      }
+    }
     await db.delete(userRoles).where(eq(userRoles.userId, id))
     if (body.roleIds.length > 0) {
       await db.insert(userRoles).values(body.roleIds.map(roleId => ({ userId: id, roleId })))

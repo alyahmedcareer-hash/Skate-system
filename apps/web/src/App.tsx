@@ -13,12 +13,12 @@
  *   - PlaceholderPage uses EmptyState component
  *   - All structural styles moved to CSS — no inline style objects for design props
  *
- * Routing (unchanged from Phase 03):
+ * Routing (Phase 02 Remediation — route-level PermissionGate added for /users and /roles):
  *   /login        → LoginPage (public)
  *   /             → Dashboard placeholder (Phase 17)
  *   /skates       → SkatesPage (protected, requires skates.view)
- *   /users        → UsersPage (protected, requires users.view)
- *   /roles        → RolesPage (protected, requires roles.view)
+ *   /users        → UsersPage (protected, requires users.view — graceful NoAccessPage if missing)
+ *   /roles        → RolesPage (protected, requires roles.view — graceful NoAccessPage if missing)
  *   /*            → 404 redirect to /
  *
  * Phase 04+ will add: /customers, /rentals, etc.
@@ -44,6 +44,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Construction,
+  ShieldOff,
 } from 'lucide-react'
 import { useAuth } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -53,6 +54,23 @@ import LoginPage from './modules/auth/LoginPage'
 import UsersPage from './modules/users/UsersPage'
 import RolesPage from './modules/users/RolesPage'
 import SkatesPage from './modules/skates/SkatesPage'
+
+// ---------------------------------------------------------------------------
+// NoAccessPage — shown when an authenticated user lacks route-level permission
+// Uses EmptyState so no new shared component is needed (GAP-RBAC-013)
+// ---------------------------------------------------------------------------
+
+function NoAccessPage({ permission }: { permission: string }) {
+  return (
+    <div className="page-container">
+      <EmptyState
+        icon={ShieldOff}
+        title="غير مصرح"
+        description={`ليس لديك صلاحية "${permission}" للوصول إلى هذه الصفحة. يرجى التواصل مع المسؤول.`}
+      />
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Nav items — Lucide icons replacing emoji (OD-003)
@@ -984,8 +1002,22 @@ export default function App() {
             <AppShell>
               <Routes>
                 <Route path="/" element={<PlaceholderPage title="لوحة التحكم" phase="المرحلة 17" />} />
-                <Route path="/users" element={<UsersPage />} />
-                <Route path="/roles" element={<RolesPage />} />
+                <Route path="/users" element={
+                  <PermissionGate
+                    permission="users.view"
+                    fallback={<NoAccessPage permission="users.view" />}
+                  >
+                    <UsersPage />
+                  </PermissionGate>
+                } />
+                <Route path="/roles" element={
+                  <PermissionGate
+                    permission="roles.view"
+                    fallback={<NoAccessPage permission="roles.view" />}
+                  >
+                    <RolesPage />
+                  </PermissionGate>
+                } />
                 <Route path="/skates" element={<SkatesPage />} />
                 <Route path="/customers" element={<PlaceholderPage title="العملاء" phase="المرحلة 04" />} />
                 <Route path="/rentals" element={<PlaceholderPage title="الإيجارات" phase="المرحلة 05" />} />

@@ -6,6 +6,61 @@
 
 ## [Unreleased]
 
+### Phase 02 RBAC Remediation — Roles & Permissions Management (2026-09-14)
+
+**Full Role Management UI and backend guards implemented. 49/49 tests pass.**
+
+#### Added
+
+- **`RolesPage.tsx`** (OD-RBAC-001): Full replacement of the read-only roles page with complete Role Management UI:
+  - Add Role modal (name, Arabic name, initial permission selection grouped by module)
+  - Edit Role modal (custom roles: editable name; system roles: name read-only per OD-RBAC-002)
+  - Permission Management modal for all roles (system and custom — OD-RBAC-002)
+  - Delete Role with `ConfirmDialog`-pattern modal; inline `Alert` on 422 blocked deletes (OD-RBAC-003)
+  - `PermissionGate` gating on all action buttons (`roles.create`, `roles.edit`)
+  - Arabic immutability notice on system role cards
+
+- **`App.tsx`** (GAP-RBAC-013): Route-level `PermissionGate` wrapping `/users` and `/roles`.
+  - Authenticated users without `users.view` / `roles.view` now see `NoAccessPage` (uses `EmptyState` + `ShieldOff`) instead of a blank error state.
+
+- **`UsersPage.tsx`** (OD-RBAC-001): Edit User Roles modal added.
+  - `UserCog` icon button per active user row (desktop) and card (mobile)
+  - `Modal` with role `CheckboxField` list; calls `PATCH /api/v1/users/:id` with `{ roleIds }`
+  - Gated by `users.edit` permission
+
+- **`roles.test.ts`** (new): 15 integration test cases (TC-ROLE-01 to TC-ROLE-14 + TC-ROLE-03b):
+  - Create, duplicate check, missing field validation
+  - Update, system role rename blocked (OD-RBAC-002), duplicate on update
+  - Delete with no users, delete blocked by active users (OD-RBAC-003), system role delete blocked (OD-RBAC-002)
+  - Set permissions (custom + system), invalid permissionId rejection
+  - GET `/api/v1/roles/permissions` endpoint
+  - No-permission user blocked from role creation
+
+#### Fixed
+
+- **`roles.service.ts`** (GAP-RBAC-010, GAP-RBAC-011, GAP-RBAC-014, OD-RBAC-002, OD-RBAC-003, GAP-RBAC-007):
+  - `updateRole()`: system role rename now throws `ForbiddenError` (OD-RBAC-002)
+  - `updateRole()`: duplicate `name` and `nameAr` checked on update (GAP-RBAC-010)
+  - `createRole()`: Arabic name (`nameAr`) uniqueness check added (GAP-RBAC-014)
+  - `deleteRole()`: active user assignment guard added; returns HTTP 422 `ROLE_HAS_ACTIVE_USERS` (OD-RBAC-003)
+  - `setRolePermissions()`: all provided `permissionIds` validated against DB before insert (GAP-RBAC-007)
+
+- **`roles.routes.ts`** (GAP-RBAC-004): `GET /api/v1/roles/permissions` handler wired to existing `listPermissions()` service.
+  - Static path declared **before** `/:id` wildcard to prevent Express route capture bug.
+
+- **`users.service.ts` (API)** (GAP-RBAC-018): `createUser()` and `updateUser()` now validate all provided `roleIds` exist in DB before inserting into `user_roles`.
+
+- **`users.service.ts` (Web)**: Added `rolesService.update()`, `rolesService.get()`, `rolesService.listPermissions()` methods.
+
+#### Verified
+
+- `tsc -b` API: **0 errors** ✅
+- `tsc -b` Web: **0 errors** ✅
+- `npm test`: **49/49 tests pass** ✅ (34 existing + 15 new)
+- `npm run build`: **387KB** ✅
+
+---
+
 ### Phase 03.5 — System-wide UI Consistency Foundation Fixes (2026-09-14)
 
 **6 Owner-approved foundation fixes implemented. Phase 03.5 fully closed. Phase 04 cleared to begin.**

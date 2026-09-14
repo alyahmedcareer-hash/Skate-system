@@ -1,6 +1,7 @@
 /**
  * KOSHK SKATE ERP — Users Management Page
  * Phase 03.5 — Design System (updated from Phase 02)
+ * Phase 02 Remediation — added Edit User Roles modal (OD-RBAC-001)
  *
  * Changes from Phase 02:
  *   - confirm() replaced with ConfirmDialog (OD-004 / UI-005)
@@ -14,11 +15,13 @@
  *   - Hardcoded status color tokens corrected (--color-success vs --color-success-bg etc.)
  *   - textTransform: uppercase removed from Arabic table headers (UI-007)
  *
- * Business logic (users.service calls, form validation, role selection) UNCHANGED.
+ * Phase 02 Remediation:
+ *   - Edit User Roles modal added (PATCH /api/v1/users/:id with roleIds)
+ *   - users.edit PermissionGate wraps the edit-roles button
  */
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Users } from 'lucide-react'
+import { UserPlus, Users, UserCog } from 'lucide-react'
 import { usersService, rolesService, type UserDTO, type RoleDTO } from './users.service'
 import { PermissionGate } from '../../components/PermissionGate'
 import {
@@ -58,6 +61,12 @@ export default function UsersPage() {
   // Confirm deactivate dialog
   const [confirmTarget, setConfirmTarget] = useState<{ id: number; name: string } | null>(null)
   const [deactivating, setDeactivating] = useState(false)
+
+  // Edit User Roles modal (Phase 02 remediation)
+  const [editRolesTarget, setEditRolesTarget] = useState<UserDTO | null>(null)
+  const [editRoleIds, setEditRoleIds] = useState<number[]>([])
+  const [editRolesSaving, setEditRolesSaving] = useState(false)
+  const [editRolesError, setEditRolesError] = useState<string | null>(null)
 
   useEffect(() => {
     load()
@@ -115,6 +124,31 @@ export default function UsersPage() {
       setConfirmTarget(null)
     } finally {
       setDeactivating(false)
+    }
+  }
+
+  // Open edit-roles modal
+  function handleEditRolesClick(user: UserDTO) {
+    setEditRolesTarget(user)
+    setEditRoleIds(user.roles.map(r => r.id))
+    setEditRolesError(null)
+  }
+
+  // Save updated role assignment
+  async function handleEditRolesSave() {
+    if (!editRolesTarget) return
+    setEditRolesError(null)
+    setEditRolesSaving(true)
+    try {
+      await usersService.update(editRolesTarget.id, { roleIds: editRoleIds })
+      showToast({ type: 'success', title: `تم تحديث أدوار "${editRolesTarget.name}" بنجاح` })
+      setEditRolesTarget(null)
+      await load()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setEditRolesError(msg ?? 'حدث خطأ أثناء تحديث الأدوار')
+    } finally {
+      setEditRolesSaving(false)
     }
   }
 
@@ -183,18 +217,32 @@ export default function UsersPage() {
       render: (_v, row) => {
         const u = row as unknown as UserDTO
         return (
-          <PermissionGate permission="users.delete">
-            {u.isActive && (
+          <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <PermissionGate permission="users.edit">
               <Button
+                id={`btn-edit-roles-${u.id}`}
                 variant="ghost"
                 size="sm"
-                onClick={() => handleDeactivateClick(u)}
-                style={{ color: 'var(--color-danger-text)' }}
+                onClick={() => handleEditRolesClick(u)}
+                title="تعديل الأدوار"
               >
-                تعطيل
+                <UserCog size={14} />
+                الأدوار
               </Button>
-            )}
-          </PermissionGate>
+            </PermissionGate>
+            <PermissionGate permission="users.delete">
+              {u.isActive && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeactivateClick(u)}
+                  style={{ color: 'var(--color-danger-text)' }}
+                >
+                  تعطيل
+                </Button>
+              )}
+            </PermissionGate>
+          </div>
         )
       },
     },
@@ -313,19 +361,34 @@ export default function UsersPage() {
                   )}
 
                   {/* Actions */}
-                  <PermissionGate permission="users.delete">
-                    {user.isActive && (
+                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <PermissionGate permission="users.edit">
                       <Button
+                        id={`btn-edit-roles-mobile-${user.id}`}
                         variant="ghost"
                         size="sm"
                         fullWidth
-                        onClick={() => handleDeactivateClick(user)}
-                        style={{ color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-bg)', backgroundColor: 'var(--color-danger-bg)' }}
+                        onClick={() => handleEditRolesClick(user)}
+                        style={{ flex: 1 }}
                       >
-                        تعطيل الحساب
+                        <UserCog size={14} />
+                        تعديل الأدوار
                       </Button>
-                    )}
-                  </PermissionGate>
+                    </PermissionGate>
+                    <PermissionGate permission="users.delete">
+                      {user.isActive && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          fullWidth
+                          onClick={() => handleDeactivateClick(user)}
+                          style={{ flex: 1, color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-bg)', backgroundColor: 'var(--color-danger-bg)' }}
+                        >
+                          تعطيل الحساب
+                        </Button>
+                      )}
+                    </PermissionGate>
+                  </div>
                 </div>
               ))
             )}
@@ -450,11 +513,73 @@ export default function UsersPage() {
         onConfirm={handleDeactivateConfirm}
         onCancel={() => setConfirmTarget(null)}
         title="تعطيل الحساب"
-        description={`هل تريد تعطيل حساب "${confirmTarget?.name ?? ''}"؟ يمكن إعادة تفعيله لاحقاً.`}
+        description={`هل تريد تعطيل حساب "${confirmTarget?.name ?? ''}"\u061f يمкн إعادة تفعيله لاحقاً.`}
         confirmLabel="تعطيل"
         variant="danger"
         loading={deactivating}
       />
+
+      {/* Edit User Roles Modal (Phase 02 Remediation — OD-RBAC-001) */}
+      <Modal
+        isOpen={Boolean(editRolesTarget)}
+        onClose={() => { if (!editRolesSaving) setEditRolesTarget(null) }}
+        title={`تعديل أدوار: ${editRolesTarget?.name ?? ''}`}
+        size="base"
+        footer={
+          <>
+            <Button
+              id="btn-edit-roles-save"
+              variant="primary"
+              loading={editRolesSaving}
+              onClick={handleEditRolesSave}
+            >
+              حفظ الأدوار
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setEditRolesTarget(null)}
+              disabled={editRolesSaving}
+            >
+              إلغاء
+            </Button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {editRolesError && (
+            <Alert variant="danger">{editRolesError}</Alert>
+          )}
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend
+              style={{
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-semibold)',
+                color: 'var(--color-text-primary)',
+                marginBottom: 'var(--space-2)',
+                padding: 0,
+              }}
+            >
+              اختر الأدوار
+            </legend>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {roles.map(role => (
+                <CheckboxField
+                  key={role.id}
+                  id={`edit-role-${role.id}`}
+                  label={role.nameAr}
+                  checked={editRoleIds.includes(role.id)}
+                  onChange={checked =>
+                    setEditRoleIds(prev =>
+                      checked ? [...prev, role.id] : prev.filter(id => id !== role.id)
+                    )
+                  }
+                  disabled={editRolesSaving}
+                />
+              ))}
+            </div>
+          </fieldset>
+        </div>
+      </Modal>
     </div>
   )
 }

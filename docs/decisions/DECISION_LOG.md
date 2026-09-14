@@ -931,6 +931,57 @@ The `<Alert>` component shall NOT have a CSS entrance animation. Alerts appear i
 **Status:** PERMANENTLY DEFERRED — OWNER DECISION
 **Source:** Owner decision — Phase 03.5 Motion Audit final review (2026-09-14)
 
+
 ---
 
-*Last updated: 2026-09-14 (DEC-041 through DEC-044 added — Phase 03.5 close-out: warning-text correction, currency standard, Badge API, motion deferral) by AI Agent*
+### DEC-045
+
+**Date:** 2026-09-14 (Phase 02 RBAC Remediation — OD-RBAC-001)
+**Category:** Product — Roles Management UI
+**Decision:** Role Management is a Phase 02 remediation item. The Roles page must support full CRUD operations: Add Role, Edit Role, Delete Role, and Manage Permissions. This was missing from the original Phase 02 implementation.  
+**Reason:** The original `RolesPage.tsx` was read-only. The gap was identified in `docs/quality/ROLES_PERMISSIONS_GAP_REPORT.md` and approved by owner.  
+**Impact:** `RolesPage.tsx` fully replaced. `roles.service.ts` extended. New frontend `users.service.ts` methods added. New test suite `roles.test.ts` created.  
+**Affected Modules:** Users/Permissions  
+**Status:** ACTIVE  
+**Source:** Owner decision OD-RBAC-001 (2026-09-14)
+
+---
+
+### DEC-046
+
+**Date:** 2026-09-14 (Phase 02 RBAC Remediation — OD-RBAC-002)
+**Category:** Business Rule — System Roles Protection
+**Decision:** System roles (Administrator, Cashier, MaintenanceStaff) have the following immutable rules:
+1. **Cannot be deleted** — `deleteRole()` throws `ForbiddenError` for any role where `is_system = true`.
+2. **Cannot be renamed** — `updateRole()` throws `ForbiddenError` if a name change is attempted on a system role.
+3. **Permissions ARE editable** — `setRolePermissions()` works on system roles without restriction.
+
+UI enforces this: system role cards show name as read-only text, Edit button is hidden, Delete button is hidden.  
+**Reason:** System roles define the fundamental access tiers of the product. Renaming or deleting them would break the authorization model.  
+**Impact:** `roles.service.ts` updated. `RolesPage.tsx` shows immutability indicators.  
+**Affected Modules:** Users/Permissions  
+**Status:** ACTIVE  
+**Source:** Owner decision OD-RBAC-002 (2026-09-14)
+
+---
+
+### DEC-047
+
+**Date:** 2026-09-14 (Phase 02 RBAC Remediation — OD-RBAC-003)
+**Category:** Business Rule — Role Deletion Guard
+**Decision:** A role cannot be deleted if it is currently assigned to one or more active users. Attempting to delete such a role must:
+1. Return HTTP 422 with code `ROLE_HAS_ACTIVE_USERS`.
+2. Return an Arabic error message explaining why the deletion was blocked.
+3. NOT silently cascade or remove assignments.
+4. The administrator must first reassign or deactivate the affected users.
+
+The frontend shows this error inline in the Delete modal as an `Alert variant="danger"` — the dialog does NOT close automatically on a blocked delete.  
+**Reason:** Deleting a role that is in active use would silently strip permissions from live users, creating a security and operational risk.  
+**Impact:** `roles.service.ts` `deleteRole()` updated. `RolesPage.tsx` delete dialog handles 422 inline.  
+**Affected Modules:** Users/Permissions  
+**Status:** ACTIVE  
+**Source:** Owner decision OD-RBAC-003 (2026-09-14)
+
+---
+
+*Last updated: 2026-09-14 (DEC-045/DEC-046/DEC-047 added — Phase 02 RBAC Remediation OD-RBAC-001/002/003) by AI Agent*
