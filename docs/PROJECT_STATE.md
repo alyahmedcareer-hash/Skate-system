@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 3.1
-**Last updated:** 2026-09-14 (Desktop UI Consistency Audit Fixes — D-001 through D-009 implemented)
-**Updated by:** AI Agent (Desktop UI Audit Fix)
+**Version:** 3.2
+**Last updated:** 2026-09-14 (Desktop UI Audit D-010, D-012, D-014 implemented)
+**Updated by:** AI Agent (Desktop UI Audit D-010/D-012)
 
 ---
 
@@ -10,14 +10,14 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | IN IMPLEMENTATION — Desktop UI Consistency Audit Fixes COMPLETE. Ready for Phase 04. |
+| **Overall Status** | IN IMPLEMENTATION — D-010, D-012, D-014 COMPLETE. Ready for Phase 04. |
 | **Current Phase** | Phase 03.5 (Desktop UI Consistency Audit) — COMPLETE |
-| **Current Milestone** | Phase 03.5 Desktop UI Audit: 9 findings resolved (D-001–D-009). Badge `role`/`system` statuses, `formatCurrency()` utility, `btn-sm` WCAG touch target, Modal `useId()`, RolesPage/UsersPage badge compliance, empty state standardisation. 0 TS errors, 34/34 tests pass, build 361KB. |
+| **Current Milestone** | Phase 03.5 Desktop UI Audit: D-010 (SkateCard → shared Card), D-012 (CheckboxField component added to FormFields.tsx, UsersPage updated), D-014 (resolved by D-010 via height:100% on skate-card-inner). All audit items D-001–D-012 + D-014 now resolved. 0 TS errors, 34/34 tests, 365KB build. |
 | **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Audit Fixes + Desktop UI Consistency) |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-14 — Desktop UI Audit Fixes: `tsc --noEmit` 0 errors ✅, `npm run build` 361KB ✅, `npm test` 34/34 PASS ✅, browser 375px + 1200px all PASS ✅ |
-| **Last Git Commit** | Pending commit of Desktop UI Consistency Audit Fixes |
+| **Last Verification** | 2026-09-14 — D-010/D-012/D-014: `tsc --noEmit` 0 errors ✅, `npm run build` 365KB ✅, `npm test` 34/34 PASS ✅, browser 375px/430px/768px/1200px all PASS ✅ |
+| **Last Git Commit** | Pending commit of D-010/D-012/D-014 |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Begin Phase 04 (Customers Module) |
 

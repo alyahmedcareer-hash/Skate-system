@@ -6,6 +6,37 @@
 
 ## [Unreleased]
 
+### Phase 03.5 — Desktop UI Consistency Audit D-010 & D-012 (2026-09-14)
+
+**Desktop UI Consistency Audit — D-010 and D-012 implemented**
+
+#### Added
+- `FormFields.tsx` (D-012): New `CheckboxField` shared form component — follows Input/Select/Textarea architecture and design tokens exactly.
+  - Controlled checked state, label, disabled, error, helperText, RTL, keyboard, WCAG 2.5.5 44px touch target, CSS focus ring.
+  - Custom visual box (18×18px, navy-800 filled + white SVG checkmark on checked) over hidden native `<input type="checkbox">`.
+  - Focus ring via CSS sibling selector `.checkbox-native:focus-visible ~ .checkbox-box` — no JS required.
+  - RTL: label at `order:0` (left in RTL), box at `order:1` (right in RTL) — standard Arabic checkbox convention.
+  - Disabled state: `opacity: 0.6`, `cursor: not-allowed`.
+  - Error state: danger-500 border on box, danger-text on label.
+- `index.ts`: `CheckboxField` added to UI barrel export.
+
+#### Fixed / Refactored
+- `SkatesPage.tsx` (D-010): `SkateCard` outer raw `<div>` (8+ inline styles + JS `onMouseEnter`/`onMouseLeave` hover handlers) replaced with shared `<Card padding="compact" hover as="article">`.
+  - `card--inactive` CSS class added in SkatesPage `<style>` for soft-disabled skate (opacity 0.65, muted bg).
+  - JS hover handlers removed — design-system `card--hover` CSS (`translateY(-1px)`, `shadow-md`) now handles hover.
+  - Inner `.skate-card-inner` flex wrapper with `height: 100%` added.
+- `SkatesPage.tsx` (D-014, via D-010): Resolved — `height: 100%` on `.skate-card-inner` + CSS Grid stretch ensures equal card heights per row. JS `marginTop: auto` on edit button replaced by `.skate-card-inner .btn { margin-top: auto }` CSS rule.
+- `UsersPage.tsx` (D-012): Role checkboxes in Create User modal replaced with `<CheckboxField>` per role. Raw `<label>` + raw `<input type="checkbox">` + inline styles removed. `<fieldset>`/`<legend>` used for semantic role-group.
+- `FormFields.tsx` module header comment updated to reflect CheckboxField addition.
+- User's label update preserved: purchase cost label changed from `ر.س` to `EGP` in both Create and Edit Skate modals.
+
+#### Verified
+- TypeScript: `npx tsc --noEmit` → 0 errors
+- Build: `npm run build` → 0 errors, 365KB bundle
+- API tests: `npm test` → 34/34 PASS
+- Browser: D-010 PASS at 375px, 430px, 768px, 1200px — cards consistent, equal height (D-014 resolved)
+- Browser: D-012 PASS at 375px and 1200px — custom checkbox, checked state, RTL, touch target
+
 ### Phase 03.5 — Desktop UI Consistency Audit Fixes (2026-09-14)
 
 **Desktop UI Consistency Audit — 9 findings resolved**

@@ -1,9 +1,11 @@
 /**
- * KOSHK SKATE ERP — Input, Select, Textarea Components
+ * KOSHK SKATE ERP — Input, Select, Textarea, CheckboxField Components
  * Phase 03.5 — Design System
  *
  * Shared form controls with integrated label, error message, RTL support.
  * UI-002: All form fields must use these components.
+ *
+ * D-012 (2026-09-14): Added CheckboxField — completes the form-control set.
  */
 
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
@@ -83,6 +85,114 @@ const FIELD_STYLES = `
     padding-left: 2.5rem;
     cursor: pointer;
   }
+
+  /* ── CheckboxField ── D-012 ────────────────────────────────────────────── */
+
+  /*
+   * .checkbox-field: row container — min 44px touch target per WCAG 2.5.5.
+   * RTL: checkbox visually on the RIGHT, label text on the LEFT (natural Arabic
+   * reading order). We use flex-direction: row-reverse + gap so the box appears
+   * at the leading (right) edge and the label follows to the left.
+   * If the host page sets dir="rtl" (which KOSHK does globally), the row-reverse
+   * already matches visual expectations.
+   */
+  .checkbox-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 44px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+
+  .checkbox-field--disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Hide the native checkbox — keep it accessible, size it to the visual box */
+  .checkbox-native {
+    position: absolute;
+    opacity: 0;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: inherit;
+    /* RTL: sit at the logical end (right) of the row */
+    inset-inline-end: 0;
+  }
+
+  /* Custom checkbox box */
+  .checkbox-box {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm, 4px);
+    background-color: var(--color-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+    /* Prevent the visual box from shrinking in RTL flex rows */
+    order: 1;
+  }
+
+  .checkbox-box__check {
+    display: none;
+    width: 10px;
+    height: 10px;
+  }
+
+  /* Checked state */
+  .checkbox-field--checked .checkbox-box {
+    background-color: var(--color-navy-800);
+    border-color: var(--color-navy-800);
+  }
+  .checkbox-field--checked .checkbox-box__check {
+    display: block;
+  }
+
+  /* Error state */
+  .checkbox-field--error .checkbox-box {
+    border-color: var(--color-danger-500);
+  }
+
+  /* Focus-visible ring — driven by the native hidden input */
+  .checkbox-native:focus-visible ~ .checkbox-box {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(77, 106, 153, 0.15);
+  }
+
+  /* Hover — only when not disabled */
+  .checkbox-field:not(.checkbox-field--disabled):hover .checkbox-box {
+    border-color: var(--color-navy-600, var(--color-navy-800));
+  }
+
+  /* Label text */
+  .checkbox-label-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    line-height: var(--line-height-normal);
+    order: 0;
+    flex: 1;
+  }
+
+  .checkbox-field--error .checkbox-label-text {
+    color: var(--color-danger-text);
+  }
+
+  /* Error/helper message below the checkbox row */
+  .checkbox-message {
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+    margin-top: calc(-1 * var(--space-1));
+  }
+  .checkbox-message--error  { color: var(--color-danger-text); }
+  .checkbox-message--helper { color: var(--color-text-muted);  }
 `
 
 let fieldStylesInjected = false
@@ -257,3 +367,126 @@ export function Textarea({
     </div>
   )
 }
+
+/* =============================================================================
+   CheckboxField — D-012
+   ============================================================================= */
+
+/**
+ * Design decisions (D-012 / 2026-09-14):
+ *
+ * 1. Custom checkbox box (18×18px) over a hidden native <input type="checkbox">:
+ *    - native input stays in DOM for keyboard, focus, form, and assistive-tech support.
+ *    - visual box driven purely by CSS classes — no SVG icons, no JS state syncing.
+ *
+ * 2. Touch target: .checkbox-field has min-height: 44px (WCAG 2.5.5). The hidden
+ *    native input is overlaid on the box region so click/tap triggers correctly.
+ *
+ * 3. RTL: label text is at order:0 (rendered first in the visual row, leftmost in RTL),
+ *    checkbox box is at order:1 (rendered second, rightmost in RTL). This means in RTL
+ *    the box appears on the RIGHT and label on the LEFT — standard Arabic UX convention.
+ *
+ * 4. Focus ring: CSS sibling selector `.checkbox-native:focus-visible ~ .checkbox-box`
+ *    shows the ring on the custom box, not the hidden input. No JS required.
+ *
+ * 5. Checked checkmark: pure SVG polyline in a 10×10 viewport, white stroke on navy-800 bg.
+ *
+ * 6. Error state: red border on box, red label text (consistent with field-control.field-error).
+ *
+ * 7. Group label ("الأدوار"): caller renders a heading/span above the CheckboxField list —
+ *    CheckboxField does not own a group label. Use <fieldset>/<legend> in the caller for
+ *    full semantic grouping when multiple checkboxes represent one choice set.
+ */
+
+interface CheckboxFieldProps {
+  /** Unique HTML id — used for the native input and focus ring. */
+  id: string
+  /** Visible label text displayed next to the checkbox. */
+  label: string
+  /** Controlled checked state. */
+  checked: boolean
+  /** Change handler — receives the new boolean value. */
+  onChange: (checked: boolean) => void
+  /** Disables interaction and applies muted appearance. */
+  disabled?: boolean
+  /** Inline error message below the checkbox row. */
+  error?: string
+  /** Helper text below the checkbox row (shown only when no error). */
+  helperText?: string
+  /** Additional class on the wrapper (e.g. for layout spacing). */
+  className?: string
+}
+
+export function CheckboxField({
+  id,
+  label,
+  checked,
+  onChange,
+  disabled = false,
+  error,
+  helperText,
+  className = '',
+}: CheckboxFieldProps) {
+  injectFieldStyles()
+  const messageId = `${id}-message`
+  const hasMessage = Boolean(error || helperText)
+
+  const wrapperClasses = [
+    'checkbox-field',
+    checked   ? 'checkbox-field--checked'  : '',
+    disabled  ? 'checkbox-field--disabled' : '',
+    error     ? 'checkbox-field--error'    : '',
+    className,
+  ].filter(Boolean).join(' ')
+
+  return (
+    <div>
+      <label className={wrapperClasses}>
+        {/* Hidden native checkbox — keyboard, focus, assistive tech */}
+        <input
+          type="checkbox"
+          id={id}
+          className="checkbox-native"
+          checked={checked}
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={hasMessage ? messageId : undefined}
+          onChange={e => onChange(e.target.checked)}
+        />
+
+        {/* Label text — order:0 → leftmost in RTL row */}
+        <span className="checkbox-label-text">{label}</span>
+
+        {/* Custom visual box — order:1 → rightmost in RTL row */}
+        <span className="checkbox-box" aria-hidden="true">
+          {/* Checkmark — SVG polyline, white on navy */}
+          <svg
+            className="checkbox-box__check"
+            viewBox="0 0 10 10"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="1.5,5 4,7.5 8.5,2.5" />
+          </svg>
+        </span>
+      </label>
+
+      {/* Validation / helper message */}
+      {error && (
+        <span id={messageId} className="checkbox-message checkbox-message--error" role="alert">
+          {error}
+        </span>
+      )}
+      {!error && helperText && (
+        <span id={messageId} className="checkbox-message checkbox-message--helper">
+          {helperText}
+        </span>
+      )}
+    </div>
+  )
+}
+

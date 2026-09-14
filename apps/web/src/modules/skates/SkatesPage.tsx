@@ -41,6 +41,7 @@ import {
   Badge,
   Button,
   Alert,
+  Card,
   Modal,
   EmptyState,
   PageLoader,
@@ -198,7 +199,7 @@ function CreateSkateModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
             <Input
               id="create-skate-purchase-cost"
-              label="تكلفة الشراء (ر.س)"
+              label="تكلفة الشراء (EGP)"
               type="number"
               min="0"
               step="0.01"
@@ -353,7 +354,7 @@ function EditSkateModal({ skate, onClose, onUpdated }: { skate: SkateDTO; onClos
             />
             <Input
               id="edit-skate-purchase-cost"
-              label="تكلفة الشراء (ر.س)"
+              label="تكلفة الشراء (EGP)"
               type="number"
               min="0"
               step="0.01"
@@ -592,95 +593,111 @@ export default function SkatesPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Skate card
+// Skate card — D-010: uses shared <Card> component
 // ---------------------------------------------------------------------------
 
 function SkateCard({ skate, onEdit }: { skate: SkateDTO; onEdit: () => void }) {
   return (
-    <div style={{
-      backgroundColor: skate.isActive ? 'var(--color-white)' : 'var(--color-page-bg)',
-      borderRadius: 'var(--radius-lg)',
-      boxShadow: 'var(--shadow-card)',
-      border: `1px solid ${skate.isActive ? 'var(--color-border)' : 'var(--color-border)'}`,
-      padding: 'var(--space-5)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 'var(--space-3)',
-      opacity: skate.isActive ? 1 : 0.65,
-      transition: 'box-shadow var(--transition-fast), transform var(--transition-fast)',
-    }}
-    onMouseEnter={e => {
-      if (skate.isActive) {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-md)'
-        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
-      }
-    }}
-    onMouseLeave={e => {
-      (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-card)'
-      ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
-    }}
-    >
-      {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <p style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 800, color: 'var(--color-navy-800)', fontFamily: 'monospace, Cairo', letterSpacing: '0.05em' }}>
-            {skate.skateCode}
-          </p>
-          {!skate.isActive && (
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-              معطّلة
-            </span>
+    <>
+      {/*
+       * D-010: outer div replaced with shared <Card padding="compact" hover>.
+       *  - Removes 8+ inline styles and JS onMouseEnter/Leave hover handlers.
+       *  - card--hover CSS handles hover (translateY(-1px), shadow-md) per design system.
+       *  - card--inactive class handles inactive skate opacity / background.
+       *  - height:100% on inner wrapper resolves D-014 (uneven row heights in CSS grid).
+       */}
+      <Card
+        padding="compact"
+        hover={skate.isActive}
+        className={skate.isActive ? '' : 'card--inactive'}
+        as="article"
+      >
+        <div className="skate-card-inner">
+          {/* Header row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 800, color: 'var(--color-navy-800)', fontFamily: 'monospace, Cairo', letterSpacing: '0.05em' }}>
+                {skate.skateCode}
+              </p>
+              {!skate.isActive && (
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                  معطّلة
+                </span>
+              )}
+            </div>
+            <StatusBadge status={skate.status} />
+          </div>
+
+          {/* Attributes */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)', fontSize: 'var(--font-size-sm)' }}>
+            <div>
+              <span style={{ color: 'var(--color-text-muted)' }}>المقاس: </span>
+              <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{skate.size}</span>
+            </div>
+            {skate.type && (
+              <div>
+                <span style={{ color: 'var(--color-text-muted)' }}>النوع: </span>
+                <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{skate.type}</span>
+              </div>
+            )}
+            <div>
+              <span style={{ color: 'var(--color-text-muted)' }}>الحالة الفنية: </span>
+              <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{CONDITION_LABELS[skate.condition]}</span>
+            </div>
+            {skate.purchaseCost && (
+              <div>
+                <span style={{ color: 'var(--color-text-muted)' }}>التكلفة: </span>
+                {/* D-009: formatCurrency — EGP, Western numerals, ج.م suffix */}
+                <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{formatCurrency(skate.purchaseCost)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          {skate.notes && (
+            <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-2)' }}>
+              {skate.notes}
+            </p>
           )}
-        </div>
-        <StatusBadge status={skate.status} />
-      </div>
 
-      {/* Attributes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)', fontSize: 'var(--font-size-sm)' }}>
-        <div>
-          <span style={{ color: 'var(--color-text-muted)' }}>المقاس: </span>
-          <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{skate.size}</span>
+          {/* Action — pushed to bottom via flex */}
+          <PermissionGate permission="skates.edit">
+            <Button
+              id={`edit-skate-${skate.id}-btn`}
+              variant="secondary"
+              size="sm"
+              onClick={onEdit}
+              fullWidth
+            >
+              <Pencil size={14} aria-hidden="true" />
+              تعديل
+            </Button>
+          </PermissionGate>
         </div>
-        {skate.type && (
-          <div>
-            <span style={{ color: 'var(--color-text-muted)' }}>النوع: </span>
-            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{skate.type}</span>
-          </div>
-        )}
-        <div>
-          <span style={{ color: 'var(--color-text-muted)' }}>الحالة الفنية: </span>
-          <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{CONDITION_LABELS[skate.condition]}</span>
-        </div>
-        {skate.purchaseCost && (
-          <div>
-            <span style={{ color: 'var(--color-text-muted)' }}>التكلفة: </span>
-            {/* D-009: formatCurrency — EGP, Western numerals, ج.م suffix */}
-            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{formatCurrency(skate.purchaseCost)}</span>
-          </div>
-        )}
-      </div>
+      </Card>
 
-      {/* Notes */}
-      {skate.notes && (
-        <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-2)' }}>
-          {skate.notes}
-        </p>
-      )}
-
-      {/* Action */}
-      <PermissionGate permission="skates.edit">
-        <Button
-          id={`edit-skate-${skate.id}-btn`}
-          variant="secondary"
-          size="sm"
-          onClick={onEdit}
-          fullWidth
-          style={{ marginTop: 'auto' } as React.CSSProperties}
-        >
-          <Pencil size={14} aria-hidden="true" />
-          تعديل
-        </Button>
-      </PermissionGate>
-    </div>
+      <style>{`
+        /*
+         * D-010: SkateCard-specific card styles.
+         * card--inactive: muted background + reduced opacity for soft-disabled skates.
+         * skate-card-inner: flex column that fills the full Card height — resolves D-014.
+         */
+        .card--inactive {
+          background-color: var(--color-page-bg) !important;
+          opacity: 0.65;
+        }
+        .skate-card-inner {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+          height: 100%;
+        }
+        /* Push edit button to bottom when card height is set by grid row */
+        .skate-card-inner .btn {
+          margin-top: auto;
+        }
+      `}</style>
+    </>
   )
 }
+

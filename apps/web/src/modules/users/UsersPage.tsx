@@ -28,6 +28,7 @@ import {
   Modal,
   ConfirmDialog,
   EmptyState,
+  CheckboxField,
   Input,
   PageLoader,
   useToast,
@@ -375,32 +376,39 @@ export default function UsersPage() {
             required
           />
 
-          {/* Role checkboxes */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+          {/* Role checkboxes — D-012: replaced raw <input type="checkbox"> + inline styles */}
+          {/* fieldset/legend provides semantic grouping for screen readers */}
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend
+              style={{
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-semibold)',
+                color: 'var(--color-text-primary)',
+                marginBottom: 'var(--space-1)',
+                padding: 0,
+              }}
+            >
               الأدوار
-            </span>
-            {roles.map(role => (
-              <label
-                key={role.id}
-                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-primary)' }}
-              >
-                <input
-                  type="checkbox"
+            </legend>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {roles.map(role => (
+                <CheckboxField
+                  key={role.id}
+                  id={`user-role-${role.id}`}
+                  label={role.nameAr}
                   checked={formData.roleIds.includes(role.id)}
-                  onChange={e => {
+                  onChange={checked =>
                     setFormData(p => ({
                       ...p,
-                      roleIds: e.target.checked
+                      roleIds: checked
                         ? [...p.roleIds, role.id]
                         : p.roleIds.filter(id => id !== role.id),
                     }))
-                  }}
+                  }
                 />
-                {role.nameAr}
-              </label>
-            ))}
-          </div>
+              ))}
+            </div>
+          </fieldset>
 
           {formError && (
             <Alert variant="danger">{formError}</Alert>

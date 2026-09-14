@@ -11,7 +11,7 @@ export type {} from './Icon'
 
 export { Button } from './Button'
 
-export { Input, Select, Textarea } from './FormFields'
+export { Input, Select, Textarea, CheckboxField } from './FormFields'
 
 export { Badge } from './Badge'
 export type { BadgeStatus } from './Badge'

@@ -78,9 +78,7 @@ A component belongs in the shared library if:
 apps/web/src/components/
   ui/
     Button.tsx
-    Input.tsx
-    Select.tsx
-    Textarea.tsx
+    FormFields.tsx   ← Input, Select, Textarea, CheckboxField (all in one file)
     Modal.tsx
     Badge.tsx
     Card.tsx
@@ -115,10 +113,11 @@ import { Button, Modal, Badge, DataTable } from '@/components/ui';
 
 | Component | File | Purpose | Phase |
 |---|---|---|---|
-| `Button` | `Button.tsx` | All interactive buttons | 03.5 |
-| `Input` | `Input.tsx` | Text inputs with label + error | 03.5 |
-| `Select` | `Select.tsx` | Dropdown select with RTL support | 03.5 |
-| `Textarea` | `Textarea.tsx` | Multi-line text input | 03.5 |
+| `Button` | `FormFields.tsx` | All interactive buttons | 03.5 |
+| `Input` | `FormFields.tsx` | Text inputs with label + error | 03.5 |
+| `Select` | `FormFields.tsx` | Dropdown select with RTL support | 03.5 |
+| `Textarea` | `FormFields.tsx` | Multi-line text input | 03.5 |
+| `CheckboxField` | `FormFields.tsx` | Checkbox with label, validation, RTL, WCAG touch target | 03.5 D-012 |
 | `Modal` | `Modal.tsx` | Reusable modal dialog shell | 03.5 |
 | `Badge` | `Badge.tsx` | Status/label pills | 03.5 |
 | `Card` | `Card.tsx` | Surface container | 03.5 |
@@ -282,7 +281,94 @@ import { Button, Modal, Badge, DataTable } from '@/components/ui';
 
 ---
 
-### 4.05 — Modal
+### 4.05 — CheckboxField *(added D-012 / 2026-09-14)*
+
+**File:** `apps/web/src/components/ui/FormFields.tsx`
+
+**Purpose:** Reusable checkbox control with label, validation, RTL layout, and WCAG 2.5.5-compliant touch target. Completes the shared form-control set (Input / Select / Textarea / CheckboxField).
+
+**Architecture:** Custom visual box (18×18px CSS-only) over a hidden native `<input type="checkbox">`. The native element stays fully in the DOM for keyboard, focus, form submission, and screen reader support. All visual state is driven by CSS class modifiers on the wrapper — no JS state beyond the React `checked` prop.
+
+**Expected props:**
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | `string` | Yes | — | Unique HTML id — links label, focus ring, aria-describedby |
+| `label` | `string` | Yes | — | Visible label text |
+| `checked` | `boolean` | Yes | — | Controlled checked state |
+| `onChange` | `(checked: boolean) => void` | Yes | — | Called with new boolean value |
+| `disabled` | `boolean` | No | `false` | Disables interaction, applies 0.6 opacity |
+| `error` | `string` | No | — | Error message below the row (red border + red label) |
+| `helperText` | `string` | No | — | Helper text below the row (shown when no error) |
+| `className` | `string` | No | `''` | Additional class on wrapper (for external spacing) |
+
+**States:**
+
+| State | Visual |
+|---|---|
+| Unchecked | White box, gray border |
+| Checked | Navy-800 fill, white SVG checkmark |
+| Focus | `outline: 2px solid --color-border-focus`, focus ring on custom box via CSS sibling selector |
+| Hover (not disabled) | Border darkens to navy-600 |
+| Disabled | `opacity: 0.6`, `cursor: not-allowed` |
+| Error | Danger-500 border, danger-text label color |
+
+**RTL conventions:**
+- Label text at CSS `order: 0` → leftmost in RTL flex row (Arabic reading direction)
+- Custom box at `order: 1` → rightmost in RTL flex row (standard Arabic checkbox placement)
+- `inset-inline-end: 0` on hidden native input → logical RTL positioning
+- No JS or directional overrides needed — `order` handles both LTR and RTL
+
+**Touch target:**
+- `.checkbox-field { min-height: 44px }` — WCAG 2.5.5 minimum for touch-capable devices
+- Entire row is clickable via `<label>` wrapping both text and box
+
+**Keyboard accessibility:**
+- Space toggles checked state (native browser behavior via hidden input)
+- Focus ring visible via CSS (`:focus-visible`) on the custom box — not on the hidden input
+
+**Semantic grouping for multiple checkboxes:**
+- Caller wraps a list of `<CheckboxField>` items in `<fieldset>`/`<legend>` for screen readers
+- `CheckboxField` itself does not own a group label — it owns only the individual row label
+
+**Usage example:**
+```tsx
+// Single checkbox
+<CheckboxField
+  id="accept-terms"
+  label="أوافق على الشروط"
+  checked={accepted}
+  onChange={setAccepted}
+/>
+
+// Group (with fieldset for screen reader semantics)
+<fieldset style={{ border: 'none', padding: 0 }}>
+  <legend className="field-label">الأدوار</legend>
+  {roles.map(role => (
+    <CheckboxField
+      key={role.id}
+      id={`role-${role.id}`}
+      label={role.nameAr}
+      checked={selectedIds.includes(role.id)}
+      onChange={checked =>
+        setSelectedIds(prev =>
+          checked ? [...prev, role.id] : prev.filter(id => id !== role.id)
+        )
+      }
+    />
+  ))}
+</fieldset>
+```
+
+**Reuse rules:**
+- All boolean option lists in the ERP use `CheckboxField`
+- Never use raw `<input type="checkbox">` in a module — always `<CheckboxField>`
+- For `<fieldset>`/`<legend>` grouping, the `legend` should use `class="field-label"` styling
+
+---
+
+### 4.06 — Modal *(was 4.05)*
+
 
 **File:** `apps/web/src/components/ui/Modal.tsx`
 
