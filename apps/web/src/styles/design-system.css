@@ -57,7 +57,7 @@
   /* Warning — تنبيه / Attention (same family as gold per VDR §2.2) */
   --color-warning-500: #F3B735;
   --color-warning-bg:  #FFF1C9;
-  --color-warning-text: #C88B00;
+  --color-warning-text: #7A5500; /* SYS-018 Owner Option A: darkened for WCAG AA ≥4.5:1 contrast on small badge text (#C88B00 was ~3.27:1) */
 
   /* Danger — خطأ / Error / Destructive / متأخر */
   --color-danger-500: #ED4547;

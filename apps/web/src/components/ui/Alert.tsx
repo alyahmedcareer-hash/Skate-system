@@ -54,9 +54,13 @@ export function Alert({ variant, title, children, dismissible, onDismiss, classN
           onClick={onDismiss}
           aria-label="إغلاق التنبيه"
           style={{
-            background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-1)',
+            background: 'none', border: 'none', cursor: 'pointer',
+            /* SYS-017: min 44×44px touch target (WCAG 2.5.5). padding: var(--space-3) = 12px
+               each side → 16px icon + 24px padding = 40px; min-width/height guarantee 44px. */
+            padding: 'var(--space-3)',
+            minWidth: 44, minHeight: 44,
             color: 'var(--color-text-muted)', borderRadius: 'var(--radius-sm)',
-            display: 'flex', alignItems: 'center', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}
         >
           <X size={16} aria-hidden="true" />

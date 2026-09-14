@@ -29,10 +29,13 @@ import {
   ConfirmDialog,
   EmptyState,
   CheckboxField,
+  DataTable,
   Input,
   PageLoader,
   useToast,
+  type TableColumn,
 } from '../../components/ui'
+
 
 // ---------------------------------------------------------------------------
 // Main page
@@ -116,6 +119,88 @@ export default function UsersPage() {
   }
 
   // ---------------------------------------------------------------------------
+  // Table columns — SYS-004: DataTable migration
+  // TableColumn uses default generic (Record<string,unknown>); row is cast to
+  // UserDTO inside each render fn so all field access remains type-safe.
+  // ---------------------------------------------------------------------------
+
+  const usersColumns: TableColumn[] = [
+    {
+      key: 'name',
+      header: 'الاسم',
+      render: (_v, row) => {
+        const u = row as unknown as UserDTO
+        return (
+          <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-navy-800)' }}>
+            {u.name}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'email',
+      header: 'البريد الإلكتروني',
+      render: (_v, row) => {
+        const u = row as unknown as UserDTO
+        return (
+          <span style={{ direction: 'ltr', display: 'inline-block', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-xs)' }}>
+            {u.email}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'roles',
+      header: 'الأدوار',
+      render: (_v, row) => {
+        const u = row as unknown as UserDTO
+        return (
+          /* D-002: role name pills using shared Badge */
+          <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+            {u.roles.map(r => (
+              <Badge key={r.id} status="role">{r.nameAr}</Badge>
+            ))}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'isActive',
+      header: 'الحالة',
+      render: (_v, row) => {
+        const u = row as unknown as UserDTO
+        return (
+          <Badge status={u.isActive ? 'active' : 'inactive'}>
+            {u.isActive ? 'نشط' : 'معطّل'}
+          </Badge>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      header: 'إجراءات',
+      align: 'center',
+      render: (_v, row) => {
+        const u = row as unknown as UserDTO
+        return (
+          <PermissionGate permission="users.delete">
+            {u.isActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeactivateClick(u)}
+                style={{ color: 'var(--color-danger-text)' }}
+              >
+                تعطيل
+              </Button>
+            )}
+          </PermissionGate>
+        )
+      },
+    },
+  ]
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
@@ -153,71 +238,14 @@ export default function UsersPage() {
       {/* Users table — desktop/tablet (>= 640px) */}
       {!loading && !error && (
         <>
-          {/* Desktop/tablet: data table */}
-          <div className="users-desktop-table" style={{ borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              <table className="ds-table" style={{ width: '100%', borderCollapse: 'collapse', direction: 'rtl', fontFamily: 'var(--font-family-base)' }}>
-                <thead>
-                  <tr style={{ backgroundColor: 'var(--color-page-bg)', borderBottom: '1px solid var(--color-border)' }}>
-                    {['الاسم', 'البريد الإلكتروني', 'الأدوار', 'الحالة', 'إجراءات'].map(h => (
-                      <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-muted)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.length === 0 ? (
-                    <tr>
-                      <td colSpan={5}>
-                        {/* D-008: EmptyState component instead of raw div with text */}
-                        <EmptyState
-                          icon={Users}
-                          title="لا يوجد مستخدمون"
-                          description="لم يتم إضافة أي مستخدمين بعد"
-                        />
-                      </td>
-                    </tr>
-                  ) : (
-                    users.map(user => (
-                      <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: 'var(--space-4)', verticalAlign: 'middle' }}>
-                          <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-navy-800)' }}>{user.name}</span>
-                        </td>
-                        <td style={{ padding: 'var(--space-4)', verticalAlign: 'middle' }}>
-                          <span style={{ direction: 'ltr', display: 'inline-block', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-xs)' }}>{user.email}</span>
-                        </td>
-                        <td style={{ padding: 'var(--space-4)', verticalAlign: 'middle' }}>
-                          {/* D-002: replaced raw <span> (inline navy-50/navy-700 style) with shared <Badge status="role"> */}
-                        <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
-                          {user.roles.map(r => (
-                            <Badge key={r.id} status="role">{r.nameAr}</Badge>
-                          ))}
-                        </div>
-                        </td>
-                        <td style={{ padding: 'var(--space-4)', verticalAlign: 'middle' }}>
-                          <Badge status={user.isActive ? 'active' : 'inactive'}>
-                            {user.isActive ? 'نشط' : 'معطّل'}
-                          </Badge>
-                        </td>
-                        <td style={{ padding: 'var(--space-4)', verticalAlign: 'middle', textAlign: 'center' }}>
-                          <PermissionGate permission="users.delete">
-                            {user.isActive && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeactivateClick(user)}
-                                style={{ color: 'var(--color-danger-text)' }}
-                              >
-                                تعطيل
-                              </Button>
-                            )}
-                          </PermissionGate>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+          {/* Desktop/tablet: DataTable — SYS-004: migrated from raw <table className="ds-table"> */}
+          <div className="users-desktop-table">
+            <DataTable
+              columns={usersColumns}
+              data={users as unknown as Record<string, unknown>[]}
+              emptyMessage="لا يوجد مستخدمون"
+              emptyIcon={Users}
+            />
           </div>
 
           {/* Mobile: card-list view (< 640px) — OD-MOBILE-001 Option B */}

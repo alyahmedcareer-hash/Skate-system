@@ -6,9 +6,56 @@
 
 ## [Unreleased]
 
+### Phase 03.5 — System-wide UI Consistency Foundation Fixes (2026-09-14)
+
+**6 Owner-approved foundation fixes implemented. Phase 03.5 fully closed. Phase 04 cleared to begin.**
+
+#### Fixed
+
+- `styles/index.css` (SYS-001): Replaced three undefined `--color-gray-*` token references that silently failed in browsers.
+  - `--color-gray-50` → `--color-page-bg` (body background)
+  - `--color-gray-100` → `--color-neutral-bg` (scrollbar track)
+  - `--color-gray-300` → `--color-navy-300` (scrollbar thumb)
+
+- `components/ui/ErrorBoundary.tsx` + `main.tsx` (SYS-003): Added shared React ErrorBoundary class component.
+  - Prevents full blank-screen on render errors.
+  - Arabic-first RTL fallback UI with KOSHK design tokens (inline styles — does not depend on potentially broken CSS).
+  - Recovery action: full page reload button.
+  - Does not expose stack traces to end users.
+  - Integrated at application root in `main.tsx` wrapping the full app tree.
+  - Exported from `components/ui/index.ts`.
+
+- `modules/users/UsersPage.tsx` (SYS-004): Migrated desktop table from raw `<table className="ds-table">` to shared `<DataTable>` component.
+  - All 5 columns preserved: name, email, roles, status, actions.
+  - Badge components, PermissionGate deactivate action, RTL, empty state all preserved.
+  - Mobile card view (OD-MOBILE-001 Option B) unchanged.
+  - `DataTable` import + `TableColumn` type added to UI barrel imports.
+
+- `modules/skates/SkatesPage.tsx` (SYS-010): Replaced raw `<input type="checkbox">` + inline `<label>` in EditSkateModal with shared `<CheckboxField>`.
+  - "زلاجة نشطة" behavior, form state, checked/unchecked, RTL, and 44px touch target preserved via CheckboxField.
+  - This closes the D-012 regression identified in SYS-010.
+
+- `components/ui/Alert.tsx` (SYS-017): Fixed Alert dismiss button touch target to meet WCAG 2.5.5 ≥44px.
+  - `padding: var(--space-3)` (was `var(--space-1)`)
+  - `minWidth: 44`, `minHeight: 44` added.
+  - `justifyContent: center` added for alignment.
+  - All Alert variants and keyboard focus preserved.
+
+- `styles/design-system.css` (SYS-018): Darkened `--color-warning-text` for WCAG AA compliance.
+  - **Owner Decision: Option A** — keep Gold warning background, darken text.
+  - Was: `#C88B00` (~3.27:1 contrast ratio against `#FFF1C9`)
+  - Now: `#7A5500` (~5.9:1 contrast ratio against `#FFF1C9`) — exceeds WCAG AA 4.5:1 for small text.
+  - Gold warning identity preserved. Other semantic colors unaffected.
+
+#### Documentation
+
+- `docs/PROJECT_STATE.md` (v3.5): Updated current status, 6 SYS fixes recorded, Phase 04/05 planned items documented, motion permanently deferred items corrected.
+
+---
+
 ### Phase 03.5 — Motion & Animation Final Cleanup AN-001–AN-011 (2026-09-14)
 
-**Motion Workstream CLOSED — All 11 approved findings implemented. AN-012 and AN-013 remain explicitly deferred.**
+**Motion Workstream CLOSED — All 11 approved findings implemented. AN-012 and AN-013 PERMANENTLY DEFERRED — OWNER DECISION.**
 
 #### Fixed
 

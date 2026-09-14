@@ -49,6 +49,7 @@ import {
   Input,
   Select,
   Textarea,
+  CheckboxField,
   type BadgeStatus,
 } from '../../components/ui'
 import { formatCurrency } from '../../utils/currency'
@@ -389,18 +390,13 @@ function EditSkateModal({ skate, onClose, onUpdated }: { skate: SkateDTO; onClos
             onChange={e => set('notes', e.target.value)}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-            <input
-              id="edit-skate-active"
-              type="checkbox"
-              checked={form.isActive ?? true}
-              onChange={e => set('isActive', e.target.checked)}
-              style={{ width: 16, height: 16, cursor: 'pointer' }}
-            />
-            <label htmlFor="edit-skate-active" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
-              زلاجة نشطة
-            </label>
-          </div>
+          {/* SYS-010: replaced raw <input type="checkbox"> + inline <label> with shared <CheckboxField> */}
+          <CheckboxField
+            id="edit-skate-active"
+            label="زلاجة نشطة"
+            checked={form.isActive ?? true}
+            onChange={checked => set('isActive', checked)}
+          />
 
           {error && <Alert variant="danger" style={{ marginBottom: 'var(--space-4)' } as React.CSSProperties}>{error}</Alert>}
       </form>

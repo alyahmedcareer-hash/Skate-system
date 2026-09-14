@@ -32,7 +32,7 @@ body {
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
   color: var(--color-text-primary);
-  background-color: var(--color-gray-50);
+  background-color: var(--color-page-bg); /* SYS-001: was --color-gray-50 (undefined) */
   direction: rtl;
   text-align: right;
   -webkit-font-smoothing: antialiased;
@@ -112,11 +112,11 @@ button {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-gray-100);
+  background: var(--color-neutral-bg); /* SYS-001: was --color-gray-100 (undefined) */
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-gray-300);
+  background: var(--color-navy-300); /* SYS-001: was --color-gray-300 (undefined) */
   border-radius: var(--radius-full);
 }
 

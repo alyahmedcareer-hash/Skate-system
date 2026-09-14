@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 3.4
-**Last updated:** 2026-09-14 (Motion & Animation Cleanup — AN-001 through AN-011 implemented, workstream COMPLETE)
-**Updated by:** AI Agent (Motion & Animation Audit Final Cleanup)
+**Version:** 3.5
+**Last updated:** 2026-09-14 (System-wide UI Consistency Foundation Fixes — SYS-001, SYS-003, SYS-004, SYS-010, SYS-017, SYS-018 implemented)
+**Updated by:** AI Agent (System-wide UI Consistency Audit — Foundation Fixes)
 
 ---
 
@@ -10,14 +10,14 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | MOTION WORKSTREAM COMPLETE — AN-001–AN-011 implemented; AN-012/AN-013 deferred. Ready for Phase 04. |
-| **Current Phase** | Phase 03.5 (Motion & Animation Audit) — COMPLETE (workstream closed) |
-| **Current Milestone** | Motion Cleanup: AN-001 (ProtectedRoute → PageLoader), AN-002 (fadeIn/fadeOut to design-system.css), AN-003 (drawer keyframes to design-system.css), AN-004 (LoginPage animation token fix), AN-007 (Toast exit animation), AN-008 (hamburger :active), AN-009 (bell :active), AN-010 (nav :active), AN-011 (Card cursor split). Combined with prior AN-005/AN-006/AN-014, all 11 approved findings resolved. |
-| **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Audit Fixes + Desktop UI + Motion) — FULLY COMPLETE |
+| **Overall Status** | FOUNDATION FIXES COMPLETE — SYS-001..SYS-018 (6 items) implemented. Phase 04 cleared to begin. |
+| **Current Phase** | Phase 03.5 — ALL workstreams COMPLETE (Design System, Mobile UX, Desktop UI, Motion, Foundation Fixes) |
+| **Current Milestone** | System-wide UI Consistency Foundation Fixes: SYS-001 (color token fix), SYS-003 (ErrorBoundary), SYS-004 (UsersPage DataTable), SYS-010 (CheckboxField in EditSkateModal), SYS-017 (Alert dismiss touch target), SYS-018 (warning badge WCAG AA contrast). |
+| **Last Completed Phase** | Phase 03.5 (Design System + Mobile UX + Desktop UI + Motion + Foundation Fixes) — FULLY COMPLETE |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-14 — Motion Cleanup: `tsc --noEmit` 0 errors ✅, `npm run build` 369KB ✅, browser 10/10 PASS ✅ (modal enter/exit, toast enter/exit, bell press, sidebar label fade, card cursor, hamburger press, drawer enter/exit, nav press, no overflow, RTL) |
-| **Last Git Commit** | `b1b3ceb` — fix(phase-03.5): motion audit AN-005 AN-006 AN-014 |
+| **Last Verification** | 2026-09-14 — Foundation Fixes: `tsc -b` 0 errors ✅, `npm run build` 374KB ✅, `npm test` 34/34 ✅ |
+| **Last Git Commit** | TBD (this session) |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Begin Phase 04 (Customers Module) |
 
@@ -133,6 +133,71 @@
 
 ---
 
+## SYSTEM-WIDE UI CONSISTENCY — FOUNDATION FIXES (Phase 03.5 close-out)
+
+### IMPLEMENTED NOW (2026-09-14)
+
+| ID | Finding | Fix | Files |
+|---|---|---|---|
+| SYS-001 | `--color-gray-50/100/300` undefined in `index.css` | Replaced with `--color-page-bg` / `--color-neutral-bg` / `--color-navy-300` | `styles/index.css` |
+| SYS-003 | No React Error Boundary — blank screen on render error | Added shared `<ErrorBoundary>` class component, integrated in `main.tsx` | `components/ui/ErrorBoundary.tsx`, `main.tsx`, `components/ui/index.ts` |
+| SYS-004 | `UsersPage` used raw `<table className="ds-table">` instead of `<DataTable>` | Migrated desktop table to shared `<DataTable>`, mobile card view unchanged | `modules/users/UsersPage.tsx` |
+| SYS-010 | Raw `<input type="checkbox">` in EditSkateModal — D-012 regression | Replaced with shared `<CheckboxField>` component | `modules/skates/SkatesPage.tsx` |
+| SYS-017 | Alert dismiss button ~24px — WCAG 2.5.5 failure | `minWidth: 44`, `minHeight: 44`, `padding: var(--space-3)` | `components/ui/Alert.tsx` |
+| SYS-018 | Warning badge contrast ~3.27:1 — WCAG AA failure | Darkened `--color-warning-text` from `#C88B00` → `#7A5500` (~5.9:1 contrast) | `styles/design-system.css` |
+
+### MOTION AUDIT — FINAL STATUS (closed 2026-09-14)
+
+| ID | Status | Notes |
+|---|---|---|
+| AN-001 through AN-011 | IMPLEMENTED ✅ | All approved motion findings complete |
+| AN-014 | IMPLEMENTED ✅ | Sidebar label fade |
+| AN-012 | **PERMANENTLY DEFERRED — OWNER DECISION** | EmptyState entrance animation — do not reopen |
+| AN-013 | **PERMANENTLY DEFERRED — OWNER DECISION** | Alert entrance animation — do not reopen |
+
+### PLANNED FOR PHASE 04 — Customers Foundation
+
+| ID | Finding | Notes |
+|---|---|---|
+| SYS-002 | Shared `<IconButton>` component | Needed for icon-only row actions (Edit/Delete/View). Define API from real Customers use cases. |
+| SYS-006 | Mobile Table Representation Strategy | Define reusable/documented mobile strategy for DataTable screens before each new module. |
+| SYS-013 | Customer Badge statuses | `active` / `inactive` exist. Determine if additional Customer statuses are required from actual business requirements only. |
+
+### PLANNED FOR PHASE 05 — Rentals Foundation
+
+| ID | Finding | Notes |
+|---|---|---|
+| SYS-005 | DatePicker / DateRangePicker strategy | Evaluate Arabic/RTL support, date range, browser consistency, mobile. Owner decides strategy in Phase 05 planning. |
+| SYS-011 | Select disabled options | Enhance shared `<Select>` for disabled options. Use case: rental status/selection. |
+| SYS-012 | RadioGroup component | Shared RadioButton/RadioGroup for payment method, rental duration, mutually exclusive choices. |
+
+### FUTURE STATUS VALUES — Add only when the module is implemented
+
+| Module | Status values | Phase |
+|---|---|---|
+| Rentals | `completed`, `overdue`, `cancelled` | Phase 05 |
+| Payments | `pending`, `paid`, `partial`, `refunded` | Phase 06 |
+| Damage | `reported`, `assessed`, `resolved` | Phase 08 |
+| Maintenance | `scheduled`, `in_progress` | Phase 09 |
+
+### FUTURE DATATABLE CAPABILITIES — Evaluate when module requirements justify
+
+| Feature | Evaluation point |
+|---|---|
+| Column sorting | Customers / Rentals / Transactions |
+| Row selection | Payments / bulk operations |
+| Sticky header | Long Rentals / Reports tables |
+
+### DEFERRED — BACKLOG (do not implement without explicit Owner approval)
+
+| ID | Finding |
+|---|---|
+| D-011 | Wide-screen optimization |
+| D-013 | Tooltip system |
+| SYS-007 through SYS-034 (excluding above) | Remaining audit findings — backlog / future evaluation |
+
+---
+
 ## TECHNICAL DEBT
 
 Items accumulated during planning and early implementation:
@@ -232,4 +297,4 @@ Status: OPEN | RESOLVED
 
 ---
 
-*Last updated: 2026-09-10 (Phase 03.5 Stage 1 — documentation & governance alignment by AI Agent)*
+*Last updated: 2026-09-14 (Phase 03.5 Final — System-wide UI Consistency Foundation Fixes by AI Agent)*
