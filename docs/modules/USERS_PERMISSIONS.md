@@ -1,8 +1,8 @@
 # Module: Users & Permissions — KOSHK SKATE ERP
 
 **Phase:** 02 — Authentication & Permissions
-**Status:** IMPLEMENTED
-**Last updated:** 2026-09-09
+**Status:** IMPLEMENTED (Users Remediation complete 2026-09-15)
+**Last updated:** 2026-09-15 (DEC-048/DEC-049/DEC-050 — User Activation + Admin Password Change)
 
 ---
 
@@ -39,7 +39,10 @@ System roles (`is_system = true`) cannot be deleted via the API.
 
 ---
 
-## Permission Keys (40 total, seeded at startup)
+## Permission Keys (41 total, seeded at startup)
+
+> [!NOTE]
+> `users.change_password` (41st permission) was added in Users Remediation (2026-09-15). The seed is idempotent — re-running `npm run db:seed` will add any missing permissions to existing roles.
 
 | Module | Keys |
 |---|---|
@@ -51,7 +54,7 @@ System roles (`is_system = true`) cannot be deleted via the API.
 | `expenses` | `expenses.view`, `expenses.create` |
 | `treasury` | `treasury.view`, `treasury.manage` |
 | `reports` | `reports.view` |
-| `users` | `users.view`, `users.create`, `users.edit`, `users.delete` |
+| `users` | `users.view`, `users.create`, `users.edit`, `users.delete`, `users.change_password` |
 | `roles` | `roles.view`, `roles.create`, `roles.edit` |
 | `shifts` | `shifts.view`, `shifts.manage` |
 | `audit` | `audit.view` |
@@ -72,8 +75,10 @@ System roles (`is_system = true`) cannot be deleted via the API.
 | GET | `/api/v1/users/:id` | `users.view` | Get user by ID |
 | PATCH | `/api/v1/users/:id` | `users.edit` | Update user |
 | DELETE | `/api/v1/users/:id` | `users.delete` | Soft-deactivate user (`is_active = false`) |
+| POST | `/api/v1/users/:id/activate` | `users.delete` | Restore deactivated user to active (DEC-048) |
+| POST | `/api/v1/users/:id/change-password` | `users.change_password` | Admin password change — no old password required (DEC-049) |
 
-**Note:** No hard delete. Historical record integrity must be preserved.
+**Note:** No hard delete. Historical record integrity must be preserved. Activating an already-active user is idempotent (returns 200). Changing password does not invalidate existing sessions (DEC-050).
 
 ### Roles
 
@@ -93,8 +98,8 @@ System roles (`is_system = true`) cannot be deleted via the API.
 ```
 apps/api/src/modules/users/
 ├── users.types.ts   — UserDTO, CreateUserRequest, RoleDTO, PermissionDTO, etc.
-├── users.service.ts — listUsers, getUser, createUser, updateUser, deactivateUser
-├── users.routes.ts  — GET/POST /users, GET/PATCH/DELETE /users/:id
+├── users.service.ts — listUsers, getUser, createUser, updateUser, deactivateUser, activateUser, changeUserPassword
+├── users.routes.ts  — GET/POST /users, GET/PATCH/DELETE /users/:id, POST /users/:id/activate, POST /users/:id/change-password
 ├── roles.service.ts — listRoles, getRole, createRole, updateRole, deleteRole, setRolePermissions
 └── roles.routes.ts  — GET/POST /roles, CRUD + PUT /roles/:id/permissions
 ```
@@ -105,8 +110,8 @@ apps/api/src/modules/users/
 
 ```
 apps/web/src/modules/users/
-├── users.service.ts — usersService.list/get/create/update/deactivate, rolesService.list/etc.
-├── UsersPage.tsx    — User list table + create modal + deactivate action
+├── users.service.ts — usersService (list/get/create/update/deactivate/activate/changePassword), rolesService
+├── UsersPage.tsx    — User list table + create modal + deactivate/activate actions + change-password modal
 └── RolesPage.tsx    — Role cards with permissions listed
 ```
 
@@ -117,7 +122,8 @@ apps/web/src/modules/users/
 `apps/api/src/db/seed.ts` — Run with `npm run db:seed`.
 
 - **Idempotent:** Safe to run multiple times.
-- Seeds all 40 permission keys, 3 default system roles, default admin user.
+- Seeds all 41 permission keys, 3 default system roles, default admin user.
+- Permission assignment is now incremental — running seed again adds only missing permissions to existing roles.
 - Stores only bcrypt hash of admin password.
 - Credentials from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` env vars.
 
@@ -144,3 +150,6 @@ refresh_tokens     — id, user_id FK, token_hash, expires_at, created_at
 | DEC-024 | JWT auth mechanism |
 | DEC-025 | Refresh token HttpOnly cookie |
 | DEC-026 | Seed admin via env vars, idempotent |
+| DEC-048 | Deactivated users can be reactivated; activation preserves all roles and history |
+| DEC-049 | `users.change_password` permission added; admin can change passwords without old password |
+| DEC-050 | Password change does NOT invalidate existing sessions |

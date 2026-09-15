@@ -2,6 +2,7 @@
  * KOSHK SKATE ERP — Users Service (Frontend)
  * Phase 02 — Authentication & Permissions
  * Phase 02 Remediation — added listPermissions, rolesService.update (GAP-RBAC-019)
+ * Users Remediation — added activate, changePassword (DEC-048/DEC-049)
  */
 
 import api from '../../services/api'
@@ -38,6 +39,11 @@ export const usersService = {
   update: (id: number, body: Partial<{ name: string; email: string; password: string; isActive: boolean; roleIds: number[] }>) =>
     api.patch<{ success: boolean; data: UserDTO }>(`/api/v1/users/${id}`, body).then(r => r.data),
   deactivate: (id: number) => api.delete<{ success: boolean }>(`/api/v1/users/${id}`),
+  /** Restore a deactivated user to active status (DEC-048). Roles and history are preserved. */
+  activate: (id: number) => api.post<{ success: boolean }>(`/api/v1/users/${id}/activate`),
+  /** Change another user's password (DEC-049). Old password not required. Sessions not invalidated (DEC-050). */
+  changePassword: (id: number, body: { newPassword: string; confirmPassword: string }) =>
+    api.post<{ success: boolean }>(`/api/v1/users/${id}/change-password`, body),
 }
 
 // Roles API

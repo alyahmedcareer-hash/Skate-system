@@ -4,7 +4,7 @@
  *
  * Seeds:
  *   - Default roles: Administrator, Cashier, Maintenance Staff
- *   - All permission keys (40 keys — see ALL_PERMISSIONS below)
+ *   - All permission keys (41 keys — see ALL_PERMISSIONS below)
  *   - Administrator role gets ALL permissions
  *   - Default admin user (credentials from env — DEC-026)
  *
@@ -58,10 +58,11 @@ const ALL_PERMISSIONS: Array<{ key: string; labelAr: string; module: string }> =
   // Reports
   { key: 'reports.view',     labelAr: 'عرض التقارير',             module: 'reports' },
   // Users
-  { key: 'users.view',       labelAr: 'عرض المستخدمين',           module: 'users' },
-  { key: 'users.create',     labelAr: 'إضافة مستخدم',             module: 'users' },
-  { key: 'users.edit',       labelAr: 'تعديل مستخدم',             module: 'users' },
-  { key: 'users.delete',     labelAr: 'تعطيل مستخدم',             module: 'users' },
+  { key: 'users.view',            labelAr: 'عرض المستخدمين',              module: 'users' },
+  { key: 'users.create',          labelAr: 'إضافة مستخدم',                module: 'users' },
+  { key: 'users.edit',            labelAr: 'تعديل مستخدم',                module: 'users' },
+  { key: 'users.delete',          labelAr: 'تعطيل مستخدم',                module: 'users' },
+  { key: 'users.change_password', labelAr: 'تغيير كلمة مرور المستخدم',   module: 'users' },
   // Roles
   { key: 'roles.view',       labelAr: 'عرض الأدوار',              module: 'roles' },
   { key: 'roles.create',     labelAr: 'إنشاء دور',                module: 'roles' },
@@ -170,32 +171,38 @@ async function seed() {
       console.log(`     Role exists: ${roleDef.name} (skipped)`)
     }
 
-    // Assign permissions to role (only if none assigned yet)
+    // Assign permissions to role (idempotent: add only missing permissions)
+    //
+    // Previous logic skipped ALL assignment if any permissions existed.
+    // This prevents newly added permissions from being assigned on re-seed.
+    // Updated: for each expected permission, add it only if not already assigned.
+
+    let expectedKeys: string[]
+    if (roleDef.allPermissions) {
+      expectedKeys = ALL_PERMISSIONS.map(p => p.key)
+    } else {
+      expectedKeys = (roleDef as { permissionKeys: string[] }).permissionKeys
+    }
+
     const existingPerms = await db
       .select()
       .from(rolePermissions)
       .where(eq(rolePermissions.roleId, existingRole.id))
 
-    if (!existingPerms.length) {
-      let keys: string[]
-      if (roleDef.allPermissions) {
-        keys = ALL_PERMISSIONS.map(p => p.key)
-      } else {
-        keys = (roleDef as { permissionKeys: string[] }).permissionKeys
-      }
+    const alreadyAssignedIds = new Set(existingPerms.map(p => p.permissionId))
 
-      const validPerms = keys
-        .map(k => permByKey.get(k))
-        .filter(Boolean) as typeof allPermsFromDb
+    const missingPerms = expectedKeys
+      .map(k => permByKey.get(k))
+      .filter(Boolean)
+      .filter(p => !alreadyAssignedIds.has(p!.id)) as typeof allPermsFromDb
 
-      if (validPerms.length > 0) {
-        await db.insert(rolePermissions).values(
-          validPerms.map(p => ({ roleId: existingRole.id, permissionId: p.id }))
-        )
-        console.log(`     Assigned ${validPerms.length} permissions to ${roleDef.name}`)
-      }
+    if (missingPerms.length > 0) {
+      await db.insert(rolePermissions).values(
+        missingPerms.map(p => ({ roleId: existingRole.id, permissionId: p.id }))
+      )
+      console.log(`     Assigned ${missingPerms.length} new permissions to ${roleDef.name}`)
     } else {
-      console.log(`     Permissions already set for ${roleDef.name} (skipped)`)
+      console.log(`     Permissions up-to-date for ${roleDef.name} (skipped)`)
     }
   }
 

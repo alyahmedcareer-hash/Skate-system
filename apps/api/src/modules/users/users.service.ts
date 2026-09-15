@@ -2,12 +2,16 @@
  * KOSHK SKATE ERP — Users Service
  * Phase 02 — Authentication & Permissions
  * Phase 02 Remediation — RBAC Gap fixes (GAP-RBAC-018)
+ * Users Remediation — User activation + admin password change (DEC-048/DEC-049/DEC-050)
  *
  * Handles user CRUD operations.
  * Password is always bcrypt-hashed (min 12 rounds).
  * No hard delete: use is_active = false for deactivation (DEC-009 principle).
  *
  * GAP-RBAC-018: createUser() and updateUser() now validate that provided roleIds exist.
+ * DEC-048: Deactivated users can be reactivated; roles and history are preserved.
+ * DEC-049: users.change_password permission allows changing another user's password.
+ * DEC-050: Changing a user's password does NOT invalidate existing sessions.
  */
 
 import bcrypt from 'bcryptjs'
@@ -180,4 +184,57 @@ export async function deactivateUser(id: number): Promise<void> {
   if (!userRows.length) throw new NotFoundError('المستخدم غير موجود')
 
   await db.update(users).set({ isActive: false }).where(eq(users.id, id))
+}
+
+// ---------------------------------------------------------------------------
+// activateUser — restore a deactivated user to active status (DEC-048)
+//
+// Business rules:
+// - User must exist
+// - Roles, history, and all data are preserved (no changes made)
+// - Only isActive changes: false → true
+// - If user is already active, return gracefully (idempotent)
+// ---------------------------------------------------------------------------
+
+export async function activateUser(id: number): Promise<void> {
+  const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  if (!userRows.length) throw new NotFoundError('المستخدم غير موجود')
+
+  // Idempotent: silently succeed if already active
+  if (userRows[0].isActive) return
+
+  await db.update(users).set({ isActive: true }).where(eq(users.id, id))
+}
+
+// ---------------------------------------------------------------------------
+// changeUserPassword — admin/authorized change of another user's password (DEC-049)
+//
+// Business rules:
+// - User must exist (active OR inactive — password can be changed on inactive users)
+// - newPassword meets existing policy (min 6 chars)
+// - newPassword === confirmPassword (caller must pass both; validated here)
+// - Password is bcrypt-hashed using the same BCRYPT_ROUNDS constant
+// - isActive is NOT modified — deactivated user remains deactivated (DEC-050)
+// - Existing sessions remain active (DEC-050 — no session invalidation)
+// - Password hash is never returned
+// ---------------------------------------------------------------------------
+
+export async function changeUserPassword(
+  id: number,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<void> {
+  if (!newPassword) throw new ValidationError('كلمة المرور الجديدة مطلوبة')
+  if (!confirmPassword) throw new ValidationError('تأكيد كلمة المرور مطلوب')
+  if (newPassword !== confirmPassword) throw new ValidationError('كلمتا المرور غير متطابقتين')
+  if (newPassword.length < 6) throw new ValidationError('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+
+  const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  if (!userRows.length) throw new NotFoundError('المستخدم غير موجود')
+
+  // Hash with same mechanism as createUser/updateUser
+  const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS)
+
+  // Update only the password hash — isActive and all other fields unchanged
+  await db.update(users).set({ passwordHash }).where(eq(users.id, id))
 }

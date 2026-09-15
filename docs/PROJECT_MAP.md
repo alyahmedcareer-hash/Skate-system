@@ -1,8 +1,8 @@
 # Project Map — KOSHK SKATE ERP
 
-**Version:** 1.6
+**Version:** 1.7
 **Purpose:** Navigation map for future AI agents. Read this BEFORE scanning the repository.
-**Last updated:** 2026-09-14 (Governance Remediation — all Phase 03.5 components marked VERIFIED, stale PLANNED entries corrected)
+**Last updated:** 2026-09-15 (Users Remediation — Activation + Password Change — DEC-048/DEC-049/DEC-050)
 
 > [!IMPORTANT]
 > **PROJECT STATE: Phase 03.5 COMPLETE ✅. Phase 04 (Customers) is NEXT.**
@@ -43,7 +43,7 @@ d:/Skate system/
     │   ├── PHASE_035_UI_DESIGN_SYSTEM.md — COMPLETE ✅ (updated Governance Remediation 2026-09-14)
     │   └── PHASE_04_CUSTOMERS_MODULE.md — PLANNING (stub — requires owner approval before implementation)
     ├── quality/                 — QA strategy and test matrix (VERIFIED)
-    ├── decisions/               — Decision log (44 decisions through DEC-044)
+    ├── decisions/               — Decision log (50 decisions through DEC-050)
     ├── product/                 — Master Business Spec copy (VERIFIED)
     ├── PROJECT_MAP.md           — THIS FILE (v1.6)
     ├── PROJECT_STATE.md         — Current project status (v3.5 — Phase 03.5 Foundation Fixes + Governance Remediation)
@@ -97,8 +97,8 @@ d:/Skate system/
 │   │           │   ├── auth.service.ts — VERIFIED (Phase 02)
 │   │           │   └── LoginPage.tsx  — VERIFIED (Phase 03.5: split-screen desktop + shared components)
 │   │           ├── users/
-│   │           │   ├── users.service.ts — VERIFIED (Phase 02)
-│   │           │   ├── UsersPage.tsx    — VERIFIED (Phase 03.5: migrated to DataTable + design system)
+│   │           │   ├── users.service.ts — VERIFIED (Users Remediation: activate, changePassword added DEC-048/DEC-049)
+│   │           │   ├── UsersPage.tsx    — VERIFIED (Users Remediation: Activate button + Change Password modal added)
 │   │           │   └── RolesPage.tsx    — VERIFIED (Phase 03.5: migrated to design system)
 │   │           └── skates/
 │   │               ├── skates.service.ts — VERIFIED (Phase 03)
@@ -121,7 +121,7 @@ d:/Skate system/
 │           │   └── rateLimiter.ts   — VERIFIED (Phase 02: loginLimiter, skipped in test)
 │           ├── db/
 │           │   ├── connection.ts    — VERIFIED
-│           │   ├── seed.ts          — VERIFIED (Phase 02: 40 perms, 3 roles, 1 admin)
+│           │   ├── seed.ts          — VERIFIED (Users Remediation: 41 perms including users.change_password; idempotent permission assignment)
 │           │   ├── migrations/
 │           │   │   └── 0000_cloudy_the_renegades.sql — VERIFIED (6 tables)
 │           │   └── schema/
@@ -130,7 +130,9 @@ d:/Skate system/
 │           │       └── auth.ts      — VERIFIED (Phase 02: refresh_tokens)
 │           ├── tests/
 │           │   ├── setup.ts         — VERIFIED (Phase 02 Final Gate)
-│           │   └── auth.test.ts     — VERIFIED (Phase 02 Final Gate: 18 tests, 18 PASS)
+│           │   ├── auth.test.ts     — VERIFIED (Users Remediation: permission count updated to 41)
+│           │   ├── roles.test.ts    — VERIFIED (Phase 02 RBAC Remediation: 15 tests, 15 PASS)
+│           │   └── users.test.ts    — VERIFIED (Users Remediation: 19 tests — activation + password + RBAC)
 │           ├── utils/
 │           │   ├── errors.ts        — VERIFIED (UnauthorizedError added Phase 02)
 │           │   └── financial.ts     — VERIFIED
@@ -141,8 +143,8 @@ d:/Skate system/
 │               │   └── auth.routes.ts  — VERIFIED (Phase 02)
 │               ├── users/
 │               │   ├── users.types.ts  — VERIFIED (Phase 02)
-│               │   ├── users.service.ts — VERIFIED (Phase 02)
-│               │   ├── users.routes.ts  — VERIFIED (Phase 02)
+│               │   ├── users.service.ts — VERIFIED (Users Remediation: activateUser(), changeUserPassword() DEC-048/DEC-049)
+│               │   ├── users.routes.ts  — VERIFIED (Users Remediation: POST /:id/activate + POST /:id/change-password)
 │               │   ├── roles.service.ts — VERIFIED (Phase 02)
 │               │   └── roles.routes.ts  — VERIFIED (Phase 02)
 │       └── skates/              — [PHASE 03 — VERIFIED ✅]

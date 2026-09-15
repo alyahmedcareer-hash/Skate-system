@@ -985,3 +985,64 @@ The frontend shows this error inline in the Delete modal as an `Alert variant="d
 ---
 
 *Last updated: 2026-09-14 (DEC-045/DEC-046/DEC-047 added — Phase 02 RBAC Remediation OD-RBAC-001/002/003) by AI Agent*
+
+---
+
+### DEC-048
+
+**Date:** 2026-09-15 (Users Remediation — pre-Phase 04)
+**Category:** Product — User Account Management
+**Decision:** Deactivated users can be reactivated via a dedicated POST `/api/v1/users/:id/activate` endpoint. Activation:
+1. Restores `isActive = true` only.
+2. Preserves all roles, history, and identity (name, email, passwordHash) unchanged.
+3. Is idempotent — activating an already-active user succeeds silently (200 OK).
+4. Requires `users.delete` permission (same permission as deactivate — both are user-lifecycle operations).
+5. The UI shows "تفعيل" (green) for inactive users and "تعطيل" (red) for active users, both gated by `PermissionGate permission="users.delete"`.
+
+**Reason:** Users may be deactivated by mistake or may return after a leave of absence. Full deletion is not permitted (DEC-009). Activation is the symmetric counterpart to deactivation.  
+**Impact:** `users.service.ts` got `activateUser()`. `users.routes.ts` got new route. `UsersPage.tsx` updated. `users.test.ts` added TC-USR-ACT-01 through TC-USR-ACT-06.  
+**Affected Modules:** Users/Permissions  
+**Status:** ACTIVE  
+**Source:** Users Remediation — approved 2026-09-15
+
+---
+
+### DEC-049
+
+**Date:** 2026-09-15 (Users Remediation — pre-Phase 04)
+**Category:** Product — User Account Management + RBAC
+**Decision:** Administrators (and users with a new dedicated `users.change_password` permission) can change another user's password without knowing the old password.
+1. A new permission `users.change_password` is added to the permissions catalog (41st permission).
+2. The Administrator role receives this permission automatically via the seed.
+3. Cashier and MaintenanceStaff do NOT receive this permission.
+4. The API endpoint: POST `/api/v1/users/:id/change-password` with body `{ newPassword, confirmPassword }`.
+5. Password is bcrypt-hashed (same 12-round mechanism as `createUser`/`updateUser`).
+6. Password policy: minimum 6 characters (same as existing policy).
+7. Both `newPassword` and `confirmPassword` must match — validated server-side.
+8. Password is NEVER returned in any API response.
+9. No old/current password required — this is an administrative action.
+10. Change My Password / self-service password change is explicitly NOT implemented.
+
+**Reason:** System administrators must be able to reset passwords for employees who forget them. Without this, the only resolution is deleting and recreating the user.  
+**Impact:** New permission in `seed.ts`. `users.service.ts` got `changeUserPassword()`. `users.routes.ts` got new route. `UsersPage.tsx` got Change Password modal. `users.test.ts` added TC-USR-PWD-01 through TC-USR-PWD-09 + TC-USR-RBAC-01 through TC-USR-RBAC-04.  
+**Affected Modules:** Users/Permissions  
+**Status:** ACTIVE  
+**Source:** Users Remediation — approved 2026-09-15
+
+---
+
+### DEC-050
+
+**Date:** 2026-09-15 (Users Remediation — pre-Phase 04)
+**Category:** Security — Session Management
+**Decision:** Changing a user's password via POST `/api/v1/users/:id/change-password` does NOT invalidate existing sessions or refresh tokens. Existing access tokens remain valid until natural expiry.
+
+**Reason:** This is an administrative action (the user whose password is changed is typically not present). Forced logout would require the user to re-authenticate immediately, which is only appropriate for self-service password changes where the current session owner initiated the change. In the admin-change flow, the user is simply given a new credential they can use at their next login.  
+**Impact:** `users.service.ts` `changeUserPassword()` updates only `passwordHash`. `refreshTokens` table is not touched.  
+**Affected Modules:** Users/Permissions, Auth  
+**Status:** ACTIVE  
+**Source:** Users Remediation — approved 2026-09-15
+
+---
+
+*Last updated: 2026-09-15 (DEC-048/DEC-049/DEC-050 added — Users Remediation pre-Phase 04) by AI Agent*

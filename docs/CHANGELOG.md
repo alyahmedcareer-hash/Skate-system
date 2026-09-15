@@ -6,6 +6,50 @@
 
 ## [Unreleased]
 
+### Users Remediation — User Activation & Admin Password Change (2026-09-15)
+
+**User Activation and Admin Password Change implemented. 68/68 tests pass.**
+
+#### Added
+
+- **`users.service.ts` (backend)**: Two new service functions:
+  - `activateUser(id)` — restores `isActive = true`; preserves all roles, history, and identity; idempotent; consistent with existing `deactivateUser()` (DEC-048)
+  - `changeUserPassword(id, newPassword, confirmPassword)` — admin password change using existing bcrypt 12-round mechanism; validates length ≥6 and field match; does NOT invalidate sessions (DEC-049/DEC-050)
+
+- **`users.routes.ts` (backend)**: Two new API endpoints:
+  - `POST /api/v1/users/:id/activate` — gated by `users.delete` (lifecycle permission)
+  - `POST /api/v1/users/:id/change-password` — gated by `users.change_password` (new dedicated permission)
+
+- **`seed.ts`**: New permission `users.change_password` (41st permission key). Administrator role receives it on seed; Cashier and MaintenanceStaff do NOT. Seed permission assignment logic improved to be **incremental** — re-running seed now adds only missing permissions instead of skipping if any already exist.
+
+- **`UsersPage.tsx` (frontend)**: Two new UI features:
+  - **Activate button**: shown for inactive users (green, `UserCheck` icon); triggers `ConfirmDialog`, calls `POST /api/v1/users/:id/activate`. Replaces the hidden gap where deactivated users had no actions. Implemented for both desktop DataTable and mobile card views. Gated by `PermissionGate permission="users.delete"`.
+  - **Change Password modal**: available for all users (active and inactive); `KeyRound` icon button; two password fields with frontend validation (mirrors server-side); calls `POST /api/v1/users/:id/change-password`. Inline `Alert` on error. Gated by `PermissionGate permission="users.change_password"`.
+
+- **`users.service.ts` (frontend)**: Two new service methods:
+  - `activate(id)` — calls `POST /api/v1/users/:id/activate`
+  - `changePassword(id, body)` — calls `POST /api/v1/users/:id/change-password`
+
+- **`users.test.ts`** (new file): 19 integration test cases:
+  - TC-USR-ACT-01 to TC-USR-ACT-06: activation, role preservation, identity preservation, idempotency, unauthorized rejection, deactivation regression
+  - TC-USR-PWD-01 to TC-USR-PWD-09: admin password change, hash verification, no-password-in-response, unauthorized rejection, validation (short/mismatch/empty), inactive user, no activation side-effect
+  - TC-USR-RBAC-01 to TC-USR-RBAC-04: permission in DB, Administrator has it, Cashier does NOT, MaintenanceStaff does NOT
+
+#### Fixed
+
+- **`auth.test.ts`** (TC-AUTH-01): Updated hardcoded permission count assertion from 40 to 41.
+- **`roles.test.ts`** (TC-ROLE-13): Updated permission count comment from `>= 40` to `>= 41`.
+
+#### Decisions
+
+| Decision | Summary |
+|---|---|
+| DEC-048 | User Activation endpoint — restores isActive, idempotent, preserves all data |
+| DEC-049 | `users.change_password` permission — admin password change, no old password required |
+| DEC-050 | Password change does not invalidate sessions |
+
+---
+
 ### Phase 02 RBAC Remediation — Roles & Permissions Management (2026-09-14)
 
 **Full Role Management UI and backend guards implemented. 49/49 tests pass.**

@@ -457,8 +457,8 @@ describe('TC-ROLE-13: GET /api/v1/roles/permissions', () => {
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
     expect(Array.isArray(res.body.data)).toBe(true)
-    // Seed data has 40 permissions
-    expect(res.body.data.length).toBeGreaterThanOrEqual(40)
+    // Seed data has 41 permissions (updated: users.change_password added)
+    expect(res.body.data.length).toBeGreaterThanOrEqual(41)
     // Each permission has expected fields
     const firstPerm = res.body.data[0]
     expect(firstPerm).toHaveProperty('id')

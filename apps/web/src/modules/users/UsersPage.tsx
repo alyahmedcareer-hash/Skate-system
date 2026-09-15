@@ -2,6 +2,7 @@
  * KOSHK SKATE ERP — Users Management Page
  * Phase 03.5 — Design System (updated from Phase 02)
  * Phase 02 Remediation — added Edit User Roles modal (OD-RBAC-001)
+ * Users Remediation — added Activate button + Change Password modal (DEC-048/DEC-049)
  *
  * Changes from Phase 02:
  *   - confirm() replaced with ConfirmDialog (OD-004 / UI-005)
@@ -18,10 +19,16 @@
  * Phase 02 Remediation:
  *   - Edit User Roles modal added (PATCH /api/v1/users/:id with roleIds)
  *   - users.edit PermissionGate wraps the edit-roles button
+ *
+ * Users Remediation:
+ *   - Activate button for deactivated users (POST /api/v1/users/:id/activate)
+ *   - users.delete PermissionGate wraps activate (same permission as deactivate — lifecycle)
+ *   - Change Password modal (POST /api/v1/users/:id/change-password)
+ *   - users.change_password PermissionGate wraps change-password button
  */
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Users, UserCog } from 'lucide-react'
+import { UserPlus, Users, UserCog, KeyRound, UserCheck } from 'lucide-react'
 import { usersService, rolesService, type UserDTO, type RoleDTO } from './users.service'
 import { PermissionGate } from '../../components/PermissionGate'
 import {
@@ -62,11 +69,21 @@ export default function UsersPage() {
   const [confirmTarget, setConfirmTarget] = useState<{ id: number; name: string } | null>(null)
   const [deactivating, setDeactivating] = useState(false)
 
+  // Confirm activate dialog (DEC-048)
+  const [activateTarget, setActivateTarget] = useState<{ id: number; name: string } | null>(null)
+  const [activating, setActivating] = useState(false)
+
   // Edit User Roles modal (Phase 02 remediation)
   const [editRolesTarget, setEditRolesTarget] = useState<UserDTO | null>(null)
   const [editRoleIds, setEditRoleIds] = useState<number[]>([])
   const [editRolesSaving, setEditRolesSaving] = useState(false)
   const [editRolesError, setEditRolesError] = useState<string | null>(null)
+
+  // Change Password modal (DEC-049)
+  const [changePwdTarget, setChangePwdTarget] = useState<UserDTO | null>(null)
+  const [changePwdData, setChangePwdData] = useState({ newPassword: '', confirmPassword: '' })
+  const [changePwdSaving, setChangePwdSaving] = useState(false)
+  const [changePwdError, setChangePwdError] = useState<string | null>(null)
 
   useEffect(() => {
     load()
@@ -127,6 +144,28 @@ export default function UsersPage() {
     }
   }
 
+  // Trigger activate ConfirmDialog (DEC-048)
+  function handleActivateClick(user: UserDTO) {
+    setActivateTarget({ id: user.id, name: user.name })
+  }
+
+  // Actual activate — called after user confirms (DEC-048)
+  async function handleActivateConfirm() {
+    if (!activateTarget) return
+    setActivating(true)
+    try {
+      await usersService.activate(activateTarget.id)
+      showToast({ type: 'success', title: `تم تفعيل حساب "${activateTarget.name}"` })
+      setActivateTarget(null)
+      await load()
+    } catch {
+      showToast({ type: 'error', title: 'تعذر تفعيل الحساب', message: 'يرجى المحاولة مجدداً' })
+      setActivateTarget(null)
+    } finally {
+      setActivating(false)
+    }
+  }
+
   // Open edit-roles modal
   function handleEditRolesClick(user: UserDTO) {
     setEditRolesTarget(user)
@@ -149,6 +188,52 @@ export default function UsersPage() {
       setEditRolesError(msg ?? 'حدث خطأ أثناء تحديث الأدوار')
     } finally {
       setEditRolesSaving(false)
+    }
+  }
+
+  // Open Change Password modal (DEC-049)
+  function handleChangePwdClick(user: UserDTO) {
+    setChangePwdTarget(user)
+    setChangePwdData({ newPassword: '', confirmPassword: '' })
+    setChangePwdError(null)
+  }
+
+  // Save password change (DEC-049)
+  async function handleChangePwdSave() {
+    if (!changePwdTarget) return
+    setChangePwdError(null)
+
+    // Frontend validation (server also validates — Rule 13)
+    if (!changePwdData.newPassword) {
+      setChangePwdError('كلمة المرور الجديدة مطلوبة')
+      return
+    }
+    if (!changePwdData.confirmPassword) {
+      setChangePwdError('تأكيد كلمة المرور مطلوب')
+      return
+    }
+    if (changePwdData.newPassword !== changePwdData.confirmPassword) {
+      setChangePwdError('كلمتا المرور غير متطابقتين')
+      return
+    }
+    if (changePwdData.newPassword.length < 6) {
+      setChangePwdError('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+      return
+    }
+
+    setChangePwdSaving(true)
+    try {
+      await usersService.changePassword(changePwdTarget.id, {
+        newPassword: changePwdData.newPassword,
+        confirmPassword: changePwdData.confirmPassword,
+      })
+      showToast({ type: 'success', title: `تم تغيير كلمة مرور "${changePwdTarget.name}" بنجاح` })
+      setChangePwdTarget(null)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setChangePwdError(msg ?? 'حدث خطأ أثناء تغيير كلمة المرور')
+    } finally {
+      setChangePwdSaving(false)
     }
   }
 
@@ -230,8 +315,20 @@ export default function UsersPage() {
                 الأدوار
               </Button>
             </PermissionGate>
+            <PermissionGate permission="users.change_password">
+              <Button
+                id={`btn-change-pwd-${u.id}`}
+                variant="ghost"
+                size="sm"
+                onClick={() => handleChangePwdClick(u)}
+                title="تغيير كلمة المرور"
+              >
+                <KeyRound size={14} />
+                كلمة المرور
+              </Button>
+            </PermissionGate>
             <PermissionGate permission="users.delete">
-              {u.isActive && (
+              {u.isActive ? (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -239,6 +336,17 @@ export default function UsersPage() {
                   style={{ color: 'var(--color-danger-text)' }}
                 >
                   تعطيل
+                </Button>
+              ) : (
+                <Button
+                  id={`btn-activate-${u.id}`}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleActivateClick(u)}
+                  style={{ color: 'var(--color-success-text)' }}
+                >
+                  <UserCheck size={14} />
+                  تفعيل
                 </Button>
               )}
             </PermissionGate>
@@ -361,30 +469,51 @@ export default function UsersPage() {
                   )}
 
                   {/* Actions */}
-                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                     <PermissionGate permission="users.edit">
                       <Button
                         id={`btn-edit-roles-mobile-${user.id}`}
                         variant="ghost"
                         size="sm"
-                        fullWidth
                         onClick={() => handleEditRolesClick(user)}
                         style={{ flex: 1 }}
                       >
                         <UserCog size={14} />
-                        تعديل الأدوار
+                        الأدوار
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate permission="users.change_password">
+                      <Button
+                        id={`btn-change-pwd-mobile-${user.id}`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleChangePwdClick(user)}
+                        style={{ flex: 1 }}
+                      >
+                        <KeyRound size={14} />
+                        كلمة المرور
                       </Button>
                     </PermissionGate>
                     <PermissionGate permission="users.delete">
-                      {user.isActive && (
+                      {user.isActive ? (
                         <Button
                           variant="ghost"
                           size="sm"
-                          fullWidth
                           onClick={() => handleDeactivateClick(user)}
                           style={{ flex: 1, color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-bg)', backgroundColor: 'var(--color-danger-bg)' }}
                         >
                           تعطيل الحساب
+                        </Button>
+                      ) : (
+                        <Button
+                          id={`btn-activate-mobile-${user.id}`}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleActivateClick(user)}
+                          style={{ flex: 1, color: 'var(--color-success-text)', borderColor: 'var(--color-success-bg)', backgroundColor: 'var(--color-success-bg)' }}
+                        >
+                          <UserCheck size={14} />
+                          تفعيل الحساب
                         </Button>
                       )}
                     </PermissionGate>
@@ -513,10 +642,22 @@ export default function UsersPage() {
         onConfirm={handleDeactivateConfirm}
         onCancel={() => setConfirmTarget(null)}
         title="تعطيل الحساب"
-        description={`هل تريد تعطيل حساب "${confirmTarget?.name ?? ''}"\u061f يمкн إعادة تفعيله لاحقاً.`}
+        description={`هل تريد تعطيل حساب "${confirmTarget?.name ?? ''}"؟ يمكن إعادة تفعيله لاحقاً.`}
         confirmLabel="تعطيل"
         variant="danger"
         loading={deactivating}
+      />
+
+      {/* Confirm Activate Dialog (DEC-048) */}
+      <ConfirmDialog
+        isOpen={Boolean(activateTarget)}
+        onConfirm={handleActivateConfirm}
+        onCancel={() => setActivateTarget(null)}
+        title="تفعيل الحساب"
+        description={`هل تريد تفعيل حساب "${activateTarget?.name ?? ''}"؟ سيتمكن المستخدم من تسجيل الدخول مجدداً.`}
+        confirmLabel="تفعيل"
+        variant="default"
+        loading={activating}
       />
 
       {/* Edit User Roles Modal (Phase 02 Remediation — OD-RBAC-001) */}
@@ -578,6 +719,68 @@ export default function UsersPage() {
               ))}
             </div>
           </fieldset>
+        </div>
+      </Modal>
+
+      {/* Change Password Modal (DEC-049) */}
+      <Modal
+        isOpen={Boolean(changePwdTarget)}
+        onClose={() => { if (!changePwdSaving) setChangePwdTarget(null) }}
+        title={`تغيير كلمة المرور: ${changePwdTarget?.name ?? ''}`}
+        size="base"
+        footer={
+          <>
+            <Button
+              id="btn-change-pwd-save"
+              variant="primary"
+              loading={changePwdSaving}
+              onClick={handleChangePwdSave}
+            >
+              تغيير كلمة المرور
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setChangePwdTarget(null)}
+              disabled={changePwdSaving}
+            >
+              إلغاء
+            </Button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {changePwdError && (
+            <Alert variant="danger">{changePwdError}</Alert>
+          )}
+          <Input
+            id="change-pwd-new"
+            label="كلمة المرور الجديدة"
+            type="password"
+            dir="ltr"
+            value={changePwdData.newPassword}
+            onChange={e => setChangePwdData(p => ({ ...p, newPassword: e.target.value }))}
+            placeholder="••••••••"
+            required
+            disabled={changePwdSaving}
+          />
+          <Input
+            id="change-pwd-confirm"
+            label="تأكيد كلمة المرور الجديدة"
+            type="password"
+            dir="ltr"
+            value={changePwdData.confirmPassword}
+            onChange={e => setChangePwdData(p => ({ ...p, confirmPassword: e.target.value }))}
+            placeholder="••••••••"
+            required
+            disabled={changePwdSaving}
+          />
+          <p style={{
+            margin: 0,
+            fontSize: 'var(--font-size-xs)',
+            color: 'var(--color-text-muted)',
+          }}>
+            لا يلزم إدخال كلمة المرور الحالية. كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.
+          </p>
         </div>
       </Modal>
     </div>

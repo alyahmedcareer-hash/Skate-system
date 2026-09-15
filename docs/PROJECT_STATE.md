@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 3.6
-**Last updated:** 2026-09-14 (Governance Remediation — module table corrected, GIT STATUS updated, TD-003 corrected, documentation version references updated)
-**Updated by:** AI Agent (Documentation & Governance Remediation — Pre-Phase-04)
+**Version:** 3.7
+**Last updated:** 2026-09-15 (Users Remediation — User Activation + Admin Password Change complete, pre-Phase 04)
+**Updated by:** AI Agent (Users Remediation — DEC-048/DEC-049/DEC-050)
 
 ---
 
@@ -10,14 +10,14 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | RBAC REMEDIATION COMPLETE — Phase 02 gaps closed (OD-RBAC-001/002/003). Phase 04 cleared to begin. |
-| **Current Phase** | Phase 02 Remediation COMPLETE. Phase 03.5 ALL workstreams COMPLETE. |
-| **Current Milestone** | RBAC Remediation: Role Management UI, backend guards, 15 new integration tests. |
-| **Last Completed Phase** | Phase 02 Remediation (RBAC) — 2026-09-14 |
+| **Overall Status** | USERS REMEDIATION COMPLETE — User Activation + Admin Password Change implemented. Phase 04 cleared to begin. |
+| **Current Phase** | Users Remediation COMPLETE. Phase 03.5 ALL workstreams COMPLETE. |
+| **Current Milestone** | Users Remediation: Activation, Admin Password Change, RBAC permission (users.change_password), 19 new integration tests. |
+| **Last Completed Phase** | Users Remediation (pre-Phase 04) — 2026-09-15 |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-14 — RBAC Remediation: `tsc -b` 0 errors ✅ (API + Web), `npm test` 49/49 ✅, `npm run build` 387KB ✅ |
-| **Last Git Commit** | Pending commit: feat(rbac): complete roles & permissions management Phase 02 remediation |
+| **Last Verification** | 2026-09-15 — Users Remediation: `tsc -b` 0 errors ✅ (API + Web), `npm test` 68/68 ✅ (4 test files), `npm run build` 391KB ✅ |
+| **Last Git Commit** | `93a2790` — feat(rbac): complete roles and permissions management (Phase 02 remediation) |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Begin Phase 04 (Customers Module) |
 
@@ -32,10 +32,10 @@
 | Governance documentation | COMPLETED |
 | Architecture documentation | COMPLETED — updated with Phase 02 decisions |
 | Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, PHASE_02 spec ✅, PHASE_03 spec ✅ (all updated) |
-| Source code — Frontend | IMPLEMENTED — Phase 02: React Router, AuthContext, LoginPage, Users/Roles pages, ProtectedRoute, PermissionGate. Phase 03: SkatesPage, skates.service.ts. Phase 03.5: 14 shared UI components, App Shell redesign (sidebar collapse, mobile drawer, Lucide icons), LoginPage split-screen, all pages migrated to design system. Built ✅ zero TS errors (351KB bundle). |
-| Source code — Backend | IMPLEMENTED — Phase 02: Auth + Users + Roles modules + middleware. Phase 03: skates schema, service, routes (6 endpoints). Built ✅ zero TS errors. |
-| Database | IMPLEMENTED — 2 migrations applied. 7 tables (6 Phase 02 + skates). Seed: 40 permissions, 3 system roles, 1 admin. |
-| Tests | IMPLEMENTED — `npm test` 34/34 PASS ✅. 18 Phase 02 + 16 Phase 03 tests. |
+| Source code — Frontend | IMPLEMENTED — Phase 02: React Router, AuthContext, LoginPage, Users/Roles pages, ProtectedRoute, PermissionGate. Phase 03: SkatesPage, skates.service.ts. Phase 03.5: 16 shared UI components, App Shell redesign (sidebar collapse, mobile drawer, Lucide icons), LoginPage split-screen, all pages migrated to design system. Users Remediation: Activate + Change Password UI added. Built ✅ zero TS errors (391KB bundle). |
+| Source code — Backend | IMPLEMENTED — Phase 02: Auth + Users + Roles modules + middleware. Phase 03: skates schema, service, routes (6 endpoints). Users Remediation: activateUser(), changeUserPassword() + 2 new routes + idempotent seed. Built ✅ zero TS errors. |
+| Database | IMPLEMENTED — 2 migrations applied. 7 tables (6 Phase 02 + skates). Seed: 41 permissions (users.change_password added), 3 system roles, 1 admin. |
+| Tests | IMPLEMENTED — `npm test` 68/68 PASS ✅. 18 Auth + 15 RBAC Roles + 16 Skates + 19 Users Remediation tests. |
 | Deployment | NONE |
 | Git repository | VERIFIED — local + GitHub remote (`https://github.com/mohamedalihassanwork-cpu/Skate-system`) |
 

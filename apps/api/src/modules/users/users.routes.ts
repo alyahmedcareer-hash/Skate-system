@@ -1,14 +1,17 @@
 /**
  * KOSHK SKATE ERP — Users Routes
  * Phase 02 — Authentication & Permissions
+ * Users Remediation — User activation + admin password change (DEC-048/DEC-049/DEC-050)
  *
  * All routes require authentication + specific permissions (server-side — Rule 13)
  *
- * GET    /api/v1/users        — list all users         (users.view)
- * POST   /api/v1/users        — create user            (users.create)
- * GET    /api/v1/users/:id    — get user by ID         (users.view)
- * PATCH  /api/v1/users/:id    — update user            (users.edit)
- * DELETE /api/v1/users/:id    — deactivate user        (users.delete)
+ * GET    /api/v1/users                    — list all users         (users.view)
+ * POST   /api/v1/users                    — create user            (users.create)
+ * GET    /api/v1/users/:id                — get user by ID         (users.view)
+ * PATCH  /api/v1/users/:id                — update user            (users.edit)
+ * DELETE /api/v1/users/:id                — deactivate user        (users.delete)
+ * POST   /api/v1/users/:id/activate       — activate user          (users.delete)
+ * POST   /api/v1/users/:id/change-password — change password       (users.change_password)
  */
 
 import { Router, type Request, type Response, type NextFunction } from 'express'
@@ -87,6 +90,53 @@ router.delete(
     try {
       await usersService.deactivateUser(parseInt(String(req.params['id']), 10))
       res.status(200).json({ success: true, data: { message: 'تم تعطيل حساب المستخدم' } })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
+// POST /api/v1/users/:id/activate — restore deactivated user to active status (DEC-048)
+// Authorization: users.delete (user lifecycle management, consistent with deactivate)
+router.post(
+  '/:id/activate',
+  authenticate,
+  requirePermission('users.delete'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await usersService.activateUser(parseInt(String(req.params['id']), 10))
+      res.status(200).json({ success: true, data: { message: 'تم تفعيل حساب المستخدم' } })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
+// POST /api/v1/users/:id/change-password — admin/authorized password change (DEC-049)
+// Authorization: users.change_password (dedicated permission — not granted to all roles by default)
+// Body: { newPassword: string, confirmPassword: string }
+// Security:
+//   - Old password is NOT required (administrative capability)
+//   - Password is bcrypt-hashed server-side; never stored as plaintext
+//   - Password is never returned in the response
+//   - Existing sessions remain active (DEC-050 — no session invalidation)
+//   - Works on inactive users; does NOT activate them
+router.post(
+  '/:id/change-password',
+  authenticate,
+  requirePermission('users.change_password'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { newPassword, confirmPassword } = req.body as {
+        newPassword?: string
+        confirmPassword?: string
+      }
+      await usersService.changeUserPassword(
+        parseInt(String(req.params['id']), 10),
+        newPassword ?? '',
+        confirmPassword ?? '',
+      )
+      res.status(200).json({ success: true, data: { message: 'تم تغيير كلمة المرور بنجاح' } })
     } catch (err) {
       next(err)
     }
