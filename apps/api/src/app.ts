@@ -1,6 +1,6 @@
 /**
  * KOSHK SKATE ERP — Express App Factory
- * Phase 03 — Skates / Asset Management (updated)
+ * Phase 04 — Customers Module (updated)
  *
  * Separated from server startup (index.ts) so tests can import the
  * configured app without starting the HTTP listener or failing on
@@ -26,6 +26,9 @@ import rolesRoutes from './modules/users/roles.routes.js'
 
 // Phase 03 routes
 import skatesRoutes from './modules/skates/skates.routes.js'
+
+// Phase 04 routes
+import customersRoutes from './modules/customers/customers.routes.js'
 
 // ---------------------------------------------------------------------------
 // Express app
@@ -68,8 +71,8 @@ app.get('/api/v1/health', (_req, res) => {
     success: true,
     status: 'ok',
     service: 'koshk-skate-api',
-    version: '3.0.0',
-    phase: 'Phase 03 — Skates / Asset Management',
+    version: '4.0.0',
+    phase: 'Phase 04 — Customers Module',
     timestamp: new Date().toISOString(),
     environment: env.NODE_ENV,
   })
@@ -82,7 +85,7 @@ app.get('/api/v1/health', (_req, res) => {
 app.get('/api/v1', (_req, res) => {
   res.json({
     success: true,
-    message: 'KOSHK SKATE ERP API — Phase 03',
+    message: 'KOSHK SKATE ERP API — Phase 04',
     routes: {
       health: 'GET /api/v1/health',
       auth: {
@@ -94,6 +97,7 @@ app.get('/api/v1', (_req, res) => {
       users: '/api/v1/users',
       roles: '/api/v1/roles',
       skates: '/api/v1/skates',
+      customers: '/api/v1/customers',
     },
   })
 })
@@ -111,6 +115,12 @@ app.use('/api/v1/roles', rolesRoutes)
 // ---------------------------------------------------------------------------
 
 app.use('/api/v1/skates', skatesRoutes)
+
+// ---------------------------------------------------------------------------
+// Phase 04 routes
+// ---------------------------------------------------------------------------
+
+app.use('/api/v1/customers', customersRoutes)
 
 // ---------------------------------------------------------------------------
 // 404 handler — must come before error handler, after all routes

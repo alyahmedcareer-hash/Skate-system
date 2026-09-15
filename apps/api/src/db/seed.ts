@@ -4,7 +4,7 @@
  *
  * Seeds:
  *   - Default roles: Administrator, Cashier, Maintenance Staff
- *   - All permission keys (41 keys — see ALL_PERMISSIONS below)
+ *   - All permission keys (42 keys — see ALL_PERMISSIONS below)
  *   - Administrator role gets ALL permissions
  *   - Default admin user (credentials from env — DEC-026)
  *
@@ -42,9 +42,10 @@ const ALL_PERMISSIONS: Array<{ key: string; labelAr: string; module: string }> =
   { key: 'maintenance.edit',     labelAr: 'تعديل سجل الصيانة',    module: 'maintenance' },
   { key: 'maintenance.complete', labelAr: 'إغلاق طلب الصيانة',    module: 'maintenance' },
   // Customers
-  { key: 'customers.view',   labelAr: 'عرض العملاء',              module: 'customers' },
-  { key: 'customers.create', labelAr: 'إضافة عميل',               module: 'customers' },
-  { key: 'customers.edit',   labelAr: 'تعديل بيانات العميل',      module: 'customers' },
+  { key: 'customers.view',       labelAr: 'عرض العملاء',              module: 'customers' },
+  { key: 'customers.create',     labelAr: 'إضافة عميل',               module: 'customers' },
+  { key: 'customers.edit',       labelAr: 'تعديل بيانات العميل',      module: 'customers' },
+  { key: 'customers.deactivate', labelAr: 'تعطيل / تفعيل العميل',     module: 'customers' },
   // Skates
   { key: 'skates.view',      labelAr: 'عرض الزلاجات',             module: 'skates' },
   { key: 'skates.create',    labelAr: 'إضافة زلاجة',              module: 'skates' },

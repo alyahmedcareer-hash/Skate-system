@@ -1,6 +1,6 @@
 /**
  * KOSHK SKATE ERP — Shared UI Component Library
- * Phase 03.5 — Design System
+ * Phase 04 — Customers Module (updated)
  *
  * Barrel export. Import shared components from '@/components/ui'.
  * UI-010: Check here before creating any new UI component.
@@ -10,6 +10,9 @@ export { Icon } from './Icon'
 export type {} from './Icon'
 
 export { Button } from './Button'
+
+export { IconButton } from './IconButton'
+export type { IconButtonProps } from './IconButton'
 
 export { Input, Select, Textarea, CheckboxField } from './FormFields'
 

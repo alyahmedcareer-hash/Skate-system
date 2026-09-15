@@ -1046,3 +1046,193 @@ The frontend shows this error inline in the Delete modal as an `Alert variant="d
 ---
 
 *Last updated: 2026-09-15 (DEC-048/DEC-049/DEC-050 added — Users Remediation pre-Phase 04) by AI Agent*
+
+---
+
+### DEC-051
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-001)
+**Category:** Product — Customer Data Model
+**Decision:** Customer required and optional fields are:
+- **Required:** `name` (VARCHAR 255, NOT NULL), `phone` (VARCHAR 20, NOT NULL)
+- **Optional:** `national_id` (VARCHAR 50, nullable), `notes` (TEXT, nullable)
+- **System-generated:** `registration_date` (DATE, set at creation = today), `created_at`, `updated_at`
+
+No additional mandatory fields beyond name and phone. Cashiers frequently create customers quickly during a rental; forcing National ID blocks fast checkout. National ID may be filled in later.
+
+**Reason:** Operational flexibility for cashiers. Phone is the minimal identifier for contact purposes. National ID is the unique identifier when available.
+**Impact:** `customers` table schema: `name` and `phone` NOT NULL; `national_id` nullable. Backend validation: 400 if name or phone missing. Frontend form: name and phone marked required (*).
+**Affected Modules:** Customers (Phase 04), Rental POS (Phase 05)
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-001 (2026-09-15)
+
+---
+
+### DEC-052
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-002)
+**Category:** Product — Customer Lifecycle
+**Decision:** Customers have an `is_active` boolean status (soft-deactivation):
+1. `is_active = true` — normal customer (default at creation)
+2. `is_active = false` — deactivated customer (still stored; excluded from Rental POS search by default)
+3. Customers are **reactivatable** — a deactivated customer can be restored to active.
+4. **Hard-delete is permanently prohibited** for any customer who has ever had a rental, damage report, reservation, or any business record.
+5. Even customers with no history must not be hard-deleted via the API; soft-deactivation is the only removal action.
+6. A new permission `customers.deactivate` gates the deactivate and reactivate actions.
+
+Schema delta from DATABASE_ARCHITECTURE.md: `is_active` column added (not in original planned schema). This is an approved deviation documented here.
+
+**Reason:** Aligns with the Users and Skates soft-delete pattern (DEC-009). Preserves referential integrity for future FK relationships (rentals, damages, reservations).
+**Impact:** `customers` table gets `is_active BOOLEAN NOT NULL DEFAULT TRUE`. `customers.deactivate` permission added to seed. Customers API gets `POST /api/v1/customers/:id/deactivate` and `POST /api/v1/customers/:id/activate`. List API defaults to `isActive=1` filter; can be overridden to show inactive.
+**Affected Modules:** Customers (Phase 04), Rental POS (Phase 05), Reports (Phase 13)
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-002 (2026-09-15)
+
+---
+
+### DEC-053
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-003)
+**Category:** Business Rule — Customer Identity
+**Decision:** `national_id` is UNIQUE when provided:
+1. Database UNIQUE constraint on `national_id` (nullable — `NULL` values are not subject to uniqueness in MySQL with standard null handling).
+2. Application layer: if `national_id` is provided, check for existing customer with the same value and return 409 with Arabic error message `"الرقم القومي مستخدم لعميل آخر"`.
+3. Two customers may both have `national_id = NULL` — this is not a uniqueness conflict.
+4. Searching by National ID is supported via the `q` query parameter.
+
+**Reason:** A National ID is a unique government-issued identifier; two customers must not share the same National ID. Prevents duplicate customer records. Uniqueness at DB level is the authoritative enforcement.
+**Impact:** `customers.national_id` column: `UNIQUE INDEX` in Drizzle schema. Service layer `createCustomer` and `updateCustomer` must catch MySQL duplicate error (ER_DUP_ENTRY, errno 1062) and map to 409.
+**Affected Modules:** Customers (Phase 04)
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-003 (2026-09-15)
+
+---
+
+### DEC-054
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-004)
+**Category:** Business Rule — Customer Contact
+**Decision:** `phone` is NOT UNIQUE. Multiple customers may share the same phone number.
+1. No UNIQUE constraint on `phone`.
+2. Phone is searchable (indexed for performance but not unique).
+3. Phone is a contact field, not a unique identifier — families commonly share phones.
+4. National ID (DEC-053) is the true unique identifier.
+
+**Reason:** Egyptian families frequently share a single phone number. A uniqueness constraint would block legitimate customer creation and force cashiers to work around the system.
+**Impact:** `customers.phone` column: indexed but NOT UNIQUE. No 409 conflict for duplicate phone numbers.
+**Affected Modules:** Customers (Phase 04)
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-004 (2026-09-15)
+
+---
+
+### DEC-055
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-005)
+**Category:** Product — Phase Scope
+**Decision:** Customer rental history, statistics, and related analytics are FULLY DEFERRED from Phase 04. Specifically, Phase 04 MUST NOT implement:
+- Rental count
+- Rental history list
+- Total paid
+- Late returns history
+- Damage history
+- Reservation history
+- Any placeholder or stub statistics on the customer profile
+- `GET /api/v1/customers/:id/rentals` endpoint
+
+**Ownership of deferred capabilities:**
+- Rental count + rental history → Phase 05 (Rental POS)
+- Total paid + payment analytics → Phase 06 (Payments)
+- Late returns + damage history → Phase 08 (Damage) / appropriate return phase
+- Reservation history → Phase 10 (Reservations)
+
+**Reason:** Avoids misleading UI (showing zeroes or stubs). Clean phase boundary. The Rentals module must own and implement rental-related customer data.
+**Impact:** `CustomerProfilePage.tsx` in Phase 04 shows only: name, phone, national_id, registration_date, status (active/inactive), notes. No stats section. Future phases add their own customer-profile data contributions.
+**Affected Modules:** Customers (Phase 04), Rental POS (Phase 05), Payments (Phase 06), Damage (Phase 08), Reservations (Phase 10)
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-005 (2026-09-15)
+
+---
+
+### DEC-056
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-006)
+**Category:** Security — Customer Data Privacy
+**Decision:** National ID display rules:
+1. **Customer LIST page:** National ID is masked — display only the last 4 digits, with asterisks for the rest (e.g., `****1234`). If National ID is null/empty, display `—`.
+2. **Customer PROFILE page:** National ID is displayed in full to authorized users (any user with `customers.view` permission).
+3. Full National ID is NEVER included in the list API response. The list DTO either omits `national_id` entirely or includes only the masked version — server-side masking is preferred.
+4. National ID is treated as sensitive PII. It must not be logged unnecessarily in application logs.
+5. Audit logging for National ID access is deferred to Phase 16 (Audit Log).
+
+**Reason:** Balances operational utility with privacy. The list is a scan-view context; the profile page is a deliberate navigation. Protecting National ID in the list reduces casual exposure.
+**Impact:** `listCustomers()` service returns masked `national_id_masked` (last 4 chars + asterisks) rather than full value. `getCustomer()` returns full `national_id`. Frontend `CustomersPage` shows masked value; `CustomerProfilePage` shows full value.
+**Affected Modules:** Customers (Phase 04)
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-006 (2026-09-15)
+
+---
+
+### DEC-057
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-007)
+**Category:** Design — Shared Component
+**Decision:** The shared `<IconButton>` component (SYS-002) is created in Phase 04 as the first real use case (customer row actions). Approved API:
+
+```tsx
+<IconButton
+  icon={Pencil}               // Lucide React icon component (required)
+  label="تعديل العميل"         // aria-label string (required — accessibility)
+  variant="ghost" | "danger"  // default: 'ghost'
+  size="sm" | "base"          // default: 'sm' for table rows
+  onClick={() => void}
+  disabled?: boolean
+  loading?: boolean
+/>
+```
+
+Rules:
+- Uses Lucide React icons (same as `Button` and `Icon` components)
+- `label` is applied as `aria-label` on the `<button>` element (accessible naming)
+- Renders as a `<button>` always
+- `disabled` + `loading` follow the same pattern as `Button`
+- `ghost` variant: transparent background; hover shows `--color-neutral-bg`
+- `danger` variant: transparent background; hover shows `--color-danger-bg`
+- No new visual variants without owner approval
+- Must be exported from `components/ui/index.ts`
+- Must be used in ALL future modules for icon-only row actions — no page-specific icon button implementations
+
+**Reason:** Row actions (edit, view, deactivate) are icon-only buttons. The existing `Button` component with `aria-label` works but a dedicated `IconButton` provides a cleaner, more focused API for this specific use case.
+**Impact:** New file `apps/web/src/components/ui/IconButton.tsx`. Export from `index.ts`. Documented in `COMPONENT_LIBRARY.md`.
+**Affected Modules:** Customers (Phase 04); all future modules with row actions
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-007 (2026-09-15)
+
+---
+
+### DEC-058
+
+**Date:** 2026-09-15 (Phase 04 — Customers Module — OD-04-008)
+**Category:** Security — RBAC — Customer Permissions
+**Decision:** The `customers.*` permission catalog for Phase 04 is:
+
+| Permission Key | Arabic Label | Administrator | Cashier | Maintenance Staff |
+|---|---|---|---|---|
+| `customers.view` | عرض العملاء | ✅ | ✅ | ❌ |
+| `customers.create` | إضافة عميل | ✅ | ✅ | ❌ |
+| `customers.edit` | تعديل بيانات العميل | ✅ | ✅ | ❌ |
+| `customers.deactivate` | تعطيل / تفعيل العميل | ✅ | ❌ | ❌ |
+
+Note: `customers.view`, `customers.create`, and `customers.edit` are already seeded from Phase 02 RBAC (seed.ts lines 44–47). `customers.deactivate` is NEW — added in Phase 04 seed update.
+
+Server-side enforcement is mandatory for all four permissions. Frontend `PermissionGate` is advisory only (DEC-013).
+
+**Reason:** Cashiers need view/create/edit to operate the Rental POS workflow. Deactivating a customer is an administrative action that must not be available to cashiers.
+**Impact:** `seed.ts` updated: `customers.deactivate` added as 42nd permission; Administrator role assignment for `customers.deactivate` added; Cashier role assigned `customers.view/create/edit` (already seeded but Cashier assignment verified).
+**Affected Modules:** Customers (Phase 04), Rental POS (Phase 05)
+**Status:** ACTIVE
+**Source:** Owner decision OD-04-008 (2026-09-15)
+
+---
+
+*Last updated: 2026-09-15 (DEC-051 through DEC-058 added — Phase 04 Customers Module Owner Decisions OD-04-001 through OD-04-008) by AI Agent*

@@ -1,27 +1,11 @@
 /**
  * KOSHK SKATE ERP — App Shell
- * Phase 03.5 — Design System (updated from Phase 03)
+ * Phase 04 — Customers Module (updated from Phase 03.5)
  *
- * Changes from Phase 03:
- *   - All emoji icons replaced with Lucide SVG (OD-003 / DEC-036 / UI-003)
- *   - Prototype "المرحلة 03 ✓" badge removed from Topbar
- *   - Active nav indicator bar added (left edge in RTL)
- *   - Avatar + role added to sidebar user block
- *   - Notification bell placeholder added to Topbar
- *   - Sidebar collapse toggle (desktop) — OD-005 / DEC-038
- *   - Mobile sidebar drawer (hamburger + overlay) — OD-005 / DEC-038
- *   - PlaceholderPage uses EmptyState component
- *   - All structural styles moved to CSS — no inline style objects for design props
- *
- * Routing (Phase 02 Remediation — route-level PermissionGate added for /users and /roles):
- *   /login        → LoginPage (public)
- *   /             → Dashboard placeholder (Phase 17)
- *   /skates       → SkatesPage (protected, requires skates.view)
- *   /users        → UsersPage (protected, requires users.view — graceful NoAccessPage if missing)
- *   /roles        → RolesPage (protected, requires roles.view — graceful NoAccessPage if missing)
- *   /*            → 404 redirect to /
- *
- * Phase 04+ will add: /customers, /rentals, etc.
+ * Changes from Phase 03.5:
+ *   - /customers route → CustomersPage (replaces PlaceholderPage)
+ *   - /customers/:id route → CustomerProfilePage (new)
+ *   - Both routes gated by customers.view PermissionGate
  */
 
 import { useState, useEffect, useRef, type ReactNode } from 'react'
@@ -54,6 +38,8 @@ import LoginPage from './modules/auth/LoginPage'
 import UsersPage from './modules/users/UsersPage'
 import RolesPage from './modules/users/RolesPage'
 import SkatesPage from './modules/skates/SkatesPage'
+import CustomersPage from './modules/customers/CustomersPage'
+import CustomerProfilePage from './modules/customers/CustomerProfilePage'
 
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
@@ -1019,7 +1005,22 @@ export default function App() {
                   </PermissionGate>
                 } />
                 <Route path="/skates" element={<SkatesPage />} />
-                <Route path="/customers" element={<PlaceholderPage title="العملاء" phase="المرحلة 04" />} />
+                <Route path="/customers" element={
+                  <PermissionGate
+                    permission="customers.view"
+                    fallback={<NoAccessPage permission="customers.view" />}
+                  >
+                    <CustomersPage />
+                  </PermissionGate>
+                } />
+                <Route path="/customers/:id" element={
+                  <PermissionGate
+                    permission="customers.view"
+                    fallback={<NoAccessPage permission="customers.view" />}
+                  >
+                    <CustomerProfilePage />
+                  </PermissionGate>
+                } />
                 <Route path="/rentals" element={<PlaceholderPage title="الإيجارات" phase="المرحلة 05" />} />
                 <Route path="/treasury" element={<PlaceholderPage title="الخزينة" phase="المرحلة 06" />} />
                 <Route path="/maintenance" element={<PlaceholderPage title="الصيانة" phase="المرحلة 09" />} />

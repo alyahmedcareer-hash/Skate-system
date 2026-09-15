@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 3.7
-**Last updated:** 2026-09-15 (Users Remediation — User Activation + Admin Password Change complete, pre-Phase 04)
-**Updated by:** AI Agent (Users Remediation — DEC-048/DEC-049/DEC-050)
+**Version:** 4.0
+**Last updated:** 2026-09-15 (Phase 04 — Customers Module COMPLETE)
+**Updated by:** AI Agent (Phase 04 — Customers Module)
 
 ---
 
@@ -10,16 +10,16 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | USERS REMEDIATION COMPLETE — User Activation + Admin Password Change implemented. Phase 04 cleared to begin. |
-| **Current Phase** | Users Remediation COMPLETE. Phase 03.5 ALL workstreams COMPLETE. |
-| **Current Milestone** | Users Remediation: Activation, Admin Password Change, RBAC permission (users.change_password), 19 new integration tests. |
-| **Last Completed Phase** | Users Remediation (pre-Phase 04) — 2026-09-15 |
+| **Overall Status** | Phase 04 (Customers Module) COMPLETE |
+| **Current Phase** | Phase 04 COMPLETE. Phase 05 (Rental POS) is next. |
+| **Current Milestone** | Phase 04: Full customers module — schema, API, frontend, 24 tests. |
+| **Last Completed Phase** | Phase 04 — Customers Module — 2026-09-15 |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-15 — Users Remediation: `tsc -b` 0 errors ✅ (API + Web), `npm test` 68/68 ✅ (4 test files), `npm run build` 391KB ✅ |
+| **Last Verification** | 2026-09-15 — Phase 04: `tsc -b` 0 errors ✅ (API + Web), `npm test` 92/92 ✅ (5 test files), `npm run build` 419KB ✅ |
 | **Last Git Commit** | `93a2790` — feat(rbac): complete roles and permissions management (Phase 02 remediation) |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
-| **Recommended Next Action** | Begin Phase 04 (Customers Module) |
+| **Recommended Next Action** | Phase 05 (Rental POS) — requires customers table (now available) |
 
 ---
 
@@ -30,14 +30,14 @@
 | Master Business Specification | VERIFIED — complete |
 | Visual Design Reference | VERIFIED — complete |
 | Governance documentation | COMPLETED |
-| Architecture documentation | COMPLETED — updated with Phase 02 decisions |
-| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, PHASE_02 spec ✅, PHASE_03 spec ✅ (all updated) |
-| Source code — Frontend | IMPLEMENTED — Phase 02: React Router, AuthContext, LoginPage, Users/Roles pages, ProtectedRoute, PermissionGate. Phase 03: SkatesPage, skates.service.ts. Phase 03.5: 16 shared UI components, App Shell redesign (sidebar collapse, mobile drawer, Lucide icons), LoginPage split-screen, all pages migrated to design system. Users Remediation: Activate + Change Password UI added. Built ✅ zero TS errors (391KB bundle). |
-| Source code — Backend | IMPLEMENTED — Phase 02: Auth + Users + Roles modules + middleware. Phase 03: skates schema, service, routes (6 endpoints). Users Remediation: activateUser(), changeUserPassword() + 2 new routes + idempotent seed. Built ✅ zero TS errors. |
-| Database | IMPLEMENTED — 2 migrations applied. 7 tables (6 Phase 02 + skates). Seed: 41 permissions (users.change_password added), 3 system roles, 1 admin. |
-| Tests | IMPLEMENTED — `npm test` 68/68 PASS ✅. 18 Auth + 15 RBAC Roles + 16 Skates + 19 Users Remediation tests. |
+| Architecture documentation | COMPLETED — updated with Phase 04 decisions |
+| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, PHASE_02 spec ✅, PHASE_03 spec ✅, PHASE_04 spec ✅ |
+| Source code — Frontend | IMPLEMENTED — Phase 04: CustomersPage, CustomerProfilePage, IconButton (SYS-002), customers.service.ts. Built ✅ zero TS errors (419KB bundle). |
+| Source code — Backend | IMPLEMENTED — Phase 04: customers schema, types, service, routes (6 endpoints). Built ✅ zero TS errors. |
+| Database | IMPLEMENTED — 3 migrations applied. 8 tables (7 Phase 02/03 + customers). Seed: 42 permissions (customers.deactivate added), 3 system roles, 1 admin. |
+| Tests | IMPLEMENTED — `npm test` 92/92 PASS ✅. 18 Auth + 15 RBAC Roles + 16 Skates + 19 Users Remediation + 24 Customers tests. |
 | Deployment | NONE |
-| Git repository | VERIFIED — local + GitHub remote (`https://github.com/mohamedalihassanwork-cpu/Skate-system`) |
+| Git repository | VERIFIED — local + GitHub remote |
 
 ---
 
@@ -50,7 +50,7 @@
 | Phase 02 | Authentication & Permissions | **FINAL GATE PASSED** | JWT auth, RBAC, 18/18 tests pass. Latest commit `647817c`. |
 | Phase 03 | Skates Module | **FINAL GATE PASSED ✅** | 16/16 tests, 34/34 total, both builds clean, UI verified. Commit `f12c5b7`. |
 | **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | 14 shared components, App Shell redesign, all pages migrated. 0 TS errors, 34/34 tests. Commit `c7ee6f6`. |
-| Phase 04 | Customers Module | PLANNED | Depends on Phase 02; begins after Phase 03.5 completes |
+| Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | 24 tests, 92/92 total, both builds clean. DEC-051–DEC-058. |
 | Phase 05 | Rental POS (Core) | PLANNED | Depends on Phases 03, 04 |
 | Phase 06 | Payments & Treasury | PLANNED | Depends on Phase 05 |
 | Phase 07 | Returns & Inspection | PLANNED | Depends on Phase 05 |
@@ -76,7 +76,7 @@
 | Users/Permissions | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ | IMPLEMENTED ✅ (permissions endpoint wired) | VERIFIED (49/49) ✅ | VERIFIED ✅ |
 | Dashboard | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Skates | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (16/16) ✅ | VERIFIED ✅ |
-| Customers | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | STUB (Phase 04) |
+| Customers | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (24/24) ✅ | COMPLETE ✅ |
 | Rentals | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Payments | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Treasury | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
