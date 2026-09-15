@@ -12,12 +12,12 @@
 |---|---|
 | **Overall Status** | Phase 04 (Customers Module) COMPLETE |
 | **Current Phase** | Phase 04 COMPLETE. Phase 05 (Rental POS) is next. |
-| **Current Milestone** | Phase 04: Full customers module — schema, API, frontend, 24 tests. |
+| **Current Milestone** | Phase 04: Full customers module — schema, API, frontend, 28 tests. |
 | **Last Completed Phase** | Phase 04 — Customers Module — 2026-09-15 |
 | **Active Work** | None |
 | **Blocked Work** | None |
 | **Last Verification** | 2026-09-15 — Phase 04 final fixes: `tsc -b` 0 errors ✅ (API + Web), `npm test` 96/96 ✅ (5 test files), `npm run build` clean ✅ |
-| **Last Git Commit** | `93a2790` — feat(rbac): complete roles and permissions management (Phase 02 remediation) |
+| **Last Git Commit** | `76fc72e` — fix(customers): add length validation, duplicate NID update test, docs reconciliation (Phase 04 finalization) |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Phase 05 (Rental POS) — requires customers table (now available) |
 
@@ -50,7 +50,7 @@
 | Phase 02 | Authentication & Permissions | **FINAL GATE PASSED** | JWT auth, RBAC, 18/18 tests pass. Latest commit `647817c`. |
 | Phase 03 | Skates Module | **FINAL GATE PASSED ✅** | 16/16 tests, 34/34 total, both builds clean, UI verified. Commit `f12c5b7`. |
 | **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | 14 shared components, App Shell redesign, all pages migrated. 0 TS errors, 34/34 tests. Commit `c7ee6f6`. |
-| Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | 24 tests, 92/92 total, both builds clean. DEC-051–DEC-058. |
+| Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | 28 tests, 96/96 total, both builds clean. DEC-051–DEC-059. |
 | Phase 05 | Rental POS (Core) | PLANNED | Depends on Phases 03, 04 |
 | Phase 06 | Payments & Treasury | PLANNED | Depends on Phase 05 |
 | Phase 07 | Returns & Inspection | PLANNED | Depends on Phase 05 |
@@ -76,7 +76,7 @@
 | Users/Permissions | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ | IMPLEMENTED ✅ (permissions endpoint wired) | VERIFIED (49/49) ✅ | VERIFIED ✅ |
 | Dashboard | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Skates | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (16/16) ✅ | VERIFIED ✅ |
-| Customers | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (24/24) ✅ | COMPLETE ✅ |
+| Customers | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (28/28) ✅ | COMPLETE ✅ |
 | Rentals | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Payments | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Treasury | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
@@ -155,13 +155,13 @@
 | AN-012 | **PERMANENTLY DEFERRED — OWNER DECISION** | EmptyState entrance animation — do not reopen |
 | AN-013 | **PERMANENTLY DEFERRED — OWNER DECISION** | Alert entrance animation — do not reopen |
 
-### PLANNED FOR PHASE 04 — Customers Foundation
+### RESOLVED IN PHASE 04 — Customers Foundation ✅
 
-| ID | Finding | Notes |
+| ID | Finding | Resolution |
 |---|---|---|
-| SYS-002 | Shared `<IconButton>` component | Needed for icon-only row actions (Edit/Delete/View). Define API from real Customers use cases. |
-| SYS-006 | Mobile Table Representation Strategy | Define reusable/documented mobile strategy for DataTable screens before each new module. |
-| SYS-013 | Customer Badge statuses | `active` / `inactive` exist. Determine if additional Customer statuses are required from actual business requirements only. |
+| SYS-002 | Shared `<IconButton>` component | IMPLEMENTED ✅ — `apps/web/src/components/ui/IconButton.tsx` (DEC-057). Ghost + danger variants, sm/base sizes, WCAG 44px touch target. |
+| SYS-006 | Mobile Table Representation Strategy | IMPLEMENTED ✅ — `CustomersPage.tsx` uses `@media (max-width: 640px)` card layout with responsive CSS. Pattern documented for reuse. |
+| SYS-013 | Customer Badge statuses | RESOLVED ✅ — Only `active`/`inactive` needed (DEC-058). No additional statuses required for Phase 04. |
 
 ### PLANNED FOR PHASE 05 — Rentals Foundation
 
@@ -233,7 +233,7 @@
 | `docs/00-governance/DEFINITION_OF_DONE.md` | UPDATED (v2.0) — UI/UX DoD expanded with design system compliance |
 | `docs/00-governance/CHANGE_REQUEST_PROCESS.md` | COMPLETE |
 | `docs/00-governance/DOCUMENTATION_RULES.md` | COMPLETE |
-| `docs/decisions/DECISION_LOG.md` | UPDATED — DEC-041 through DEC-044 added (Governance Remediation 2026-09-14) |
+| `docs/decisions/DECISION_LOG.md` | UPDATED — DEC-051 through DEC-059 added (Phase 04 Customers Module + finalization 2026-09-15) |
 | `docs/architecture/TECHNICAL_ARCHITECTURE.md` | COMPLETE — target only |
 | `docs/architecture/DATABASE_ARCHITECTURE.md` | COMPLETE — target schema |
 | `docs/architecture/API_ARCHITECTURE.md` | COMPLETE — target routes |
@@ -241,17 +241,18 @@
 | `docs/architecture/BACKEND_ARCHITECTURE.md` | COMPLETE — target |
 | `docs/architecture/SECURITY_ARCHITECTURE.md` | COMPLETE |
 | `docs/architecture/DEPLOYMENT_ARCHITECTURE.md` | COMPLETE |
-| `docs/PROJECT_MAP.md` | UPDATED (v1.6) — all Phase 03.5 components marked VERIFIED (Governance Remediation) |
-| `docs/PROJECT_STATE.md` | UPDATED (v3.6) — this file |
-| `docs/CHANGELOG.md` | UPDATED — updated through Phase 03.5 Foundation Fixes |
+| `docs/PROJECT_MAP.md` | UPDATED (v1.8) — Phase 04 customers files marked VERIFIED |
+| `docs/PROJECT_STATE.md` | UPDATED (v4.0) — this file |
+| `docs/CHANGELOG.md` | UPDATED — Phase 04 Customers Module entry added |
 | `docs/RELEASE_HISTORY.md` | COMPLETE |
 | `docs/INITIAL_PROJECT_AUDIT.md` | COMPLETE |
 | `docs/design/VISUAL_DESIGN_REFERENCE.md` | COMPLETE (source document copy) |
 | `docs/design/DESIGN_SYSTEM.md` | UPDATED (Governance Remediation) — warning-text corrected to #7A5500 (DEC-041) |
-| `docs/design/COMPONENT_LIBRARY.md` | UPDATED (Governance Remediation) — file structure corrected to actual implementation |
-| `docs/phases/PHASE_035_UI_DESIGN_SYSTEM.md` | UPDATED (Governance Remediation) — status corrected to COMPLETE ✅ |
-| `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` | PLANNING STUB — requires owner approval |
-| `docs/modules/SKATES.md` | UPDATED — Phase 03 pre-implementation (DEC-030 to DEC-033 applied) |
+| `docs/design/COMPONENT_LIBRARY.md` | UPDATED (Phase 04) — IconButton §4.19 specification added |
+| `docs/phases/PHASE_035_UI_DESIGN_SYSTEM.md` | COMPLETE ✅ |
+| `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` | COMPLETE ✅ — full spec, DoD reconciled, 28 tests documented |
+| `docs/modules/CUSTOMERS.md` | COMPLETE ✅ — Phase 04 implementation documented |
+| `docs/modules/SKATES.md` | UPDATED — Phase 03 implementation documented |
 | `docs/phases/PHASE_03_SKATES_MODULE.md` | VERIFIED — full phase spec written |
 | Other module docs (`docs/modules/`) | STUB entries — to be expanded during implementation |
 | Other phase docs (`docs/phases/`) | STUB entries |
@@ -265,10 +266,10 @@
 | Repository | VERIFIED — `https://github.com/mohamedalihassanwork-cpu/Skate-system` |
 | Remote name | `origin` |
 | Branch | `master` |
-| Last implementation commit | `b907372` fix(phase-03.5): system-wide UI consistency foundation fixes SYS-001 SYS-003 SYS-004 SYS-010 SYS-017 SYS-018 |
-| Last docs commit | `257c19f` docs: update PROJECT_STATE.md commit hash b907372 |
-| Push status | PUSHED — branch is up to date with `origin/master` |
-| Working tree | Clean (verified 2026-09-14) |
+| Last implementation commit | `76fc72e` fix(customers): add length validation, duplicate NID update test, docs reconciliation (Phase 04 finalization) |
+| Last docs commit | `e15f028` docs: reconcile Phase 04 documentation with verified implementation |
+| Push status | LOCAL — needs `git push origin master` |
+| Working tree | Clean (verified 2026-09-15) |
 
 ## TECHNICAL DEBT
 
@@ -286,4 +287,4 @@
 
 ---
 
-*Last updated: 2026-09-14 (Governance Remediation — module table corrected, GIT STATUS updated, TD-003 corrected, empty TD template removed, documentation versions corrected by AI Agent)*
+*Last updated: 2026-09-15 (Phase 04 Customers Module documentation reconciliation — test counts, git status, SYS findings, documentation status corrected by AI Agent)*

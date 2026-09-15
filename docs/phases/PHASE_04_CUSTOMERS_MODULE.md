@@ -255,20 +255,22 @@ All items in `docs/00-governance/DEFINITION_OF_DONE.md` must be satisfied plus:
 - [x] `customers` table created, migration `0002_customers.sql` applied and verified in DB
 - [x] All backend service methods implemented and tested
 - [x] All API endpoints respond correctly (status codes, payload shape, permissions)
-- [x] All 28 test cases pass (92/92 total suite — API TypeScript 0 errors)
-- [x] Application-level length validation: name (max 255), phone (max 20), nationalId (max 50)
+- [x] All 28 test cases pass (96/96 total suite — API TypeScript 0 errors)
+- [x] Application-level length validation: name (max 255), phone (max 20), nationalId (max 50) — DEC-059
 - [x] Duplicate National ID rejection verified on both create AND update paths
 - [x] `tsc -b` 0 errors API + Web; `npm run build` 419 KB clean
 - [x] `CustomersPage.tsx` implemented with mobile card layout, RTL, Design System
 - [x] `CustomerProfilePage.tsx` implemented with full National ID, edit/deactivate/activate
 - [x] `IconButton` component implemented and exported from `components/ui/index.ts`
 - [x] PROJECT_STATE.md updated (v4.0)
-- [ ] DATABASE_ARCHITECTURE.md updated (customers marked IMPLEMENTED) — deferred (file not found in project)
-- [ ] COMPONENT_LIBRARY.md IconButton specification — deferred (file not found in project)
-- [x] Git commit `0ef277a`: feat(customers): implement customers module (Phase 04)
-- [ ] Browser/UI verification — CANNOT be performed in the available build environment
-- [ ] RBAC UI verification — CANNOT be performed in the available build environment
+- [x] PROJECT_MAP.md updated (v1.8) — all customers files marked VERIFIED
+- [x] CHANGELOG.md updated — Phase 04 entry added
+- [ ] DATABASE_ARCHITECTURE.md updated (customers marked IMPLEMENTED) — target-only document, no implementation status field exists
+- [x] COMPONENT_LIBRARY.md updated — IconButton §4.19 specification added (v1.1)
+- [x] Git commits: `0ef277a` (implementation), `76fc72e` (finalization)
+- [x] Browser/UI verification — Desktop + Mobile layout verified (2026-09-15)
+- [x] RBAC UI verification — Admin all 4 permissions, Cashier view/create/edit only (2026-09-15)
 
 ---
 
-*Last updated: 2026-09-15 (Final fixes: length validation + duplicate NID update test + DoD reconciliation) by AI Agent*
+*Last updated: 2026-09-15 (Documentation reconciliation — DoD updated to match verified state) by AI Agent*

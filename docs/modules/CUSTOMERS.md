@@ -1,7 +1,7 @@
 # Module: Customers
 
-**Status:** IN PROGRESS — Phase 04
-**Last updated:** 2026-09-15 (Phase 04 implementation started — owner approved)
+**Status:** COMPLETE ✅
+**Last updated:** 2026-09-15 (Phase 04 documentation reconciliation)
 
 ---
 
@@ -15,7 +15,7 @@ Required by Phase 05 (Rental POS) for `rental.customer_id` foreign key.
 
 ## Current Status
 
-Phase 04 is in progress. See `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` for full spec and progress.
+Phase 04 is COMPLETE. See `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` for full spec and Definition of Done.
 
 ---
 
@@ -115,7 +115,7 @@ Phase 04 is in progress. See `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` for full
 
 **File:** `apps/api/src/tests/customers.test.ts`
 
-Test IDs: TC-CUST-01 through TC-CUST-16, TC-CUST-RBAC-01 through TC-CUST-RBAC-08.
+Test IDs: TC-CUST-01 through TC-CUST-17, TC-CUST-VAL-01 through TC-CUST-VAL-03, TC-CUST-RBAC-01 through TC-CUST-RBAC-08 (28 tests total).
 See `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` for full test matrix.
 
 ---
@@ -132,6 +132,7 @@ See `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` for full test matrix.
 | DEC-056 | National ID masked in list; full in profile |
 | DEC-057 | `IconButton` component API approved (SYS-002) |
 | DEC-058 | Role-permission defaults confirmed |
+| DEC-059 | Application-level length validation: name max 255, phone max 20, nationalId max 50 |
 
 ---
 
@@ -155,4 +156,4 @@ See `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` for full test matrix.
 
 ---
 
-*Last updated: 2026-09-15 (Phase 04 — implementation started)*
+*Last updated: 2026-09-15 (Phase 04 — documentation reconciliation)*

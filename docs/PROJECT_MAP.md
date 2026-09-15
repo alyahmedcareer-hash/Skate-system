@@ -41,7 +41,7 @@ d:/Skate system/
     │   ├── PHASE_02_AUTHENTICATION_AND_PERMISSIONS.md — VERIFIED (full spec, Phase 02 Final Gate)
     │   ├── PHASE_03_SKATES_MODULE.md — VERIFIED (full spec written 2026-09-10)
     │   ├── PHASE_035_UI_DESIGN_SYSTEM.md — COMPLETE ✅ (updated Governance Remediation 2026-09-14)
-    │   └── PHASE_04_CUSTOMERS_MODULE.md — PLANNING (stub — requires owner approval before implementation)
+    │   └── PHASE_04_CUSTOMERS_MODULE.md — COMPLETE ✅ (full spec + DoD reconciled 2026-09-15)
     ├── quality/                 — QA strategy and test matrix (VERIFIED)
     ├── decisions/               — Decision log (59 decisions through DEC-059)
     ├── product/                 — Master Business Spec copy (VERIFIED)
@@ -207,7 +207,8 @@ Verified API migrations:
 ```
 apps/api/src/db/migrations/
 ├── 0000_cloudy_the_renegades.sql — VERIFIED (Phase 02: 6 tables — users, roles, permissions, user_roles, role_permissions, refresh_tokens)
-└── 0001_*.sql                   — VERIFIED (Phase 03: skates table)
+├── 0001_*.sql                   — VERIFIED (Phase 03: skates table)
+└── 0002_customers.sql           — VERIFIED (Phase 04: customers table + national_id UNIQUE index)
 ```
 
 ---
@@ -254,12 +255,12 @@ For each module: where to find code, documentation, database tables, and API rou
 
 | Area | Path | Status |
 |---|---|---|
-| Frontend | `apps/web/src/modules/skates/` | PLANNED (Phase 03) |
-| Backend | `apps/api/src/modules/skates/` | PLANNED (Phase 03) |
-| Database tables | `skates` | PLANNED (Phase 03) |
-| API routes | `GET /api/v1/skates`, `POST /api/v1/skates`, `GET /api/v1/skates/available`, `GET /api/v1/skates/:id`, `PUT /api/v1/skates/:id`, `GET /api/v1/skates/:id/history` | PLANNED (Phase 03) |
-| Documentation | `docs/modules/SKATES.md` | UPDATED (Phase 03 pre-implementation) |
-| Tests | `apps/api/src/tests/skates.test.ts` | PLANNED (Phase 03 — 16 test cases defined) |
+| Frontend | `apps/web/src/modules/skates/` | VERIFIED (Phase 03 + 03.5 migration) |
+| Backend | `apps/api/src/modules/skates/` | VERIFIED (Phase 03) |
+| Database tables | `skates` | VERIFIED (Phase 03) |
+| API routes | `GET /api/v1/skates`, `POST /api/v1/skates`, `GET /api/v1/skates/available`, `GET /api/v1/skates/:id`, `PUT /api/v1/skates/:id`, `GET /api/v1/skates/:id/history` | VERIFIED (Phase 03) |
+| Documentation | `docs/modules/SKATES.md` | VERIFIED (Phase 03) |
+| Tests | `apps/api/src/tests/skates.test.ts` | VERIFIED (Phase 03 — 16/16 PASS) |
 
 **Dependencies:** AUTH, USERS_PERMISSIONS
 **Key risks:**
@@ -268,7 +269,7 @@ For each module: where to find code, documentation, database tables, and API rou
 - `GET /api/v1/skates/available` must be registered before `GET /api/v1/skates/:id` in the router
 - DEC-007 enforcement (maintenance→available requires completed record) deferred to Phase 09 (TD-002)
 **Approved decisions:** DEC-030, DEC-031, DEC-032, DEC-033
-**Unresolved implementation details:** IMPL-001 (skate_code algorithm), IMPL-002 (QR format), IMPL-003 (barcode format), IMPL-004 (skate type values)
+**Resolved implementation details:** IMPL-001 (skate_code SK-NNN, DEC-030), IMPL-002 (QR = skate_code, DEC-032), IMPL-003 (barcode = skate_code, DEC-032), IMPL-004 (free-text type, DEC-033)
 
 ---
 
@@ -276,15 +277,16 @@ For each module: where to find code, documentation, database tables, and API rou
 
 | Area | Path | Status |
 |---|---|---|
-| Frontend | `apps/web/src/modules/customers/` | PLANNED |
-| Backend | `apps/api/src/modules/customers/` | PLANNED |
-| Database tables | `customers` | PLANNED |
-| API routes | `/api/v1/customers`, `/api/v1/customers/:id` | PLANNED |
-| Documentation | `docs/modules/CUSTOMERS.md` | PLANNED |
-| Tests | `tests/customers/` | PLANNED |
+| Frontend | `apps/web/src/modules/customers/` | VERIFIED (Phase 04) |
+| Backend | `apps/api/src/modules/customers/` | VERIFIED (Phase 04) |
+| Database tables | `customers` | VERIFIED (Phase 04 — migration `0002_customers.sql`) |
+| API routes | `GET /api/v1/customers`, `POST /api/v1/customers`, `GET /api/v1/customers/:id`, `PUT /api/v1/customers/:id`, `POST /api/v1/customers/:id/deactivate`, `POST /api/v1/customers/:id/activate` | VERIFIED (Phase 04) |
+| Documentation | `docs/modules/CUSTOMERS.md` | VERIFIED (Phase 04) |
+| Tests | `apps/api/src/tests/customers.test.ts` | VERIFIED (Phase 04 — 28/28 PASS) |
 
-**Dependencies:** AUTH  
-**Key risks:** National ID is sensitive — access logging required
+**Dependencies:** AUTH, USERS_PERMISSIONS
+**Key risks:** National ID is PII — access logging deferred to Phase 16 (Audit Log)
+**Approved decisions:** DEC-051 through DEC-059
 
 ---
 

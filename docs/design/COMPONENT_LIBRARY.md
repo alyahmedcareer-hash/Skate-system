@@ -1,9 +1,9 @@
 # KOSHK SKATE ERP — Component Library
 
-**Version:** 1.0  
-**Status:** ACTIVE — Documentation reference for Phase 03.5 implementation  
-**Authority:** Owner-approved (OD-001 through OD-005, Phase 03.5)  
-**Last updated:** 2026-09-10  
+**Version:** 1.1  
+**Status:** ACTIVE — Documentation reference for Phase 03.5 + Phase 04 implementation  
+**Authority:** Owner-approved (OD-001 through OD-005, Phase 03.5; DEC-057, Phase 04)  
+**Last updated:** 2026-09-15  
 
 > This document is the developer reference for the KOSHK SKATE ERP shared React component library.
 > All components described here must be implemented in `apps/web/src/components/ui/` during Phase 03.5 Stage 2.
@@ -36,6 +36,7 @@
    - Alert
    - Icon
    - Pagination
+   - IconButton (Phase 04 — SYS-002)
 5. Reuse Rules
 6. Extension Rules
 
@@ -74,7 +75,7 @@ A component belongs in the shared library if:
 
 ## 2. FILE STRUCTURE
 
-Actual verified structure as of Phase 03.5 completion (commit `b907372`):
+Actual verified structure as of Phase 04 completion (commit `76fc72e`):
 
 ```
 apps/web/src/components/
@@ -93,8 +94,9 @@ apps/web/src/components/
     Alert.tsx            ← Inline contextual banner
     Icon.tsx             ← Lucide icon wrapper
     Pagination.tsx       ← RTL-aware page navigation
+    IconButton.tsx       ← Icon-only action button (Phase 04 SYS-002, DEC-057)
     ErrorBoundary.tsx    ← React error boundary (SYS-003)
-    index.ts             ← barrel export for all ui components
+    index.ts             ← barrel export for all ui components (17 components)
   PermissionGate.tsx     ← Permission-conditional rendering (not in ui/)
   ProtectedRoute.tsx     ← Auth-protected route wrapper (not in ui/)
 ```
@@ -139,6 +141,7 @@ import { Button, Modal, Badge, DataTable } from '@/components/ui';
 | `Alert` | `Alert.tsx` | Inline contextual banner | 03.5 | VERIFIED |
 | `Icon` | `Icon.tsx` | Lucide icon wrapper | 03.5 | VERIFIED |
 | `Pagination` | `Pagination.tsx` | RTL-aware page navigation | 03.5 | VERIFIED |
+| `IconButton` | `IconButton.tsx` | Icon-only action button for row actions (SYS-002, DEC-057) | 04 | VERIFIED |
 | `ErrorBoundary` | `ErrorBoundary.tsx` | React error boundary (SYS-003) | 03.5 | VERIFIED |
 
 ---
@@ -854,6 +857,72 @@ Use `Toast` for transient feedback.
 
 ---
 
+### 4.19 — IconButton
+
+**File:** `apps/web/src/components/ui/IconButton.tsx`
+
+**Purpose:** A reusable icon-only button for row actions (Edit, View, Deactivate, etc.). Must be used for ALL icon-only row actions across all ERP modules. Do NOT create page-specific icon button implementations (UI-010).
+
+**Decision:** DEC-057 (Phase 04 — OD-04-007)  
+**Finding:** SYS-002
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `icon` | `LucideIcon` | Yes | — | Lucide React icon component |
+| `label` | `string` | Yes | — | Accessible label — applied as `aria-label` and `title` |
+| `variant` | `'ghost' \| 'danger'` | No | `'ghost'` | Visual variant |
+| `size` | `'sm' \| 'base'` | No | `'sm'` | Button size |
+| `onClick` | `() => void` | No | — | Click handler |
+| `disabled` | `boolean` | No | `false` | Disabled state |
+| `loading` | `boolean` | No | `false` | Shows `Loader2` spinner, disables interaction |
+| `className` | `string` | No | `''` | Additional CSS class |
+
+**Variants:**
+
+| Variant | Background | Text Color | Hover | Use case |
+|---|---|---|---|---|
+| `ghost` | transparent | `--color-text-secondary` | `--color-navy-50` bg, `--color-navy-800` text | Edit, View, neutral actions |
+| `danger` | transparent | `--color-danger-text` | `--color-danger-bg` bg, `--color-danger-500` text | Delete, Deactivate, destructive actions |
+
+**Sizes:**
+
+| Size | Icon size | Rendered dimensions | Min touch target |
+|---|---|---|---|
+| `sm` | 16px | 32×32px (visual) | 44×44px (WCAG 2.5.5) |
+| `base` | 20px | 40×40px (visual) | 44×44px (WCAG 2.5.5) |
+
+**Accessibility:**
+- `aria-label` is required (from `label` prop) — screen readers announce the action
+- `aria-busy="true"` set during loading state
+- `title` attribute mirrors `label` for tooltip on hover
+- Focus ring: `2px solid --color-border-focus` with `2px offset`
+- Disabled state: `opacity: 0.4`, `cursor: not-allowed`
+
+**CSS classes:** `.icon-btn`, `.icon-btn--ghost`, `.icon-btn--danger`, `.icon-btn--sm`, `.icon-btn--base`
+
+**Usage examples:**
+
+```tsx
+import { Pencil, Eye, UserX } from 'lucide-react'
+import { IconButton } from '@/components/ui'
+
+// Edit action (ghost)
+<IconButton icon={Pencil} label="تعديل" onClick={handleEdit} />
+
+// View profile (ghost)
+<IconButton icon={Eye} label="عرض الملف الشخصي" onClick={handleView} />
+
+// Deactivate (danger)
+<IconButton icon={UserX} label="تعطيل" variant="danger" onClick={handleDeactivate} />
+
+// With loading state
+<IconButton icon={Pencil} label="تعديل" loading={isUpdating} onClick={handleEdit} />
+```
+
+---
+
 ## 5. REUSE RULES
 
 These rules are mandatory for all new development (UI-002):
@@ -878,6 +947,6 @@ When extending an existing component:
 
 ---
 
-*Last updated: 2026-09-10 — Phase 03.5 Stage 1 establishment*  
-*Authority: Owner-approved (OD-001 through OD-005)*  
+*Last updated: 2026-09-15 — Phase 04: IconButton §4.19 added (SYS-002, DEC-057)*  
+*Authority: Owner-approved (OD-001 through OD-005; DEC-057)*  
 *Reference: `docs/design/DESIGN_SYSTEM.md`*
