@@ -10,6 +10,11 @@
  *   - DEC-054: phone NOT unique — no uniqueness check for phone
  *   - DEC-055: Rental history, stats, analytics are FULLY DEFERRED — not in Phase 04
  *   - DEC-056: listCustomers() returns masked national_id; getCustomer() returns full value
+ *
+ * Length limits (application-level — mirrors DB column lengths):
+ *   - name:       max 255 chars
+ *   - phone:      max 20 chars
+ *   - nationalId: max 50 chars
  */
 
 import { eq, like, or, and, sql, count, asc, desc } from 'drizzle-orm'
@@ -29,6 +34,14 @@ import {
   type ListCustomersQuery,
   type PaginatedCustomers,
 } from './customers.types.js'
+
+// ---------------------------------------------------------------------------
+// Field length limits — mirror DB column definitions
+// ---------------------------------------------------------------------------
+
+const MAX_NAME_LENGTH       = 255
+const MAX_PHONE_LENGTH      = 20
+const MAX_NATIONAL_ID_LENGTH = 50
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -179,6 +192,17 @@ export async function createCustomer(data: CreateCustomerRequest): Promise<Custo
     throw new ValidationError('رقم الهاتف مطلوب')
   }
 
+  // Application-level length validation (mirrors DB column limits)
+  if (data.name.trim().length > MAX_NAME_LENGTH) {
+    throw new ValidationError(`اسم العميل لا يمكن أن يتجاوز ${MAX_NAME_LENGTH} حرفاً`)
+  }
+  if (data.phone.trim().length > MAX_PHONE_LENGTH) {
+    throw new ValidationError(`رقم الهاتف لا يمكن أن يتجاوز ${MAX_PHONE_LENGTH} حرفاً`)
+  }
+  if (data.nationalId && data.nationalId.trim().length > MAX_NATIONAL_ID_LENGTH) {
+    throw new ValidationError(`الرقم القومي لا يمكن أن يتجاوز ${MAX_NATIONAL_ID_LENGTH} حرفاً`)
+  }
+
   const today = new Date().toISOString().split('T')[0]  // YYYY-MM-DD
 
   try {
@@ -243,14 +267,24 @@ export async function updateCustomer(id: number, data: UpdateCustomerRequest): P
 
   if (data.name !== undefined) {
     if (!data.name.trim()) throw new ValidationError('اسم العميل لا يمكن أن يكون فارغاً')
+    if (data.name.trim().length > MAX_NAME_LENGTH) {
+      throw new ValidationError(`اسم العميل لا يمكن أن يتجاوز ${MAX_NAME_LENGTH} حرفاً`)
+    }
     updateValues.name = data.name.trim()
   }
   if (data.phone !== undefined) {
     if (!data.phone.trim()) throw new ValidationError('رقم الهاتف لا يمكن أن يكون فارغاً')
+    if (data.phone.trim().length > MAX_PHONE_LENGTH) {
+      throw new ValidationError(`رقم الهاتف لا يمكن أن يتجاوز ${MAX_PHONE_LENGTH} حرفاً`)
+    }
     updateValues.phone = data.phone.trim()
   }
   if (data.nationalId !== undefined) {
-    updateValues.nationalId = data.nationalId?.trim() || null
+    const trimmedNid = data.nationalId?.trim() || null
+    if (trimmedNid && trimmedNid.length > MAX_NATIONAL_ID_LENGTH) {
+      throw new ValidationError(`الرقم القومي لا يمكن أن يتجاوز ${MAX_NATIONAL_ID_LENGTH} حرفاً`)
+    }
+    updateValues.nationalId = trimmedNid
   }
   if (data.notes !== undefined) {
     updateValues.notes = data.notes?.trim() || null

@@ -19,6 +19,11 @@
  *   TC-CUST-14:  Deactivate customer — succeeds → isActive = false
  *   TC-CUST-15:  Activate customer — succeeds → isActive = true
  *   TC-CUST-16:  Activate already-active customer — idempotent → 200
+ *   TC-CUST-17:  Update customer to duplicate National ID → 409
+ *
+ *   TC-CUST-VAL-01: Create — name exceeds 255 chars → 400
+ *   TC-CUST-VAL-02: Create — phone exceeds 20 chars → 400
+ *   TC-CUST-VAL-03: Create — nationalId exceeds 50 chars → 400
  *
  *   TC-CUST-RBAC-01: No token → 401 on all endpoints
  *   TC-CUST-RBAC-02: Missing customers.view → 403 on GET list
@@ -58,6 +63,7 @@ const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Koshk@12345'
 // Unique test data to avoid clashing with other tests
 const TEST_NATIONAL_ID  = 'TEST99999999901'
 const TEST_NATIONAL_ID2 = 'TEST99999999902'
+const TEST_NATIONAL_ID3 = 'TEST99999999903'  // For TC-CUST-17 (duplicate NID on update)
 const TEST_PHONE        = '01099999999'
 
 // ---------------------------------------------------------------------------
@@ -146,6 +152,7 @@ afterAll(async () => {
   // Also clean up any test customers by national_id in case of leftover runs
   await db.delete(customers).where(eq(customers.nationalId, TEST_NATIONAL_ID))
   await db.delete(customers).where(eq(customers.nationalId, TEST_NATIONAL_ID2))
+  await db.delete(customers).where(eq(customers.nationalId, TEST_NATIONAL_ID3))
 
   // Clean up test users
   if (cashierUserId) {
@@ -381,6 +388,78 @@ describe('Customers — CRUD', () => {
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
     expect(res.body.data.isActive).toBe(true)
+  })
+
+  it('TC-CUST-17: Update customer to duplicate National ID → 409', async () => {
+    // Create Customer B with a distinct National ID (TEST_NATIONAL_ID3)
+    const createB = await request
+      .post('/api/v1/customers')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name:       'عميل تجريبي باء',
+        phone:      '01088888888',
+        nationalId: TEST_NATIONAL_ID3,
+      })
+    expect(createB.status).toBe(201)
+    const customerBId: number = createB.body.data.id
+    createdCustomerIds.push(customerBId)
+
+    // Attempt to update Customer B to TEST_NATIONAL_ID (already used by Customer A from TC-CUST-01)
+    const updateRes = await request
+      .put(`/api/v1/customers/${customerBId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ nationalId: TEST_NATIONAL_ID })
+
+    expect(updateRes.status).toBe(409)
+    expect(updateRes.body.success).toBe(false)
+
+    // Verify Customer B is unchanged (still has its original National ID)
+    const verifyB = await request
+      .get(`/api/v1/customers/${customerBId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(verifyB.status).toBe(200)
+    expect(verifyB.body.data.nationalId).toBe(TEST_NATIONAL_ID3)  // unchanged
+  })
+
+  // ---------------------------------------------------------------------------
+  // Length validation tests
+  // ---------------------------------------------------------------------------
+
+  it('TC-CUST-VAL-01: Create — name exceeds 255 chars → 400', async () => {
+    const res = await request
+      .post('/api/v1/customers')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name:  'أ'.repeat(256),
+        phone: '01011111111',
+      })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+
+  it('TC-CUST-VAL-02: Create — phone exceeds 20 chars → 400', async () => {
+    const res = await request
+      .post('/api/v1/customers')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name:  'اختبار هاتف طويل',
+        phone: '0'.repeat(21),
+      })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+
+  it('TC-CUST-VAL-03: Create — nationalId exceeds 50 chars → 400', async () => {
+    const res = await request
+      .post('/api/v1/customers')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name:       'اختبار رقم قومي طويل',
+        phone:      '01011111111',
+        nationalId: '1'.repeat(51),
+      })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
   })
 })
 

@@ -1236,3 +1236,33 @@ Server-side enforcement is mandatory for all four permissions. Frontend `Permiss
 ---
 
 *Last updated: 2026-09-15 (DEC-051 through DEC-058 added — Phase 04 Customers Module Owner Decisions OD-04-001 through OD-04-008) by AI Agent*
+
+---
+
+## DEC-059: Application-Level Length Validation for Customer Fields
+
+**Phase:** 04 — Customers Module (finalization)
+**Date:** 2026-09-15
+**Decided by:** AI Agent (Phase 04 final fixes)
+
+**Decision:** Enforce application-level maximum length limits on customer fields at the service boundary, in addition to the existing database column constraints:
+
+| Field | Max Length | DB Column |
+|---|---|---|
+| `name` | 255 characters | `varchar(255)` |
+| `phone` | 20 characters | `varchar(20)` |
+| `nationalId` | 50 characters | `varchar(50)` |
+
+These limits mirror the DB column definitions and are enforced in `customers.service.ts` for both `createCustomer()` and `updateCustomer()`. Violations return HTTP 400 with an Arabic error message consistent with existing validation error conventions.
+
+No regex patterns or format rules are applied — only length. No new business rules are introduced.
+
+**Reason:** Database constraints alone do not provide application-level error messages at the API boundary. This is the established pattern in other modules (e.g., users, skates). Required by the Phase 04 review.
+**Impact:** `customers.service.ts` — 3 length checks added to `createCustomer`, 3 to `updateCustomer`. 3 new test cases (TC-CUST-VAL-01/02/03) added.
+**Affected Modules:** Customers (Phase 04)
+**Status:** ACTIVE
+**Source:** Phase 04 final review (2026-09-15)
+
+---
+
+*Last updated: 2026-09-15 (DEC-059 added — Phase 04 final review: application-level length validation) by AI Agent*

@@ -16,7 +16,7 @@
 | **Last Completed Phase** | Phase 04 — Customers Module — 2026-09-15 |
 | **Active Work** | None |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-15 — Phase 04: `tsc -b` 0 errors ✅ (API + Web), `npm test` 92/92 ✅ (5 test files), `npm run build` 419KB ✅ |
+| **Last Verification** | 2026-09-15 — Phase 04 final fixes: `tsc -b` 0 errors ✅ (API + Web), `npm test` 96/96 ✅ (5 test files), `npm run build` clean ✅ |
 | **Last Git Commit** | `93a2790` — feat(rbac): complete roles and permissions management (Phase 02 remediation) |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Phase 05 (Rental POS) — requires customers table (now available) |
@@ -35,7 +35,7 @@
 | Source code — Frontend | IMPLEMENTED — Phase 04: CustomersPage, CustomerProfilePage, IconButton (SYS-002), customers.service.ts. Built ✅ zero TS errors (419KB bundle). |
 | Source code — Backend | IMPLEMENTED — Phase 04: customers schema, types, service, routes (6 endpoints). Built ✅ zero TS errors. |
 | Database | IMPLEMENTED — 3 migrations applied. 8 tables (7 Phase 02/03 + customers). Seed: 42 permissions (customers.deactivate added), 3 system roles, 1 admin. |
-| Tests | IMPLEMENTED — `npm test` 92/92 PASS ✅. 18 Auth + 15 RBAC Roles + 16 Skates + 19 Users Remediation + 24 Customers tests. |
+| Tests | IMPLEMENTED — `npm test` 96/96 PASS ✅. 18 Auth + 15 RBAC Roles + 16 Skates + 19 Users Remediation + 28 Customers tests (inc. TC-CUST-17 duplicate NID on update + TC-CUST-VAL-01/02/03 length validation). |
 | Deployment | NONE |
 | Git repository | VERIFIED — local + GitHub remote |
 

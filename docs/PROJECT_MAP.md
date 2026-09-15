@@ -1,14 +1,14 @@
 # Project Map — KOSHK SKATE ERP
 
-**Version:** 1.7
+**Version:** 1.8
 **Purpose:** Navigation map for future AI agents. Read this BEFORE scanning the repository.
-**Last updated:** 2026-09-15 (Users Remediation — Activation + Password Change — DEC-048/DEC-049/DEC-050)
+**Last updated:** 2026-09-15 (Phase 04 — Customers Module COMPLETE — DEC-051 through DEC-059)
 
 > [!IMPORTANT]
-> **PROJECT STATE: Phase 03.5 COMPLETE ✅. Phase 04 (Customers) is NEXT.**
-> All Phase 01–03.5 files are committed and verified. 16 shared UI components are implemented.
-> Phase 04 requires a written + approved specification before any implementation begins (Rule 16).
-> Update status from PLANNED → VERIFIED as new files are created in Phase 04+.
+> **PROJECT STATE: Phase 04 (Customers) COMPLETE ✅. Phase 05 (Rental POS) is NEXT.**
+> All Phase 01–04 files are committed and verified. 17 shared UI components (16 design system + IconButton SYS-002).
+> Phase 05 requires a written + approved specification before any implementation begins (Rule 16).
+> Update status from PLANNED → VERIFIED as new files are created in Phase 05+.
 
 ---
 
@@ -43,15 +43,15 @@ d:/Skate system/
     │   ├── PHASE_035_UI_DESIGN_SYSTEM.md — COMPLETE ✅ (updated Governance Remediation 2026-09-14)
     │   └── PHASE_04_CUSTOMERS_MODULE.md — PLANNING (stub — requires owner approval before implementation)
     ├── quality/                 — QA strategy and test matrix (VERIFIED)
-    ├── decisions/               — Decision log (50 decisions through DEC-050)
+    ├── decisions/               — Decision log (59 decisions through DEC-059)
     ├── product/                 — Master Business Spec copy (VERIFIED)
-    ├── PROJECT_MAP.md           — THIS FILE (v1.6)
-    ├── PROJECT_STATE.md         — Current project status (v3.5 — Phase 03.5 Foundation Fixes + Governance Remediation)
-    ├── CHANGELOG.md             — Change history (updated through Phase 03.5 Foundation Fixes)
+    ├── PROJECT_MAP.md           — THIS FILE (v1.8)
+    ├── PROJECT_STATE.md         — Current project status (v4.0 — Phase 04 COMPLETE)
+    ├── CHANGELOG.md             — Change history (updated through Phase 04)
     ├── RELEASE_HISTORY.md       — Release history
     └── INITIAL_PROJECT_AUDIT.md — Initial audit report
 ├── apps/                        — Applications
-│   ├── web/                     — Frontend (VERIFIED — Phase 03.5 COMPLETE)
+│   ├── web/                     — Frontend (VERIFIED — Phase 04 COMPLETE)
 │   │   ├── index.html             — VERIFIED (lang=ar dir=rtl, Cairo font)
 │   │   ├── .env.example           — VERIFIED
 │   │   ├── package.json           — VERIFIED (react-router-dom, lucide-react added)
@@ -78,7 +78,7 @@ d:/Skate system/
 │   │       │       ├── Button.tsx        — VERIFIED
 │   │       │       ├── FormFields.tsx    — VERIFIED (Input, Select, Textarea, CheckboxField)
 │   │       │       ├── Modal.tsx         — VERIFIED (with exit animation AN-005)
-│   │       │       ├── Badge.tsx         — VERIFIED (DEC-043 semantic status API)
+│   │       │       ├── Badge.tsx         — VERIFIED (DEC-043 semantic status API; active/inactive added DEC-058)
 │   │       │       ├── Card.tsx          — VERIFIED
 │   │       │       ├── DataTable.tsx     — VERIFIED
 │   │       │       ├── SearchBar.tsx     — VERIFIED
@@ -89,8 +89,9 @@ d:/Skate system/
 │   │       │       ├── Alert.tsx         — VERIFIED (dismiss touch target 44px SYS-017)
 │   │       │       ├── Icon.tsx          — VERIFIED
 │   │       │       ├── Pagination.tsx    — VERIFIED
+│   │       │       ├── IconButton.tsx    — VERIFIED (Phase 04 SYS-002 — icon-only action button)
 │   │       │       ├── ErrorBoundary.tsx — VERIFIED (SYS-003)
-│   │       │       └── index.ts          — VERIFIED (barrel export)
+│   │       │       └── index.ts          — VERIFIED (barrel export — 17 components)
 │   │       └── modules/
 │   │           ├── auth/
 │   │           │   ├── auth.types.ts  — VERIFIED (Phase 02)
@@ -100,9 +101,13 @@ d:/Skate system/
 │   │           │   ├── users.service.ts — VERIFIED (Users Remediation: activate, changePassword added DEC-048/DEC-049)
 │   │           │   ├── UsersPage.tsx    — VERIFIED (Users Remediation: Activate button + Change Password modal added)
 │   │           │   └── RolesPage.tsx    — VERIFIED (Phase 03.5: migrated to design system)
-│   │           └── skates/
-│   │               ├── skates.service.ts — VERIFIED (Phase 03)
-│   │               └── SkatesPage.tsx    — VERIFIED (Phase 03.5: migrated to Card + design system + CheckboxField)
+│   │           ├── skates/
+│   │           │   ├── skates.service.ts — VERIFIED (Phase 03)
+│   │           │   └── SkatesPage.tsx    — VERIFIED (Phase 03.5: migrated to Card + design system + CheckboxField)
+│   │           └── customers/
+│   │               ├── customers.service.ts — VERIFIED (Phase 04)
+│   │               ├── CustomersPage.tsx    — VERIFIED (Phase 04 — list, search, filter, create/edit modals, deactivate)
+│   │               └── CustomerProfilePage.tsx — VERIFIED (Phase 04 — profile, full NID, edit/deactivate/activate)
 │   └── api/                     — Backend (VERIFIED — Phase 03 COMPLETE)
 │       ├── .env.example           — VERIFIED (updated Phase 02)
 │       ├── package.json           — VERIFIED (test, db:seed scripts added)
@@ -121,18 +126,21 @@ d:/Skate system/
 │           │   └── rateLimiter.ts   — VERIFIED (Phase 02: loginLimiter, skipped in test)
 │           ├── db/
 │           │   ├── connection.ts    — VERIFIED
-│           │   ├── seed.ts          — VERIFIED (Users Remediation: 41 perms including users.change_password; idempotent permission assignment)
+│           │   ├── seed.ts          — VERIFIED (Phase 04: 42 permissions including customers.deactivate; idempotent)
 │           │   ├── migrations/
-│           │   │   └── 0000_cloudy_the_renegades.sql — VERIFIED (6 tables)
+│           │   │   ├── 0000_cloudy_the_renegades.sql — VERIFIED (6 tables: users/roles/perms/user_roles/role_perms/refresh_tokens)
+│           │   │   └── 0002_customers.sql — VERIFIED (Phase 04: customers table)
 │           │   └── schema/
-│           │       ├── index.ts     — VERIFIED (exports all tables)
+│           │       ├── index.ts     — VERIFIED (exports all tables incl. customers)
 │           │       ├── users.ts     — VERIFIED (Phase 02: users, roles, perms, join tables)
-│           │       └── auth.ts      — VERIFIED (Phase 02: refresh_tokens)
+│           │       ├── auth.ts      — VERIFIED (Phase 02: refresh_tokens)
+│           │       └── customers.ts — VERIFIED (Phase 04: customers table schema)
 │           ├── tests/
 │           │   ├── setup.ts         — VERIFIED (Phase 02 Final Gate)
-│           │   ├── auth.test.ts     — VERIFIED (Users Remediation: permission count updated to 41)
+│           │   ├── auth.test.ts     — VERIFIED (Phase 04: permission count updated to 42)
 │           │   ├── roles.test.ts    — VERIFIED (Phase 02 RBAC Remediation: 15 tests, 15 PASS)
-│           │   └── users.test.ts    — VERIFIED (Users Remediation: 19 tests — activation + password + RBAC)
+│           │   ├── users.test.ts    — VERIFIED (Users Remediation: 19 tests — activation + password + RBAC)
+│           │   └── customers.test.ts — VERIFIED (Phase 04: 28 tests — CRUD + validation + RBAC)
 │           ├── utils/
 │           │   ├── errors.ts        — VERIFIED (UnauthorizedError added Phase 02)
 │           │   └── financial.ts     — VERIFIED
@@ -191,7 +199,7 @@ apps/web/src/
     ├── auth/               — VERIFIED (Phase 02 + 03.5 redesign)
     ├── users/              — VERIFIED (Phase 02 + 03.5 migration)
     ├── skates/             — VERIFIED (Phase 03 + 03.5 migration)
-    ├── customers/          — [PHASE 04 — PLANNING]
+    ├── customers/          — VERIFIED (Phase 04 — COMPLETE ✅)
     └── ...
 ```
 

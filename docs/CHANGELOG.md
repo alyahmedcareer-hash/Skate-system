@@ -6,6 +6,61 @@
 
 ## [Unreleased]
 
+### Phase 04 — Customers Module (2026-09-15)
+
+**Full Customers Module implemented and finalized. 96/96 tests pass.**
+
+#### Added
+
+- **`apps/api/src/db/schema/customers.ts`**: `customers` table schema — `id`, `name` (required, max 255), `phone` (required, max 20), `national_id` (optional, UNIQUE nullable, max 50), `registration_date` (system-generated), `notes`, `is_active` (soft-delete per DEC-052), `created_at`, `updated_at`.
+
+- **`apps/api/src/db/migrations/0002_customers.sql`**: Migration applied — creates `customers` table with `national_id` UNIQUE index and search indexes on `name` and `phone`.
+
+- **`apps/api/src/modules/customers/customers.types.ts`**: DTOs (`CustomerDTO`, `CustomerListItemDTO` with masked National ID), request types, list query type. `maskNationalId()` utility (DEC-056).
+
+- **`apps/api/src/modules/customers/customers.service.ts`**: Full CRUD service — `listCustomers()` (paginated, searchable, filterable), `createCustomer()`, `getCustomer()`, `updateCustomer()`, `deactivateCustomer()`, `activateCustomer()`. Application-level length validation for name/phone/nationalId (DEC-059). Duplicate national_id returns 409 on both create and update (DEC-053).
+
+- **`apps/api/src/modules/customers/customers.routes.ts`**: 6 endpoints at `/api/v1/customers` — all gated by `requirePermission()` middleware. Profile endpoint returns full national_id (DEC-056).
+
+- **`apps/api/src/tests/customers.test.ts`**: 28 integration tests:
+  - TC-CUST-01 to TC-CUST-17: CRUD, validation, duplicate NID on create and update, search, pagination, masking, soft-delete, idempotency
+  - TC-CUST-VAL-01 to TC-CUST-VAL-03: application-level length validation
+  - TC-CUST-RBAC-01 to TC-CUST-RBAC-08: 401/403 enforcement, Cashier vs Administrator boundary
+
+- **`apps/api/src/db/seed.ts`**: `customers.deactivate` added as 42nd permission. Administrator receives all 4 customer permissions. Cashier receives `customers.view/create/edit` (not deactivate per DEC-058).
+
+- **`apps/web/src/components/ui/IconButton.tsx`** (SYS-002): Icon-only action button with `ghost` and `danger` variants, `sm`/`base`/`lg` sizes, accessible `aria-label`, 40px minimum touch target.
+
+- **`apps/web/src/modules/customers/customers.service.ts`** (frontend): API layer — `list()`, `get()`, `create()`, `update()`, `deactivate()`, `activate()`.
+
+- **`apps/web/src/modules/customers/CustomersPage.tsx`**: Customer list page — DataTable (desktop), mobile card layout (< 640px), SearchBar, active/inactive filter, pagination, Create modal, Edit modal, Deactivate/Activate confirm dialogs, all RBAC-gated via `PermissionGate`.
+
+- **`apps/web/src/modules/customers/CustomerProfilePage.tsx`**: Customer profile — full national_id (DEC-056), edit modal, deactivate/activate with confirm dialogs, back to list.
+
+- **`apps/web/src/App.tsx`**: Routes `/customers` and `/customers/:id` added, protected by `customers.view`.
+
+#### Fixed (Phase 04 Finalization)
+
+- Added explicit test for duplicate National ID on **update** path (TC-CUST-17) — was previously only tested on create (TC-CUST-04).
+- Added application-level length validation for `name`, `phone`, and `nationalId` at service boundary (DEC-059).
+- Reconciled PHASE_04_CUSTOMERS_MODULE.md status and Definition of Done checklist.
+
+#### Decisions
+
+| Decision | Summary |
+|---|---|
+| DEC-051 | Name + phone required; National ID optional |
+| DEC-052 | Soft-deactivate via is_active; reactivatable; no hard delete |
+| DEC-053 | National ID UNIQUE (nullable); 409 on duplicate |
+| DEC-054 | Phone NOT unique |
+| DEC-055 | Rental history deferred to Phase 05+ |
+| DEC-056 | National ID masked in list; full in profile |
+| DEC-057 | IconButton component API (SYS-002) |
+| DEC-058 | Admin: all 4 permissions; Cashier: view/create/edit; Maintenance: none |
+| DEC-059 | Application-level length validation: name max 255, phone max 20, nationalId max 50 |
+
+---
+
 ### Users Remediation — User Activation & Admin Password Change (2026-09-15)
 
 **User Activation and Admin Password Change implemented. 68/68 tests pass.**
