@@ -1,6 +1,6 @@
 /**
  * KOSHK SKATE ERP — Express App Factory
- * Phase 04 — Customers Module (updated)
+ * Phase 05 — Rental POS Core (updated from Phase 04)
  *
  * Separated from server startup (index.ts) so tests can import the
  * configured app without starting the HTTP listener or failing on
@@ -29,6 +29,9 @@ import skatesRoutes from './modules/skates/skates.routes.js'
 
 // Phase 04 routes
 import customersRoutes from './modules/customers/customers.routes.js'
+
+// Phase 05 routes
+import rentalsRoutes from './modules/rentals/rentals.routes.js'
 
 // ---------------------------------------------------------------------------
 // Express app
@@ -71,8 +74,8 @@ app.get('/api/v1/health', (_req, res) => {
     success: true,
     status: 'ok',
     service: 'koshk-skate-api',
-    version: '4.0.0',
-    phase: 'Phase 04 — Customers Module',
+    version: '5.0.0',
+    phase: 'Phase 05 — Rental POS Core',
     timestamp: new Date().toISOString(),
     environment: env.NODE_ENV,
   })
@@ -85,7 +88,7 @@ app.get('/api/v1/health', (_req, res) => {
 app.get('/api/v1', (_req, res) => {
   res.json({
     success: true,
-    message: 'KOSHK SKATE ERP API — Phase 04',
+    message: 'KOSHK SKATE ERP API — Phase 05',
     routes: {
       health: 'GET /api/v1/health',
       auth: {
@@ -94,10 +97,11 @@ app.get('/api/v1', (_req, res) => {
         logout: 'POST /api/v1/auth/logout',
         me: 'GET /api/v1/auth/me',
       },
-      users: '/api/v1/users',
-      roles: '/api/v1/roles',
-      skates: '/api/v1/skates',
+      users:     '/api/v1/users',
+      roles:     '/api/v1/roles',
+      skates:    '/api/v1/skates',
       customers: '/api/v1/customers',
+      rentals:   '/api/v1/rentals',
     },
   })
 })
@@ -121,6 +125,12 @@ app.use('/api/v1/skates', skatesRoutes)
 // ---------------------------------------------------------------------------
 
 app.use('/api/v1/customers', customersRoutes)
+
+// ---------------------------------------------------------------------------
+// Phase 05 routes
+// ---------------------------------------------------------------------------
+
+app.use('/api/v1/rentals', rentalsRoutes)
 
 // ---------------------------------------------------------------------------
 // 404 handler — must come before error handler, after all routes

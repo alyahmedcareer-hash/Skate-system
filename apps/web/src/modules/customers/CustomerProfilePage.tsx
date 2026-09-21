@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowRight, UserX, UserCheck, Pencil } from 'lucide-react'
+import { ArrowRight, UserX, UserCheck, Pencil, Ticket } from 'lucide-react'
 import {
   Button,
   Badge,
@@ -28,6 +28,14 @@ import {
   type CustomerDTO,
   type UpdateCustomerBody,
 } from './customers.service'
+// Phase 05: Customer rental history (DEC-055)
+import {
+  rentalsService,
+  type CustomerRentalHistoryItem,
+  getRentalStatusLabel,
+  lifetimeStatusToBadge,
+} from '../rentals/rentals.service'
+import { formatCurrency } from '../../utils/currency'
 
 // ---------------------------------------------------------------------------
 // Profile Info Row
@@ -73,12 +81,22 @@ export default function CustomerProfilePage() {
   const [showActivate, setShowActivate] = useState(false)
   const [activating,   setActivating]   = useState(false)
 
+  // Phase 05: Rental history state (DEC-055)
+  const [rentals, setRentals]         = useState<CustomerRentalHistoryItem[]>([])
+  const [rentalsLoading, setRentalsLoading] = useState(false)
+  const [rentalsTotal, setRentalsTotal]     = useState(0)
+
   // ---------------------------------------------------------------------------
   // Load
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
-    if (id) load(parseInt(id, 10))
+    if (id) {
+      const numId = parseInt(id, 10)
+      load(numId)
+      // Phase 05: Load rental history (DEC-055)
+      loadRentals(numId)
+    }
   }, [id])
 
   async function load(customerId: number) {
@@ -91,6 +109,20 @@ export default function CustomerProfilePage() {
       setError('تعذر تحميل بيانات العميل')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Phase 05: Load customer rental history (DEC-055)
+  async function loadRentals(customerId: number) {
+    setRentalsLoading(true)
+    try {
+      const res = await rentalsService.getCustomerRentals(customerId, { perPage: 5 })
+      setRentals(res.data ?? [])
+      setRentalsTotal(res.pagination.total)
+    } catch {
+      // Non-blocking — rental history failure doesn't break the profile
+    } finally {
+      setRentalsLoading(false)
     }
   }
 
@@ -276,13 +308,55 @@ export default function CustomerProfilePage() {
         </div>
 
         {/*
-          ── DEC-055: Rental history / statistics INTENTIONALLY OMITTED ──
-          Phase 04 scope: basic customer info only.
-          Rental count + history → Phase 05
-          Total paid + payment analytics → Phase 06
-          Late returns + damage history → Phase 08
-          Reservation history → Phase 10
+          ── Phase 05: Customer Rental History (DEC-055) ──
+          Total rentals and most recent 5 rentals shown on profile.
+          Full history available at /rentals?customerId=X
         */}
+        <div className="profile-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+            <h2 className="profile-section-title" style={{ marginBottom: 0 }}>
+              <Ticket size={16} style={{ display: 'inline', marginInlineEnd: 6 }} />
+              سجل الإيجارات ({rentalsTotal})
+            </h2>
+          </div>
+          {rentalsLoading ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>جاري التحميل...</p>
+          ) : rentals.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>لا توجد إيجارات مسجلة لهذا العميل</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-sm)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-bold)' }}>كود الإيجار</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-bold)' }}>الزلاجة</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-bold)' }}>المدة</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-bold)' }}>المبلغ</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-bold)' }}>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rentals.map(r => (
+                    <tr key={r.id} style={{ borderBottom: '1px solid var(--color-border-subtle)' }}>
+                      <td style={{ padding: '8px', fontWeight: 'var(--font-weight-medium)' }}>{r.rentalCode}</td>
+                      <td style={{ padding: '8px' }}>{r.skate.skateCode} / {r.skate.size}</td>
+                      <td style={{ padding: '8px' }}>{r.durationMinutes} د</td>
+                      <td style={{ padding: '8px' }}>{formatCurrency(r.rentalAmount)}</td>
+                      <td style={{ padding: '8px' }}>
+                        <Badge status={lifetimeStatusToBadge(r.status)}>{getRentalStatusLabel(r.status)}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {rentalsTotal > 5 && (
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 8 }}>
+                  يعرض آخر 5 إيجارات من إجمالي {rentalsTotal}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
       </div>
 

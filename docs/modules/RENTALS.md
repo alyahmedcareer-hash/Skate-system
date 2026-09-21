@@ -1,7 +1,7 @@
 # Module: Rentals
 
-**Status:** PLANNED / NOT IMPLEMENTED  
-**Last updated:** 2026-09-09
+**Status:** IMPLEMENTED — PENDING VERIFICATION  
+**Last updated:** 2026-09-21 (Phase 05 Verification Remediation — integration tests written, rental code strategy fixed, duration config endpoint added)
 
 ---
 

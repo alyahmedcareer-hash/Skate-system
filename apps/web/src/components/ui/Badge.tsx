@@ -24,18 +24,25 @@ export type BadgeStatus =
   | 'inactive'
   | 'role'    // D-002 / D-006: user role name pills
   | 'system'  // D-005: نظامي — system-defined resource badge
+  // Phase 05 — Rental statuses (DEC-064)
+  | 'completed'   // alias for 'returned' in display
+  | 'overdue'     // computed operational status — danger
+  | 'cancelled'   // lifecycle status — neutral
 
 type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'role'
 
 const STATUS_VARIANT_MAP: Record<BadgeStatus, BadgeVariant> = {
   available:   'success',
   active:      'success',
+  completed:   'success',  // returned rental — Phase 05 DEC-064
   rented:      'info',
   reserved:    'warning',
   maintenance: 'warning',
   damaged:     'danger',
   lost:        'neutral',
   inactive:    'neutral',
+  cancelled:   'neutral',  // Phase 05 DEC-064
+  overdue:     'danger',   // Phase 05 DEC-064, DEC-066
   role:        'role',    // D-002 / D-006: navy-50 bg / navy-700 text
   system:      'warning', // D-005: gold-adjacent — system resources
 }

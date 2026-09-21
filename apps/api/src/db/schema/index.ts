@@ -7,12 +7,13 @@
  * Phase 02: users, roles, permissions, user_roles, role_permissions, refresh_tokens
  * Phase 03: skates
  * Phase 04: customers
- * Phase 05 will add: rentals, rental_payments
- * etc.
+ * Phase 05: settings, rentals
  */
 
 export * from './users.js'
 export * from './auth.js'
 export * from './skates.js'
 export * from './customers.js'
+export * from './settings.js'
+export * from './rentals.js'
 

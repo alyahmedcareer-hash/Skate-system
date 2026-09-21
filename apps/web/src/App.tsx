@@ -1,6 +1,6 @@
 /**
  * KOSHK SKATE ERP — App Shell
- * Phase 04 — Customers Module (updated from Phase 03.5)
+ * Phase 05 — Rental POS Core (updated from Phase 04)
  *
  * Changes from Phase 03.5:
  *   - /customers route → CustomersPage (replaces PlaceholderPage)
@@ -40,6 +40,11 @@ import RolesPage from './modules/users/RolesPage'
 import SkatesPage from './modules/skates/SkatesPage'
 import CustomersPage from './modules/customers/CustomersPage'
 import CustomerProfilePage from './modules/customers/CustomerProfilePage'
+// Phase 05 — Rental POS
+import RentalsPage from './modules/rentals/RentalsPage'
+import ActiveRentalsPage from './modules/rentals/ActiveRentalsPage'
+import RentalPOSPage from './modules/rentals/RentalPOSPage'
+import RentalDetailPage from './modules/rentals/RentalDetailPage'
 
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
@@ -1021,7 +1026,38 @@ export default function App() {
                     <CustomerProfilePage />
                   </PermissionGate>
                 } />
-                <Route path="/rentals" element={<PlaceholderPage title="الإيجارات" phase="المرحلة 05" />} />
+                <Route path="/rentals" element={
+                  <PermissionGate
+                    permission="rentals.view"
+                    fallback={<NoAccessPage permission="rentals.view" />}
+                  >
+                    <RentalsPage />
+                  </PermissionGate>
+                } />
+                <Route path="/rentals/new" element={
+                  <PermissionGate
+                    permission="rentals.create"
+                    fallback={<NoAccessPage permission="rentals.create" />}
+                  >
+                    <RentalPOSPage />
+                  </PermissionGate>
+                } />
+                <Route path="/rentals/active" element={
+                  <PermissionGate
+                    permission="rentals.view"
+                    fallback={<NoAccessPage permission="rentals.view" />}
+                  >
+                    <ActiveRentalsPage />
+                  </PermissionGate>
+                } />
+                <Route path="/rentals/:id" element={
+                  <PermissionGate
+                    permission="rentals.view"
+                    fallback={<NoAccessPage permission="rentals.view" />}
+                  >
+                    <RentalDetailPage />
+                  </PermissionGate>
+                } />
                 <Route path="/treasury" element={<PlaceholderPage title="الخزينة" phase="المرحلة 06" />} />
                 <Route path="/maintenance" element={<PlaceholderPage title="الصيانة" phase="المرحلة 09" />} />
                 <Route path="/reports" element={<PlaceholderPage title="التقارير" phase="المرحلة 13" />} />

@@ -12,8 +12,7 @@
  * PUT    /api/v1/customers/:id            — update customer                          customers.edit
  * POST   /api/v1/customers/:id/deactivate — soft-deactivate customer                customers.deactivate
  * POST   /api/v1/customers/:id/activate   — reactivate customer                     customers.deactivate
- *
- * DEC-055: No /customers/:id/rentals endpoint in Phase 04 — deferred to Phase 05.
+ * GET    /api/v1/customers/:id/rentals    — customer rental history (paginated)      customers.view (DEC-055)
  */
 
 import { Router, type Request, type Response, type NextFunction } from 'express'
@@ -21,6 +20,8 @@ import { authenticate } from '../../middleware/auth.js'
 import { requirePermission } from '../../middleware/permission.js'
 import * as customerSvc from './customers.service.js'
 import type { ListCustomersQuery } from './customers.types.js'
+// DEC-055: Customer rental history endpoint — Phase 05
+import * as rentalSvc from '../rentals/rentals.service.js'
 
 const router = Router()
 
@@ -92,6 +93,28 @@ router.post(
     try {
       const data = await customerSvc.activateCustomer(parseInt(String(req.params['id']), 10))
       res.json({ success: true, data })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/customers/:id/rentals — customer rental history (DEC-055)
+// Phase 05: Implemented. Must be registered BEFORE GET /:id.
+// ---------------------------------------------------------------------------
+
+router.get(
+  '/:id/rentals',
+  authenticate,
+  requirePermission('customers.view'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await rentalSvc.getCustomerRentals(
+        parseInt(String(req.params['id']), 10),
+        req.query as { page?: string; perPage?: string },
+      )
+      res.json({ success: true, ...result })
     } catch (err) {
       next(err)
     }

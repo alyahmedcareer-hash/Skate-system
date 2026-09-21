@@ -1,12 +1,14 @@
 /**
  * KOSHK SKATE ERP — Database Seed Script
- * Phase 02 — Authentication & Permissions
+ * Phase 05 — Rental POS Core (updated)
  *
  * Seeds:
  *   - Default roles: Administrator, Cashier, Maintenance Staff
  *   - All permission keys (42 keys — see ALL_PERMISSIONS below)
  *   - Administrator role gets ALL permissions
  *   - Default admin user (credentials from env — DEC-026)
+ *   - Settings: rental_hourly_rate = 120 EGP/hr (DEC-068)
+ *   - Settings: rental_duration_options = [15,30,45,60,90] (DEC-069)
  *
  * IDEMPOTENT: Safe to run multiple times. Checks before inserting.
  *
@@ -18,6 +20,7 @@ import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db } from './connection.js'
 import { users, roles, permissions, userRoles, rolePermissions } from './schema/index.js'
+import { settings } from './schema/settings.js'
 
 const BCRYPT_ROUNDS = 12
 
@@ -242,6 +245,45 @@ async function seed() {
     }
   } else {
     console.log(`     Admin user already exists (skipped)`)
+  }
+
+  // 4. Seed Phase 05 settings (DEC-061, DEC-068, DEC-069)
+  // IDEMPOTENT: Only inserts if key does not already exist.
+  console.log('  → Seeding Phase 05 rental settings...')
+
+  const RENTAL_SETTINGS: Array<{ key: string; value: string; labelAr: string }> = [
+    {
+      key:     'rental_hourly_rate',
+      // DEC-068: Initial configured hourly rate = 120 EGP/hr
+      // Read from settings at runtime — NEVER hardcoded in application source.
+      value:   '120',
+      labelAr: 'سعر الإيجار بالساعة',
+    },
+    {
+      key:     'rental_duration_options',
+      // DEC-069: Standard durations in minutes — JSON-encoded array
+      value:   '[15, 30, 45, 60, 90]',
+      labelAr: 'خيارات مدة الإيجار بالدقائق',
+    },
+  ]
+
+  for (const setting of RENTAL_SETTINGS) {
+    const existing = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, setting.key))
+      .limit(1)
+
+    if (!existing.length) {
+      await db.insert(settings).values({
+        key:     setting.key,
+        value:   setting.value,
+        labelAr: setting.labelAr,
+      })
+      console.log(`     Setting seeded: ${setting.key} = ${setting.value}`)
+    } else {
+      console.log(`     Setting exists: ${setting.key} (skipped)`)
+    }
   }
 
   console.log('✅ Seed complete.')
