@@ -9,5 +9,3 @@ CREATE TABLE `settings` (
 	CONSTRAINT `settings_key_unique` UNIQUE(`key`),
 	FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX `settings_key_unique` ON `settings` (`key`);

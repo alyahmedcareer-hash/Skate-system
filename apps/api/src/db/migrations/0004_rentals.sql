@@ -22,8 +22,6 @@ CREATE TABLE `rentals` (
 	FOREIGN KEY (`cashier_id`) REFERENCES `users`(`id`)
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `rentals_rental_code_unique` ON `rentals` (`rental_code`);
---> statement-breakpoint
 CREATE INDEX `rentals_skate_id_idx` ON `rentals` (`skate_id`);
 --> statement-breakpoint
 CREATE INDEX `rentals_customer_id_idx` ON `rentals` (`customer_id`);
