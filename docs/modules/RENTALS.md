@@ -1,7 +1,7 @@
 # Module: Rentals
 
-**Status:** IMPLEMENTED — PENDING FINAL VERIFICATION  
-**Last updated:** 2026-09-21 (Phase 05 Final Remediation — all VG2 findings resolved, documentation reconciled)
+**Status:** VERIFIED — FINAL GATE PASSED ✅  
+**Last updated:** 2026-09-21 (Phase 05 Closure Gate — FINAL GATE PASSED ✅. Final Verification Gate passed. 170/170 tests. All VG2 findings resolved.)
 
 ---
 
@@ -25,7 +25,7 @@ The Rentals module is the core operational module of KOSHK SKATE ERP. It manages
 | Database — rental_payments table | PLANNED | Phase 06 |
 | Database — late_fee_records table | PLANNED | Phase 07 |
 | API routes | IMPLEMENTED | POST /rentals, GET /rentals, GET /rentals/active, GET /rentals/:id, GET /rentals/calculate-price, GET /rentals/config, GET /customers/:id/rentals |
-| Tests | IMPLEMENTED | 62 Phase 05 tests (31 TC-RENT-* integration + 5 RBAC + 5 VAL + 5 CFG + 16 unit). 168 total system tests pass. |
+| Tests | VERIFIED ✅ | 74 Phase 05 tests (31 TC-RENT-01..31 integration + 7 RBAC + 5 VAL + 5 CFG + 8 op-status unit + 8 code-format unit + 10 pricing unit). 170/170 total system tests pass. Manual visual verification not performed during automated gate. |
 
 ---
 

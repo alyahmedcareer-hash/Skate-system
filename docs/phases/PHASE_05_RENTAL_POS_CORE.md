@@ -1,8 +1,8 @@
 # Phase 05 — Rental POS Core
 
-**Status:** READY FOR IMPLEMENTATION — Entry Gate PASSED. All blocking decisions resolved (DEC-060 through DEC-069).  
-**Version:** 1.1  
-**Last updated:** 2026-09-21 (Phase 05 Entry Gate Closure — RD-05-001 through RD-05-004 resolved as DEC-066 through DEC-069. All blocking decisions cleared.)
+**Status:** FINAL GATE PASSED ✅ — Phase 05 implementation COMPLETE. Closure Gate passed 2026-09-21.  
+**Version:** 1.2  
+**Last updated:** 2026-09-21 (Closure Gate — FINAL GATE PASSED. Final Verification Gate: 170/170 tests, 0 TS errors, build clean, schema clean. DEC-060 through DEC-070 all documented. Operational status boundary: strict `>` for overdue per DEC-066. Rental Code: insertId-based per DEC-070. Duration config: no runtime fallback per DEC-070. All VG1/VG2 findings resolved.)
 
 ---
 
@@ -888,4 +888,4 @@ All four previously unresolved items are now approved and recorded in the Decisi
 
 ---
 
-*Last updated: 2026-09-21 (Phase 05 Final Remediation — DEC-070: Rental Code insertId strategy approved and documented, MAX+1 references removed; DEC-066 operational status boundary clarified: exact equality NOT overdue; config endpoint error behavior corrected; documentation reconciled)*
+*Last updated: 2026-09-21 (Closure Gate — Phase 05 FINAL GATE PASSED ✅. Verification Gate confirmed 170/170 tests passing. Rental Code: insertId-based DEC-070. Operational status boundary: DEC-066 strict `>` at exact equality = ending_soon NOT overdue. Duration config: no runtime fallback — RENTAL_DURATION_CONFIG_INVALID thrown on any invalid config. GOVERNANCE-01 documented. All VG1/VG2 findings closed.)*

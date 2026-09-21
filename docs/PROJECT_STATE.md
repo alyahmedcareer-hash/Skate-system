@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 4.3  
-**Last updated:** 2026-09-21 (Phase 05 Final Remediation complete — pending Final Verification Gate)  
-**Updated by:** AI Agent (Phase 05 Final Remediation)
+**Version:** 4.4  
+**Last updated:** 2026-09-21 (Phase 05 — Closure Gate complete — FINAL GATE PASSED ✅)  
+**Updated by:** AI Agent (Phase 05 Closure Gate)
 
 ---
 
@@ -10,16 +10,16 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | Phase 05 (Rental POS Core) IMPLEMENTED — PENDING FINAL VERIFICATION |
-| **Current Phase** | Phase 05 implementation complete. Final Verification Gate pending. |
-| **Current Milestone** | Phase 05: Rental POS — schema, API, frontend, 168 tests |
-| **Last Completed Phase** | Phase 04 — Customers Module — 2026-09-15 |
-| **Active Work** | Phase 05 Final Remediation — all VG2 findings resolved |
+| **Overall Status** | Phase 05 (Rental POS Core) **FINAL GATE PASSED ✅** |
+| **Current Phase** | Phase 05 COMPLETE. Phase 06 (Payments & Treasury) is NEXT. |
+| **Current Milestone** | Phase 05: Rental POS — schema, API, frontend, 170 tests — COMPLETE ✅ |
+| **Last Completed Phase** | Phase 05 — Rental POS Core — 2026-09-21 |
+| **Active Work** | None — Phase 05 Closure Gate complete |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-21 — Phase 05 Final Remediation: `tsc -b` 0 errors ✅ (API + Web), all tests passing ✅, `vite build` clean ✅ |
-| **Last Git Commit** | `3783c61` — Phase 05 Verification Remediation [F-01 through F-06] (pending remediation commit for VG2 findings) |
+| **Last Verification** | 2026-09-21 — Phase 05 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), 170/170 tests ✅, `vite build` clean ✅, `drizzle-kit check` clean ✅ |
+| **Last Git Commit** | `f7bc21a` — fix(rentals): resolve final Phase 05 verification findings |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
-| **Recommended Next Action** | Run Final Verification Gate for Phase 05 |
+| **Recommended Next Action** | Begin Phase 06 — Payments & Treasury specification |
 
 ---
 
@@ -32,12 +32,12 @@
 | Governance documentation | COMPLETED |
 | Architecture documentation | COMPLETED — updated with Phase 04 decisions |
 | Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, RENTALS.md ✅, PHASE_02 spec ✅, PHASE_03 spec ✅, PHASE_04 spec ✅, PHASE_05 spec ✅ |
-| Source code — Frontend | IMPLEMENTED — Phase 05: RentalPOSPage, ActiveRentalsPage, rentals.service.ts. Built ✅ zero TS errors. |
-| Source code — Backend | IMPLEMENTED — Phase 05: rentals schema, types, service (7 functions), routes (7 endpoints). Built ✅ zero TS errors. |
-| Database | IMPLEMENTED — 4 migrations applied. 9 tables. Seed: `rental_hourly_rate` + `rental_duration_options`. |
-| Tests | IMPLEMENTED — `npm test` 168/168 PASS ✅ (6 test files). 62 Phase 05 tests + 106 prior. TC-RENT-CFG-01 to 05 (config errors). |
+| Source code — Frontend | VERIFIED ✅ — Phase 05: RentalPOSPage, ActiveRentalsPage, rentals.service.ts. Built ✅ zero TS errors. |
+| Source code — Backend | VERIFIED ✅ — Phase 05: rentals schema, types, service (7 functions), routes (7 endpoints). Built ✅ zero TS errors. |
+| Database | VERIFIED ✅ — 5 migrations applied. 9 tables. Seed: `rental_hourly_rate` + `rental_duration_options`. |
+| Tests | VERIFIED ✅ — `npm test` 170/170 PASS (6 test files). 74 Phase 05 tests (31 integration + 7 RBAC + 5 VAL + 5 CFG + 8 op-status unit + 8 code-format unit + 10 pricing unit) + 96 prior. |
 | Deployment | NONE |
-| Git repository | VERIFIED — local + GitHub remote (commit `3783c61`) |
+| Git repository | VERIFIED ✅ — local + GitHub remote (commit `f7bc21a`) |
 
 ---
 
@@ -51,7 +51,7 @@
 | Phase 03 | Skates Module | **FINAL GATE PASSED ✅** | 16/16 tests, 34/34 total, both builds clean, UI verified. Commit `f12c5b7`. |
 | **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | 14 shared components, App Shell redesign, all pages migrated. 0 TS errors, 34/34 tests. Commit `c7ee6f6`. |
 | Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | 28 tests, 96/96 total, both builds clean. DEC-051–DEC-059. |
-| Phase 05 | Rental POS (Core) | **IMPLEMENTED — PENDING FINAL VERIFICATION** | DEC-060–DEC-070 all resolved. 168/168 tests pass. 2× remediation complete. |
+| Phase 05 | Rental POS (Core) | **FINAL GATE PASSED ✅** | DEC-060–DEC-070 all resolved. 170/170 tests pass. Closure Gate complete 2026-09-21. |
 | Phase 06 | Payments & Treasury | PLANNED | Depends on Phase 05 |
 | Phase 07 | Returns & Inspection | PLANNED | Depends on Phase 05 |
 | Phase 08 | Damage Management | PLANNED | Depends on Phase 07 |
@@ -77,7 +77,7 @@
 | Dashboard | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Skates | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (16/16) ✅ | VERIFIED ✅ |
 | Customers | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (28/28) ✅ | COMPLETE ✅ |
-| Rentals | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
+| Rentals | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (74/74) ✅ | VERIFIED ✅ |
 | Payments | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Treasury | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Returns/Inspection | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
@@ -233,7 +233,7 @@
 | `docs/00-governance/DEFINITION_OF_DONE.md` | UPDATED (v2.0) — UI/UX DoD expanded with design system compliance |
 | `docs/00-governance/CHANGE_REQUEST_PROCESS.md` | COMPLETE |
 | `docs/00-governance/DOCUMENTATION_RULES.md` | COMPLETE |
-| `docs/decisions/DECISION_LOG.md` | UPDATED — DEC-051 through DEC-059 added (Phase 04 Customers Module + finalization 2026-09-15) |
+| `docs/decisions/DECISION_LOG.md` | UPDATED — DEC-060 through DEC-070 added (Phase 05 Rental POS Core — including DEC-070 insertId Rental Code strategy, 2026-09-21) |
 | `docs/architecture/TECHNICAL_ARCHITECTURE.md` | COMPLETE — target only |
 | `docs/architecture/DATABASE_ARCHITECTURE.md` | COMPLETE — target schema |
 | `docs/architecture/API_ARCHITECTURE.md` | COMPLETE — target routes |
@@ -241,9 +241,9 @@
 | `docs/architecture/BACKEND_ARCHITECTURE.md` | COMPLETE — target |
 | `docs/architecture/SECURITY_ARCHITECTURE.md` | COMPLETE |
 | `docs/architecture/DEPLOYMENT_ARCHITECTURE.md` | COMPLETE |
-| `docs/PROJECT_MAP.md` | UPDATED (v1.8) — Phase 04 customers files marked VERIFIED |
-| `docs/PROJECT_STATE.md` | UPDATED (v4.0) — this file |
-| `docs/CHANGELOG.md` | UPDATED — Phase 04 Customers Module entry added |
+| `docs/PROJECT_MAP.md` | UPDATED (v1.9) — Phase 05 Rentals module marked VERIFIED; rentals files added |
+| `docs/PROJECT_STATE.md` | UPDATED (v4.4) — this file |
+| `docs/CHANGELOG.md` | UPDATED — Phase 05 Rental POS Core closure entry added |
 | `docs/RELEASE_HISTORY.md` | COMPLETE |
 | `docs/INITIAL_PROJECT_AUDIT.md` | COMPLETE |
 | `docs/design/VISUAL_DESIGN_REFERENCE.md` | COMPLETE (source document copy) |
@@ -251,6 +251,8 @@
 | `docs/design/COMPONENT_LIBRARY.md` | UPDATED (Phase 04) — IconButton §4.19 specification added |
 | `docs/phases/PHASE_035_UI_DESIGN_SYSTEM.md` | COMPLETE ✅ |
 | `docs/phases/PHASE_04_CUSTOMERS_MODULE.md` | COMPLETE ✅ — full spec, DoD reconciled, 28 tests documented |
+| `docs/phases/PHASE_05_RENTAL_POS_CORE.md` | **FINAL GATE PASSED ✅** — full spec, DEC-060–DEC-070, 170/170 tests, Closure Gate 2026-09-21 |
+| `docs/modules/RENTALS.md` | **VERIFIED ✅** — Phase 05 FINAL GATE PASSED ✅ |
 | `docs/modules/CUSTOMERS.md` | COMPLETE ✅ — Phase 04 implementation documented |
 | `docs/modules/SKATES.md` | UPDATED — Phase 03 implementation documented |
 | `docs/phases/PHASE_03_SKATES_MODULE.md` | VERIFIED — full phase spec written |
@@ -266,10 +268,10 @@
 | Repository | VERIFIED — `https://github.com/mohamedalihassanwork-cpu/Skate-system` |
 | Remote name | `origin` |
 | Branch | `master` |
-| Last implementation commit | `9f03caf` — docs: reconcile Phase 04 documentation with verified implementation |
-| Last docs commit | `9f03caf` — same commit (docs reconciliation was the final commit) |
-| Push status | **SYNCED** — local and remote are identical (`9f03caf`). No push required. |
-| Working tree | Clean (verified 2026-09-15) |
+| Last implementation commit | `f7bc21a` — fix(rentals): resolve final Phase 05 verification findings |
+| Last docs commit | Closure Gate commit — see Phase 05 closure entry in CHANGELOG.md |
+| Push status | **SYNCED** — local and remote are identical (`f7bc21a` + closure commit). |
+| Working tree | Clean (verified 2026-09-21 — Phase 05 Closure Gate) |
 
 ## TECHNICAL DEBT
 
@@ -287,4 +289,4 @@
 
 ---
 
-*Last updated: 2026-09-21 (Phase 05 Entry Gate — stale push status corrected, DATABASE_ARCHITECTURE.md is_active correction noted, Phase 05 spec and decisions DEC-060 through DEC-065 recorded by AI Agent)*
+*Last updated: 2026-09-21 (Phase 05 Closure Gate — FINAL GATE PASSED ✅. DOC-01 resolved: test count corrected 168→170, commit reference updated to f7bc21a, Rentals module row updated, Phase 05 status COMPLETE. DEC-060 through DEC-070 all documented. by AI Agent)*

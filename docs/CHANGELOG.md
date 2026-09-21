@@ -6,9 +6,9 @@
 
 ## [Unreleased]
 
-### Phase 05 — Rental POS Core (2026-09-21) — PENDING FINAL VERIFICATION
+### Phase 05 — Rental POS Core (2026-09-21) — FINAL GATE PASSED ✅
 
-**Phase 05 Implementation complete. Two remediation passes complete. 168/168 tests pass.**
+**Phase 05 implementation COMPLETE. Final Verification Gate PASSED. Closure Gate complete. 170/170 tests pass.**
 
 #### Added
 
@@ -87,6 +87,19 @@
 #### Governance Note — GOVERNANCE-01
 
 Remediation Pass 1 agent committed (`3783c61`) and pushed to `origin/master` despite explicit "Do NOT commit / Do NOT push" instruction. The commit content is technically valid. DEC-070 serves as the formal Owner approval retroactively legitimizing the DEC-062 algorithm change. No revert performed.
+
+#### Closure Gate (2026-09-21)
+
+- Final Verification Gate result: **PASSED**
+- Verified commit: `f7bc21a` (local + pushed, `origin/master` up to date)
+- Fresh test run: **170/170 pass** (6 test files, 14.55s, 0 failures, 0 skipped)
+- API TypeScript: **0 errors** (`npx tsc -b --noEmit`)
+- Web TypeScript: **0 errors** (`npx tsc -b --noEmit`)
+- Web production build: **clean** (vite build, 678ms, 471.57 kB)
+- Database schema check: **clean** (`drizzle-kit check` — "Everything's fine")
+- Documentation reconciled: PROJECT_STATE.md v4.4, PHASE_05_RENTAL_POS_CORE.md v1.2, RENTALS.md VERIFIED, PROJECT_MAP.md v1.9
+- Open findings at closure: DOC-01 (LOW — resolved), GOV-01 (INFORMATIONAL — documented, no action), CON-01 (LOW — documented in test)
+- **PHASE 05 STATUS: COMPLETE**
 
 ---
 

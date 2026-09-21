@@ -1,14 +1,14 @@
 # Project Map — KOSHK SKATE ERP
 
-**Version:** 1.8
+**Version:** 1.9
 **Purpose:** Navigation map for future AI agents. Read this BEFORE scanning the repository.
-**Last updated:** 2026-09-15 (Phase 04 — Customers Module COMPLETE — DEC-051 through DEC-059)
+**Last updated:** 2026-09-21 (Phase 05 — Rental POS Core — FINAL GATE PASSED ✅)
 
 > [!IMPORTANT]
-> **PROJECT STATE: Phase 04 (Customers) COMPLETE ✅. Phase 05 (Rental POS) is NEXT.**
-> All Phase 01–04 files are committed and verified. 17 shared UI components (16 design system + IconButton SYS-002).
-> Phase 05 requires a written + approved specification before any implementation begins (Rule 16).
-> Update status from PLANNED → VERIFIED as new files are created in Phase 05+.
+> **PROJECT STATE: Phase 05 (Rental POS Core) FINAL GATE PASSED ✅. Phase 06 (Payments & Treasury) is NEXT.**
+> All Phase 01–05 files are committed and verified. 17 shared UI components.
+> Phase 06 requires a written + approved specification before any implementation begins (Rule 16).
+> Update status from PLANNED → VERIFIED as new files are created in Phase 06+.
 
 ---
 
@@ -43,7 +43,7 @@ d:/Skate system/
     │   ├── PHASE_035_UI_DESIGN_SYSTEM.md — COMPLETE ✅ (updated Governance Remediation 2026-09-14)
     │   └── PHASE_04_CUSTOMERS_MODULE.md — COMPLETE ✅ (full spec + DoD reconciled 2026-09-15)
     ├── quality/                 — QA strategy and test matrix (VERIFIED)
-    ├── decisions/               — Decision log (59 decisions through DEC-059)
+    ├── decisions/               — Decision log (70 decisions through DEC-070)
     ├── product/                 — Master Business Spec copy (VERIFIED)
     ├── PROJECT_MAP.md           — THIS FILE (v1.8)
     ├── PROJECT_STATE.md         — Current project status (v4.0 — Phase 04 COMPLETE)
@@ -104,10 +104,14 @@ d:/Skate system/
 │   │           ├── skates/
 │   │           │   ├── skates.service.ts — VERIFIED (Phase 03)
 │   │           │   └── SkatesPage.tsx    — VERIFIED (Phase 03.5: migrated to Card + design system + CheckboxField)
-│   │           └── customers/
-│   │               ├── customers.service.ts — VERIFIED (Phase 04)
-│   │               ├── CustomersPage.tsx    — VERIFIED (Phase 04 — list, search, filter, create/edit modals, deactivate)
-│   │               └── CustomerProfilePage.tsx — VERIFIED (Phase 04 — profile, full NID, edit/deactivate/activate)
+│   │           ├── customers/
+│   │           │   ├── customers.service.ts — VERIFIED (Phase 04)
+│   │           │   ├── CustomersPage.tsx    — VERIFIED (Phase 04 — list, search, filter, create/edit modals, deactivate)
+│   │           │   └── CustomerProfilePage.tsx — VERIFIED (Phase 04 — profile, full NID, edit/deactivate/activate)
+│   │           └── rentals/              — [PHASE 05 — VERIFIED ✅]
+│   │               ├── rentals.service.ts   — VERIFIED (Phase 05 — API layer: list, getActive, getById, create, calculatePrice, getConfig, getCustomerRentals)
+│   │               ├── RentalPOSPage.tsx    — VERIFIED (Phase 05 — multi-step POS; config from server; no hardcoded fallback; error/retry state)
+│   │               └── ActiveRentalsPage.tsx — VERIFIED (Phase 05 — active rentals with operational status badges)
 │   └── api/                     — Backend (VERIFIED — Phase 03 COMPLETE)
 │       ├── .env.example           — VERIFIED (updated Phase 02)
 │       ├── package.json           — VERIFIED (test, db:seed scripts added)
@@ -129,7 +133,10 @@ d:/Skate system/
 │           │   ├── seed.ts          — VERIFIED (Phase 04: 42 permissions including customers.deactivate; idempotent)
 │           │   ├── migrations/
 │           │   │   ├── 0000_cloudy_the_renegades.sql — VERIFIED (6 tables: users/roles/perms/user_roles/role_perms/refresh_tokens)
-│           │   │   └── 0002_customers.sql — VERIFIED (Phase 04: customers table)
+│           │   │   ├── 0001_*.sql                   — VERIFIED (Phase 03: skates table)
+│           │   │   ├── 0002_customers.sql           — VERIFIED (Phase 04: customers table)
+│           │   │   ├── 0003_settings.sql            — VERIFIED (Phase 05: settings table — rental_hourly_rate 120 EGP + rental_duration_options [15,30,45,60,90])
+│           │   │   └── 0004_rentals.sql             — VERIFIED (Phase 05: rentals table — all columns, FK constraints, UNIQUE rental_code, 6 performance indexes)
 │           │   └── schema/
 │           │       ├── index.ts     — VERIFIED (exports all tables incl. customers)
 │           │       ├── users.ts     — VERIFIED (Phase 02: users, roles, perms, join tables)
@@ -140,7 +147,8 @@ d:/Skate system/
 │           │   ├── auth.test.ts     — VERIFIED (Phase 04: permission count updated to 42)
 │           │   ├── roles.test.ts    — VERIFIED (Phase 02 RBAC Remediation: 15 tests, 15 PASS)
 │           │   ├── users.test.ts    — VERIFIED (Users Remediation: 19 tests — activation + password + RBAC)
-│           │   └── customers.test.ts — VERIFIED (Phase 04: 28 tests — CRUD + validation + RBAC)
+│           │   ├── customers.test.ts — VERIFIED (Phase 04: 28 tests — CRUD + validation + RBAC)
+│           │   └── rentals.test.ts  — VERIFIED (Phase 05: 74 tests — TC-RENT-01..31 + 13a/b/c + RBAC + VAL + CFG + unit — 170/170 system PASS)
 │           ├── utils/
 │           │   ├── errors.ts        — VERIFIED (UnauthorizedError added Phase 02)
 │           │   └── financial.ts     — VERIFIED
@@ -155,10 +163,18 @@ d:/Skate system/
 │               │   ├── users.routes.ts  — VERIFIED (Users Remediation: POST /:id/activate + POST /:id/change-password)
 │               │   ├── roles.service.ts — VERIFIED (Phase 02)
 │               │   └── roles.routes.ts  — VERIFIED (Phase 02)
-│       └── skates/              — [PHASE 03 — VERIFIED ✅]
-│           ├── skates.types.ts  — VERIFIED (Phase 03)
-│           ├── skates.service.ts — VERIFIED (Phase 03)
-│           └── skates.routes.ts  — VERIFIED (Phase 03)
+│               ├── skates/              — [PHASE 03 — VERIFIED ✅]
+│               │   ├── skates.types.ts  — VERIFIED (Phase 03)
+│               │   ├── skates.service.ts — VERIFIED (Phase 03)
+│               │   └── skates.routes.ts  — VERIFIED (Phase 03)
+│               ├── customers/       — [PHASE 04 — VERIFIED ✅]
+│               │   ├── customers.types.ts  — VERIFIED (Phase 04)
+│               │   ├── customers.service.ts — VERIFIED (Phase 04)
+│               │   └── customers.routes.ts  — VERIFIED (Phase 04)
+│               └── rentals/         — [PHASE 05 — VERIFIED ✅]
+│                   ├── rentals.types.ts  — VERIFIED (Phase 05)
+│                   ├── rentals.service.ts — VERIFIED (Phase 05: 7 functions incl. startRental, getRentalConfig, computeOperationalStatus)
+│                   └── rentals.routes.ts  — VERIFIED (Phase 05: 7 endpoints)
 ├── tests/                       — Integration tests (top-level placeholder; actual tests in apps/api/src/tests/)
 ├── scripts/                     — PLACEHOLDER
 ├── KOSHK_SKATE_VISUAL_DESIGN_REFERENCE.md  — VERIFIED (source document)
@@ -208,7 +224,9 @@ Verified API migrations:
 apps/api/src/db/migrations/
 ├── 0000_cloudy_the_renegades.sql — VERIFIED (Phase 02: 6 tables — users, roles, permissions, user_roles, role_permissions, refresh_tokens)
 ├── 0001_*.sql                   — VERIFIED (Phase 03: skates table)
-└── 0002_customers.sql           — VERIFIED (Phase 04: customers table + national_id UNIQUE index)
+├── 0002_customers.sql           — VERIFIED (Phase 04: customers table + national_id UNIQUE index)
+├── 0003_settings.sql            — VERIFIED (Phase 05: settings table — rental_hourly_rate 120 EGP + rental_duration_options [15,30,45,60,90])
+└── 0004_rentals.sql             — VERIFIED (Phase 05: rentals table — all columns, FK constraints, UNIQUE rental_code, 6 performance indexes)
 ```
 
 ---
@@ -294,19 +312,21 @@ For each module: where to find code, documentation, database tables, and API rou
 
 | Area | Path | Status |
 |---|---|---|
-| Frontend | `apps/web/src/modules/rentals/` | PLANNED |
-| Backend | `apps/api/src/modules/rentals/` | PLANNED |
-| Database tables | `rentals`, `rental_payments`, `late_fee_records` | PLANNED |
-| API routes | `/api/v1/rentals`, `POST /api/v1/rentals`, `/api/v1/rentals/active`, `/api/v1/rentals/:id/return`, `/api/v1/rentals/:id/waive-late-fee` | PLANNED |
-| Documentation | `docs/modules/RENTALS.md` | PLANNED |
-| Tests | `tests/rentals/` | PLANNED |
+| Frontend | `apps/web/src/modules/rentals/` | VERIFIED ✅ (Phase 05 — FINAL GATE PASSED) |
+| Backend | `apps/api/src/modules/rentals/` | VERIFIED ✅ (Phase 05 — FINAL GATE PASSED) |
+| Database tables | `rentals` (Phase 05), `settings` (Phase 05 pricing/duration config) | VERIFIED ✅ |
+| API routes | `GET /api/v1/rentals/active`, `GET /api/v1/rentals/config`, `GET /api/v1/rentals/calculate-price`, `GET /api/v1/rentals`, `POST /api/v1/rentals`, `GET /api/v1/rentals/:id`, `GET /api/v1/customers/:id/rentals` | VERIFIED ✅ (Phase 05) |
+| Documentation | `docs/modules/RENTALS.md` | VERIFIED ✅ (Phase 05 — FINAL GATE PASSED) |
+| Tests | `apps/api/src/tests/rentals.test.ts` | VERIFIED ✅ (Phase 05 — 170/170 PASS, 74 rental tests) |
 
-**Dependencies:** AUTH, SKATES, CUSTOMERS, PAYMENTS, TREASURY  
+**Dependencies:** AUTH, SKATES, CUSTOMERS  
+**Phase 05 scope (implemented):** Rental POS (create), Active Rental monitoring (operational status), Rental history/detail, settings-backed pricing, settings-backed duration config, config error handling, DEC-070 insertId Rental Code generation, FOR UPDATE concurrency protection  
+**Phase 06+ scope (deferred):** payment recording (Phase 06), return workflow (Phase 07), late fee calculation (Phase 07)  
 **Key risks:**
-- Concurrent rental of same skate (requires DB transaction + lock)
-- Late fee calculation correctness
-- Waiver permission + audit
-- Rental price stored historically (not referenced from current config)
+- Concurrent rental of same skate: handled by `SELECT ... FOR UPDATE` inside atomic transaction (DEC-070)
+- Rental price stored historically (snapshot at creation — DEC-065, DEC-067)
+- Duration options come from settings table — no hardcoded fallback (DEC-069, DEC-070)
+**Approved decisions:** DEC-060 through DEC-070
 
 ---
 
@@ -611,4 +631,4 @@ For each module: where to find code, documentation, database tables, and API rou
 
 ---
 
-*Last updated: 2026-09-10 (Phase 03.5 Stage 1 — design system docs registered, component library paths planned)*
+*Last updated: 2026-09-21 (Phase 05 Closure Gate — FINAL GATE PASSED ✅. Rentals module VERIFIED. Rentals files added to file tree. Migrations 0003_settings.sql and 0004_rentals.sql added. Decisions count updated to 70 (DEC-060 through DEC-070). IMPORTANT alert updated: Phase 06 is next.)*
