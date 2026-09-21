@@ -6,6 +6,22 @@
 
 ## [Unreleased]
 
+### Phase 06 — Rental Payment Integration
+
+#### Added
+
+- [Phase 06] Payment integration in the frontend `RentalPOSPage.tsx` Step 4.
+- [Phase 06] Dynamic fetching of active payment methods (`payments.service.ts`).
+- [Phase 06] Exact payment total validation before starting a rental.
+- [Phase 06] Support for split payments across multiple payment methods in a single rental.
+
+#### Changed
+
+- [Phase 06] Backend strictly requires `payments` array in `POST /rentals` to exactly match `rentalAmount`.
+- [Phase 06] Cancellation in the Active Rentals flow automatically creates reverse treasury movements to refund payments.
+
+---
+
 ### Phase 05 — Rental POS Core (2026-09-21) — FINAL GATE PASSED ✅
 
 **Phase 05 implementation COMPLETE. Final Verification Gate PASSED. Closure Gate complete. 170/170 tests pass.**

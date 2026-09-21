@@ -18,7 +18,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Ticket, ChevronRight, ChevronLeft, Clock, User, Search, Plus, AlertCircle, CheckCircle } from 'lucide-react'
+import { Ticket, ChevronRight, ChevronLeft, Clock, User, Search, Plus, CheckCircle } from 'lucide-react'
 import {
   Button,
   Badge,
@@ -33,6 +33,8 @@ import { rentalsService } from './rentals.service'
 import { customersService, type CustomerListItemDTO, type CreateCustomerBody } from '../customers/customers.service'
 import { skatesService, type SkateDTO } from '../skates/skates.service'
 import { formatCurrency } from '../../utils/currency'
+import { paymentsService, type PaymentMethodDTO } from '../payments/payments.service'
+import { Trash2 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Step constants
@@ -518,7 +520,7 @@ interface ReviewStepProps {
   notes: string
   onNotesChange: (n: string) => void
   onBack: () => void
-  onConfirm: () => void
+  onConfirm: (payments: { paymentMethodId: number; amount: number }[]) => void
   loading: boolean
   error: string | null
 }
@@ -529,6 +531,50 @@ function ReviewStep({
 }: ReviewStepProps) {
   const now = new Date()
   const expectedEnd = new Date(now.getTime() + durationMinutes * 60000)
+
+  const [methods, setMethods] = useState<PaymentMethodDTO[]>([])
+  const [methodsLoading, setMethodsLoading] = useState(true)
+  const [payments, setPayments] = useState<{ methodId: number; amount: string }[]>([])
+
+  useEffect(() => {
+    let active = true
+    paymentsService.listMethods().then(res => {
+      if (!active) return
+      const fetched = res.data || []
+      setMethods(fetched)
+      setMethodsLoading(false)
+      if (fetched.length > 0) {
+        setPayments([{ methodId: fetched[0].id, amount: rentalAmount.toString() }])
+      }
+    }).catch(() => {
+      if (active) setMethodsLoading(false)
+    })
+    return () => { active = false }
+  }, [rentalAmount])
+
+  const totalPayments = payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+  const isExact = Math.abs(totalPayments - rentalAmount) < 0.01
+
+  const handleAddPayment = () => {
+    if (methods.length === 0) return
+    setPayments([...payments, { methodId: methods[0].id, amount: '' }])
+  }
+
+  const handleRemovePayment = (idx: number) => {
+    setPayments(payments.filter((_, i) => i !== idx))
+  }
+
+  const handleUpdatePayment = (idx: number, field: 'methodId' | 'amount', value: string | number) => {
+    const next = [...payments]
+    next[idx] = { ...next[idx], [field]: value }
+    setPayments(next)
+  }
+
+  const handleConfirm = () => {
+    if (!isExact) return
+    const formatted = payments.map(p => ({ paymentMethodId: p.methodId, amount: parseFloat(p.amount) || 0 }))
+    onConfirm(formatted)
+  }
 
   return (
     <div className="rental-pos-step">
@@ -589,9 +635,63 @@ function ReviewStep({
           />
         </div>
 
-        <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--color-info-bg)', color: 'var(--color-info-text)', fontSize: 'var(--font-size-xs)' }}>
-          <AlertCircle size={12} style={{ display: 'inline', marginInlineEnd: 4 }} />
-          تسجيل الدفع سيكون متاحاً في المرحلة 06
+        <div className="review-section" style={{ marginTop: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 className="review-section-title" style={{ margin: 0 }}>الدفع</h3>
+            <Button variant="ghost" onClick={handleAddPayment} style={{ padding: '4px 8px', fontSize: 'var(--font-size-xs)', height: 'auto', minHeight: 'unset' }}>
+              <Plus size={14} style={{ marginInlineEnd: 4 }} /> تقسيم
+            </Button>
+          </div>
+          
+          {methodsLoading ? (
+            <div style={{ textAlign: 'center', padding: '16px 0' }}><LoadingSpinner /></div>
+          ) : methods.length === 0 ? (
+            <Alert variant="danger">لا توجد طرق دفع متاحة</Alert>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {payments.map((p, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="rental-search-input"
+                    value={p.methodId}
+                    onChange={e => handleUpdatePayment(idx, 'methodId', parseInt(e.target.value, 10))}
+                    style={{ flex: 1, appearance: 'auto' }}
+                  >
+                    {methods.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <Input
+                    id={`payment-amount-${idx}`}
+                    label=""
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={p.amount}
+                    onChange={e => handleUpdatePayment(idx, 'amount', e.target.value)}
+                    style={{ width: 100 }}
+                  />
+                  {payments.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePayment(idx)}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', padding: 4 }}
+                      title="حذف"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--color-border-subtle)', fontWeight: 'var(--font-weight-bold)' }}>
+                <span style={{ color: isExact ? 'var(--color-success-text)' : 'var(--color-danger-text)' }}>إجمالي المدفوع: {formatCurrency(totalPayments)}</span>
+                <span>المطلوب: {formatCurrency(rentalAmount)}</span>
+              </div>
+              {!isExact && (
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-danger-text)' }}>يجب أن يتطابق الإجمالي مع المبلغ المطلوب بالضبط.</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -603,7 +703,8 @@ function ReviewStep({
           id="start-rental-btn"
           variant="primary"
           loading={loading}
-          onClick={onConfirm}
+          onClick={handleConfirm}
+          disabled={!isExact || methodsLoading}
         >
           <CheckCircle size={16} /> بدء الإيجار
         </Button>
@@ -649,7 +750,7 @@ export default function RentalPOSPage() {
   const [submitting, setSubmitting]       = useState(false)
   const [submitError, setSubmitError]     = useState<string | null>(null)
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (payments: { paymentMethodId: number; amount: number }[]) => {
     if (!selectedSkate || !selectedCustomer) return
     setSubmitting(true); setSubmitError(null)
     try {
@@ -658,6 +759,7 @@ export default function RentalPOSPage() {
         customerId:      selectedCustomer.id,
         durationMinutes,
         notes:           notes.trim() || undefined,
+        payments,
       })
       showToast({ type: 'success', title: `تم بدء الإيجار: ${res.data.rentalCode}` })
       navigate('/rentals/active')
