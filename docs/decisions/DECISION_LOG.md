@@ -1266,3 +1266,354 @@ No regex patterns or format rules are applied — only length. No new business r
 ---
 
 *Last updated: 2026-09-15 (DEC-059 added — Phase 04 final review: application-level length validation) by AI Agent*
+
+---
+
+### DEC-060
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate — OD-05-001)  
+**Category:** Product — Phase Boundary — Payment Recording  
+**Decision:** Phase 05 (Rental POS Core) must NOT implement payment recording. The following are fully owned by Phase 06 (Payments and Treasury) and must not be introduced in Phase 05:
+
+- `payment_methods` table
+- `rental_payments` table
+- `treasury_accounts` table
+- Treasury movements
+- Split payments
+- Payment collection logic
+- Payment management UI
+
+Phase 05 is responsible only for calculating and storing the authoritative rental amount (`price_per_hour` and `rental_amount`) in the `rentals` table. The Rental POS may display the calculated amount as part of the review step but must not create any payment record.
+
+No temporary payment columns, fake payment states, placeholder payment records, or schema deviations may be introduced in Phase 05 to simulate payment. Phase 06 will close the Payment → Start Rental business-flow gap described in Spec §10 and §51.
+
+**Reason:** Phase 06 owns `payment_methods`, `treasury_accounts`, and `rental_payments` (which requires NOT NULL FKs to both). No valid partial implementation of `rental_payments` exists without Phase 06 tables. Clean phase boundaries preserve architectural integrity.  
+**Impact:**
+- `PHASE_05_RENTAL_POS_CORE.md` — payment recording explicitly excluded from scope
+- `RENTALS.md` — `startRental()` Phase 05 implementation excludes payment recording step
+- Phase 06 spec will document the extension of `startRental()` to include payment recording
+
+**Affected Modules:** Rentals (Phase 05), Payments (Phase 06), Treasury (Phase 06)  
+**Status:** APPROVED — Owner decision OD-05-001  
+**Source:** Owner decision — Phase 05 Entry Gate (2026-09-21)
+
+---
+
+### DEC-061
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate — OD-05-002)  
+**Category:** Architecture — Settings Infrastructure  
+**Decision:** Phase 05 may introduce the approved target `settings` table as shared infrastructure required for rental pricing configuration. Phase 05 scope for Settings is strictly limited to:
+
+1. `settings` database schema (Drizzle schema file)
+2. Drizzle migration for `settings` table
+3. Required initial rental configuration seed values
+4. Backend read access in `RentalService` (read-only)
+
+Phase 05 must NOT implement:
+- Settings administration UI
+- General Settings screens or management pages
+- `GET /api/v1/settings` or `PUT /api/v1/settings` endpoints
+- Unrelated configuration management features
+
+The future Settings module will build full administration functionality on top of this infrastructure. Rental pricing must never be hardcoded in application source code.
+
+**Reason:** Inviolable Rule 4 (SOURCE_OF_TRUTH.md) prohibits hardcoded rental prices. The `settings` table is the approved target architecture. Creating it as shared infrastructure in Phase 05 satisfies the rule while deferring the admin UI to the appropriate future phase.  
+**Impact:**
+- `apps/api/src/db/schema/settings.ts` — new schema file (Phase 05)
+- New Drizzle migration for `settings` table (Phase 05)
+- `apps/api/src/db/seed.ts` — seed rental configuration keys (Phase 05)
+- `RentalService` reads `price_per_hour` from `settings` table at rental creation time
+- Future Settings module phase will add `settings.service.ts`, routes, and UI
+
+**Affected Modules:** Rentals (Phase 05), Settings (future phase)  
+**Status:** APPROVED — Owner decision OD-05-002  
+**Source:** Owner decision — Phase 05 Entry Gate (2026-09-21)
+
+---
+
+### DEC-062
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate — OD-05-003)  
+**Category:** Product — Rental Code Generation  
+**Decision:** Rental codes use the format `RN-NNNNN` (prefix `RN-` followed by a five-digit zero-padded sequential integer).
+
+Examples: `RN-00001`, `RN-00002`, `RN-00003`
+
+Rules:
+1. Prefix is always `RN-`
+2. Five-digit zero padding (e.g., `00001` through `99999`; padded to at least 5 digits for values above 99999)
+3. Sequential MAX + 1 generation: read the maximum existing numeric suffix from the `rentals` table and add 1
+4. Never reuse a code — returned or cancelled rentals do not free their code
+5. `rental_code` column is UNIQUE (database constraint)
+6. Generation must be concurrency-safe: the `rental_code` generation must occur inside the same database transaction used for rental creation (the UNIQUE constraint provides a final safety net against race conditions)
+
+This decision mirrors the established `SK-NNN` convention (DEC-030) for consistency.
+
+**Reason:** A human-readable rental identifier is required by Spec §13 ("A unique Rental ID is created"). The `RN-NNNNN` format is consistent with `SK-NNN` (DEC-030), easy for cashiers to reference verbally, and never ambiguous.  
+**Impact:**
+- `rentals.service.ts` — `generateRentalCode()` helper implements MAX+1 within the rental creation transaction
+- `rentals` table schema — `rental_code VARCHAR(50) UNIQUE NOT NULL`
+
+**Affected Modules:** Rentals (Phase 05)  
+**Status:** APPROVED — Owner decision OD-05-003  
+**Source:** Owner decision — Phase 05 Entry Gate (2026-09-21)
+
+---
+
+### DEC-063
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate — OD-05-004)  
+**Category:** Architecture — Schema — `shift_id` Nullability  
+**Decision:** `rentals.shift_id` is nullable in the Phase 05 migration. Phase 05 must NOT implement the Cashier Shifts module.
+
+Until Phase 12 (Expenses and Cashier Shifts) is implemented:
+1. New rentals may be created with `shift_id = NULL`
+2. No placeholder shift records may be created
+3. No artificial shift dependency may be introduced
+4. The `cashier_shifts` table is NOT created in Phase 05
+
+Phase 12 will integrate real Cashier Shift behavior. At that time, the shift context will be set based on the currently open shift, and retroactive NULL values remain as-is (representing rentals created before the shifts feature existed).
+
+This is consistent with `sales.shift_id` being explicitly nullable in `DATABASE_ARCHITECTURE.md` (line 333).
+
+**Reason:** The `cashier_shifts` table belongs to Phase 12. Making `shift_id` nullable allows Phase 05 to proceed without an out-of-scope dependency. The pattern is consistent with the `sales` table schema.  
+**Impact:**
+- `rentals` Drizzle schema — `shiftId: integer('shift_id').references(() => cashierShifts.id)` — column nullable
+
+**Affected Modules:** Rentals (Phase 05), Cashier Shifts (Phase 12)  
+**Status:** APPROVED — Owner decision OD-05-004  
+**Source:** Owner decision — Phase 05 Entry Gate (2026-09-21)
+
+---
+
+### DEC-064
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate — OD-05-005)  
+**Category:** Product — Rental Status Model  
+**Decision:** The canonical rental status model for Phase 05 is:
+
+**Persisted lifecycle statuses** (stored in `rentals.status` ENUM):
+- `active` — rental is ongoing
+- `returned` — rental has been returned (Phase 07 sets this)
+- `cancelled` — rental was cancelled before or without a return
+
+The following are NOT persisted as lifecycle statuses:
+- `late`, `overdue`, `normal`, `ending_soon`, `expired` — these are computed display states derived from timestamps
+
+**Computed operational statuses** (derived server-side from timestamps for active rentals only):
+- `Normal` — `current_time < expected_end_at` and not within "Ending Soon" window
+- `Ending Soon` — `current_time` is within the configured threshold before `expected_end_at` (threshold is a remaining owner decision — see RD-05-001)
+- `Overdue / Late` — `current_time > expected_end_at`
+
+A returned rental uses persisted status `returned` which maps visually to "Returned / Completed". A cancelled rental uses persisted status `cancelled`.
+
+**Badge status values to add** (per DEC-043 extension rule, during Phase 05 implementation):
+- `'completed'` — maps to the `returned` persisted status in display contexts (success variant)
+- `'overdue'` — computed display state for past-due active rentals (danger variant)
+- `'cancelled'` — maps to `cancelled` persisted status (neutral variant)
+
+No scheduled job or background process may update `rentals.status` from `active` to any other value in Phase 05. The Phase 15 notification subsystem owns the one-minute-before alert. The `returned` status transition is Phase 07.
+
+**Reason:** Avoids scheduled-job complexity in Phase 05. Keeps DB ENUM minimal and correct. Computed states are always authoritative from server-side timestamps. Aligns with DEC-010 (server-side state authority).  
+**Impact:**
+- `rentals` Drizzle schema — `status ENUM('active', 'returned', 'cancelled') NOT NULL DEFAULT 'active'`
+- `RentalService.getActiveRentals()` — computes `operationalStatus` field from timestamps
+- `Badge.tsx` — `'completed'`, `'overdue'`, `'cancelled'` added to `BadgeStatus` union type
+
+**Affected Modules:** Rentals (Phase 05), Returns (Phase 07), Notifications (Phase 15)  
+**Status:** APPROVED — Owner decision OD-05-005  
+**Source:** Owner decision — Phase 05 Entry Gate (2026-09-21)
+
+---
+
+### DEC-065
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate — OD-05-006)  
+**Category:** Product — Rental Pricing Formula  
+**Decision:** The shop uses a single configurable hourly rental rate. Rental price is calculated proportionally from that rate.
+
+**Approved pricing formula:**
+```
+rental_amount = hourly_rate × duration_minutes / 60
+```
+
+Rules:
+1. `hourly_rate` comes from the `settings` table — never hardcoded in application source (DEC-061)
+2. The server is authoritative for price calculation — the client never supplies the authoritative amount
+3. `price_per_hour` must be stored in the `rentals` record as a historical snapshot at the time of rental creation
+4. `rental_amount` must also be stored in the `rentals` record at creation time
+5. Both `price_per_hour` and `rental_amount` are immutable after creation (DEC-003)
+6. Future changes to the configured hourly rate do not affect historical rental amounts
+7. The same proportional formula applies to all durations including custom duration
+8. Do not create separate configured prices for each duration option — all durations derive from the single hourly rate
+
+**Custom duration:** Uses the same `hourly_rate × duration_minutes / 60` formula.
+
+**Rounding behavior:** Not yet defined in approved project documentation. Implementation cannot safely proceed without a defined rounding strategy. This is flagged as remaining owner input (RD-05-002).
+
+**Initial numeric hourly rate value:** Not defined in this decision. The seed data for `settings` must include a `rental_hourly_rate` key but the numeric value must come from owner input (RD-05-003). Implementation must not invent a numeric value.
+
+**Reason:** Establishes the single-rate proportional model as the authoritative pricing approach. Prevents per-duration hardcoding. Ensures historical pricing integrity.  
+**Impact:**
+- `settings` seed data — `rental_hourly_rate` key required (numeric value pending RD-05-003)
+- `RentalService.calculatePrice()` — uses formula above
+- `RentalService.startRental()` — reads `rental_hourly_rate` from settings, calculates `rental_amount`, stores both in `rentals` record
+- `price_per_hour` and `rental_amount` stored at creation and never updated
+
+**Affected Modules:** Rentals (Phase 05), Settings (future phase)  
+**Status:** APPROVED — Owner decision OD-05-006  
+**Source:** Owner decision — Phase 05 Entry Gate (2026-09-21)
+
+---
+
+*Last updated: 2026-09-21 (DEC-060 through DEC-065 added — Phase 05 Entry Gate Owner Decisions OD-05-001 through OD-05-006) by AI Agent*
+
+---
+
+### DEC-066
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate Closure — RD-05-001)  
+**Category:** Product — Rental Operational Display Status — Ending Soon Threshold  
+**Decision:** An active rental enters the `ending_soon` operational display state when:
+
+```
+remaining_time <= 5 minutes AND remaining_time > 0
+```
+
+The three server-computed operational statuses for active rentals are:
+
+| State | Condition |
+|---|---|
+| `normal` | `remaining_time > 5 minutes` |
+| `ending_soon` | `remaining_time <= 5 minutes AND remaining_time > 0` |
+| `overdue` | `current_server_time > expected_end_at` (remaining_time = 0) |
+
+Rules:
+1. These are server-computed display states only — never persisted as lifecycle status values
+2. `RentalService.getActiveRentals()` computes `operationalStatus` from `NOW()` vs `expected_end_at`
+3. `remainingMinutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, NOW(), expected_end_at))`
+4. The Phase 15 notification of exactly one minute before expiry is separate and must NOT be implemented in Phase 05
+
+**Reason:** A 5-minute threshold gives the cashier adequate operational warning before a rental expires, without generating premature alerts. It is operationally meaningful and clearly distinct from the Phase 15 one-minute notification.  
+**Impact:**
+- `RentalService.getActiveRentals()` — implements three-state computation using 5-minute threshold
+- `PHASE_05_RENTAL_POS_CORE.md` — BR-31 and Active Rentals section updated
+- `Badge.tsx` — `ending_soon` maps to warning variant in Active Rentals view
+
+**Affected Modules:** Rentals (Phase 05)  
+**Status:** APPROVED — Resolution of RD-05-001  
+**Source:** Owner decision — Phase 05 Entry Gate Closure (2026-09-21)
+
+---
+
+### DEC-067
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate Closure — RD-05-002)  
+**Category:** Product — Rental Amount Rounding  
+**Decision:** The authoritative `rental_amount` is calculated and stored as a whole-EGP integer value using the following rule:
+
+```
+raw_amount = hourly_rate × duration_minutes / 60
+rental_amount = Math.round(raw_amount)  // nearest whole EGP; .5 rounds up
+```
+
+Rounding examples:
+- `83.33` → `83` EGP
+- `83.49` → `83` EGP
+- `83.50` → `84` EGP (`.5` rounds up)
+- `83.67` → `84` EGP
+- `60.00` → `60` EGP (exact — no rounding needed)
+
+Rules:
+1. The server is the authoritative source of the final `rental_amount`
+2. The client must not supply the final rental amount — it must be server-calculated
+3. The rounded whole-EGP result is stored as `rental_amount` in the `rentals` record (DECIMAL(10,2) stores as e.g. `83.00`)
+4. `price_per_hour` is stored as the exact configured hourly rate (e.g. `120.00`) — this is the snapshot, not rounded
+5. Both `price_per_hour` and `rental_amount` are immutable after creation (DEC-003, DEC-065)
+6. This rounding rule applies to all durations including custom duration
+
+**Implementation:** JavaScript `Math.round()` follows this rule natively (rounds `.5` up for positive numbers).
+
+**Reason:** Whole-EGP pricing is operationally simpler for cashiers, avoids fractional-amount confusion, and is consistent with the store's operational practice.  
+**Impact:**
+- `RentalService.calculatePrice()` — applies `Math.round()` after formula
+- `RentalService.startRental()` — stores `Math.round(raw_amount)` as `rental_amount`
+- Test cases TC-RENT-13a, TC-RENT-13b, TC-RENT-13c added to verify rounding behavior
+- `PHASE_05_RENTAL_POS_CORE.md` — BR-15, BR-17, Pricing Model section updated
+
+**Affected Modules:** Rentals (Phase 05), Settings (future phase)  
+**Status:** APPROVED — Resolution of RD-05-002  
+**Source:** Owner decision — Phase 05 Entry Gate Closure (2026-09-21)
+
+---
+
+### DEC-068
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate Closure — RD-05-003)  
+**Category:** Product — Initial Rental Hourly Rate Configuration Value  
+**Decision:** The initial `rental_hourly_rate` value seeded into the `settings` table is:
+
+```
+rental_hourly_rate = "120"   (120 EGP per hour)
+```
+
+Rules:
+1. This is the initial configured business value — it is NOT a hardcoded application constant
+2. The application must read the hourly rate from the `settings` table at runtime via `RentalService`
+3. The value is stored as a string in the `settings.value` column and parsed as a float at read time
+4. Future changes to this value via the Settings module (future phase) must not affect historical `rental_amount` or `price_per_hour` values in the `rentals` table (DEC-003, DEC-065)
+5. The string `"120"` in the seed represents EGP per hour — this is the initial rate for the store
+
+**Verification examples at 120 EGP/hr:**
+- 15 min: `120 × 15 / 60 = 30` EGP (exact)
+- 30 min: `120 × 30 / 60 = 60` EGP (exact)
+- 45 min: `120 × 45 / 60 = 90` EGP (exact)
+- 60 min: `120 × 60 / 60 = 120` EGP (exact)
+- 90 min: `120 × 90 / 60 = 180` EGP (exact)
+
+All standard durations at this rate produce exact whole-EGP amounts requiring no rounding.
+
+**Reason:** The store's current operational hourly rental rate has been confirmed as 120 EGP/hr by the owner. The spec §11 used 120 EGP as an example — this decision confirms it as the approved initial seed value.  
+**Impact:**
+- `apps/api/src/db/seed.ts` — add `{ key: 'rental_hourly_rate', value: '120', label_ar: 'سعر الإيجار بالساعة' }` seed entry
+- `PHASE_05_RENTAL_POS_CORE.md` — settings seed table updated to show `"120"` as confirmed value
+- No further seed placeholder or owner-input comment required
+
+**Affected Modules:** Rentals (Phase 05), Settings (future phase)  
+**Status:** APPROVED — Resolution of RD-05-003  
+**Source:** Owner decision — Phase 05 Entry Gate Closure (2026-09-21)
+
+---
+
+### DEC-069
+
+**Date:** 2026-09-21 (Phase 05 Entry Gate Closure — RD-05-004)  
+**Category:** Product — Custom Rental Duration Validation  
+**Decision:** No maximum custom rental duration is defined for Phase 05. The validation rule for `durationMinutes` is:
+
+```
+durationMinutes > 0   (positive integer, no upper limit)
+```
+
+Standard configured durations remain: 15, 30, 45, 60, 90 minutes (from `rental_duration_options` settings key).
+
+Custom duration rules:
+1. Must be a positive integer (> 0)
+2. No approved upper limit in Phase 05
+3. Uses the same proportional formula: `raw_amount = hourly_rate × duration_minutes / 60`
+4. Subject to the same whole-EGP rounding rule (DEC-067)
+5. No minimum other than > 0 is defined
+
+**Reason:** No operational maximum has been identified. Enforcing an arbitrary maximum not approved by the owner would be an AI-invented constraint. If abuse of very long durations becomes an operational concern, the owner may add a maximum via a future decision.  
+**Impact:**
+- `rentals.routes.ts` / `rentals.service.ts` — validation: `durationMinutes` is integer > 0, no upper bound check
+- `PHASE_05_RENTAL_POS_CORE.md` — BR-27 updated, Duration section updated
+
+**Affected Modules:** Rentals (Phase 05)  
+**Status:** APPROVED — Resolution of RD-05-004  
+**Source:** Owner decision — Phase 05 Entry Gate Closure (2026-09-21)
+
+---
+
+*Last updated: 2026-09-21 (DEC-066 through DEC-069 added — Phase 05 Entry Gate Closure, final resolution of RD-05-001 through RD-05-004) by AI Agent*

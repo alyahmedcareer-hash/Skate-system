@@ -1,8 +1,8 @@
 # Database Architecture — KOSHK SKATE ERP
 
-**Version:** 1.1  
-**Status:** PARTIAL — Engine and ORM approved (Phase 01). Schema is PLANNED (Phase 02+).  
-**Last updated:** 2026-09-09 (Phase 01 final gate)
+**Version:** 1.2  
+**Status:** PARTIAL — Engine and ORM approved (Phase 01). Customers schema IMPLEMENTED (Phase 04). Schema for other tables is PLANNED (Phase 02+).  
+**Last updated:** 2026-09-21 (Phase 05 Entry Gate documentation corrections: `customers.is_active` added per DEC-052; `rentals.status` ENUM corrected per DEC-064; `rentals.shift_id` nullability noted per DEC-063)
 
 > [!IMPORTANT]
 > The database engine and ORM are approved (DEC-015, DEC-022). The local `koshk_skate` database has been created. No business tables exist yet — all table definitions below are PLANNED and will be implemented starting Phase 02.
@@ -162,6 +162,10 @@ settings
 ### Customers
 
 #### `customers`
+
+> [!NOTE]
+> **IMPLEMENTED** — Phase 04. `is_active` column added per DEC-052 (approved deviation from original target schema).
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | INT PK AUTO_INCREMENT | |
@@ -170,6 +174,7 @@ settings
 | `phone` | VARCHAR(20) | |
 | `registration_date` | DATE | |
 | `notes` | TEXT | |
+| `is_active` | BOOLEAN NOT NULL DEFAULT TRUE | Phase 04 addition — DEC-052. `false` = deactivated customer. Deactivated customers excluded from search and cannot start new rentals (DEC-052). |
 | `created_at` | DATETIME | |
 | `updated_at` | DATETIME | |
 
@@ -185,14 +190,14 @@ settings
 | `skate_id` | INT FK → skates | |
 | `customer_id` | INT FK → customers | |
 | `cashier_id` | INT FK → users | |
-| `shift_id` | INT FK → cashier_shifts | |
+| `shift_id` | INT FK → cashier_shifts NULL | Nullable until Phase 12 — DEC-063. FK enforcement deferred to Phase 12 migration. |
 | `duration_minutes` | INT | Planned duration |
-| `price_per_hour` | DECIMAL(10,2) | Price at time of rental |
-| `rental_amount` | DECIMAL(10,2) | Calculated at rental start |
-| `started_at` | DATETIME | Actual start time |
-| `expected_end_at` | DATETIME | Calculated from started_at + duration |
-| `returned_at` | DATETIME NULL | Actual return time |
-| `status` | ENUM | `active`, `returned`, `late`, `cancelled` |
+| `price_per_hour` | DECIMAL(10,2) | Historical snapshot — immutable after creation (DEC-065) |
+| `rental_amount` | DECIMAL(10,2) | Historical snapshot — immutable after creation (DEC-065). Formula: `hourly_rate x duration_minutes / 60` |
+| `started_at` | DATETIME | Server-generated at activation — not user-supplied |
+| `expected_end_at` | DATETIME | Stored: `started_at + duration_minutes` (DEC-010) |
+| `returned_at` | DATETIME NULL | Phase 07 sets this on return |
+| `status` | ENUM | `active`, `returned`, `cancelled` — DEC-064. `late`/`overdue` are computed display states, NOT persisted. |
 | `notes` | TEXT | |
 | `created_at` | DATETIME | |
 | `updated_at` | DATETIME | |
