@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 4.2  
-**Last updated:** 2026-09-21 (Phase 05 Entry Gate PASSED — DEC-066 through DEC-069 recorded, all blocking decisions resolved, spec implementation-ready)  
-**Updated by:** AI Agent (Phase 05 Entry Gate Closure)
+**Version:** 4.3  
+**Last updated:** 2026-09-21 (Phase 05 Final Remediation complete — pending Final Verification Gate)  
+**Updated by:** AI Agent (Phase 05 Final Remediation)
 
 ---
 
@@ -10,16 +10,16 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | Phase 04 (Customers Module) COMPLETE |
-| **Current Phase** | Phase 04 COMPLETE. Phase 05 (Rental POS) is next. |
-| **Current Milestone** | Phase 04: Full customers module — schema, API, frontend, 28 tests. |
+| **Overall Status** | Phase 05 (Rental POS Core) IMPLEMENTED — PENDING FINAL VERIFICATION |
+| **Current Phase** | Phase 05 implementation complete. Final Verification Gate pending. |
+| **Current Milestone** | Phase 05: Rental POS — schema, API, frontend, 168 tests |
 | **Last Completed Phase** | Phase 04 — Customers Module — 2026-09-15 |
-| **Active Work** | None |
+| **Active Work** | Phase 05 Final Remediation — all VG2 findings resolved |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-15 — Phase 04 final fixes: `tsc -b` 0 errors ✅ (API + Web), `npm test` 96/96 ✅ (5 test files), `npm run build` clean ✅ |
-| **Last Git Commit** | `76fc72e` — fix(customers): add length validation, duplicate NID update test, docs reconciliation (Phase 04 finalization) |
+| **Last Verification** | 2026-09-21 — Phase 05 Final Remediation: `tsc -b` 0 errors ✅ (API + Web), all tests passing ✅, `vite build` clean ✅ |
+| **Last Git Commit** | `3783c61` — Phase 05 Verification Remediation [F-01 through F-06] (pending remediation commit for VG2 findings) |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
-| **Recommended Next Action** | Phase 05 (Rental POS) — requires customers table (now available) |
+| **Recommended Next Action** | Run Final Verification Gate for Phase 05 |
 
 ---
 
@@ -31,13 +31,13 @@
 | Visual Design Reference | VERIFIED — complete |
 | Governance documentation | COMPLETED |
 | Architecture documentation | COMPLETED — updated with Phase 04 decisions |
-| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, PHASE_02 spec ✅, PHASE_03 spec ✅, PHASE_04 spec ✅ |
-| Source code — Frontend | IMPLEMENTED — Phase 04: CustomersPage, CustomerProfilePage, IconButton (SYS-002), customers.service.ts. Built ✅ zero TS errors (419KB bundle). |
-| Source code — Backend | IMPLEMENTED — Phase 04: customers schema, types, service, routes (6 endpoints). Built ✅ zero TS errors. |
-| Database | IMPLEMENTED — 3 migrations applied. 8 tables (7 Phase 02/03 + customers). Seed: 42 permissions (customers.deactivate added), 3 system roles, 1 admin. |
-| Tests | IMPLEMENTED — `npm test` 96/96 PASS ✅. 18 Auth + 15 RBAC Roles + 16 Skates + 19 Users Remediation + 28 Customers tests (inc. TC-CUST-17 duplicate NID on update + TC-CUST-VAL-01/02/03 length validation). |
+| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, RENTALS.md ✅, PHASE_02 spec ✅, PHASE_03 spec ✅, PHASE_04 spec ✅, PHASE_05 spec ✅ |
+| Source code — Frontend | IMPLEMENTED — Phase 05: RentalPOSPage, ActiveRentalsPage, rentals.service.ts. Built ✅ zero TS errors. |
+| Source code — Backend | IMPLEMENTED — Phase 05: rentals schema, types, service (7 functions), routes (7 endpoints). Built ✅ zero TS errors. |
+| Database | IMPLEMENTED — 4 migrations applied. 9 tables. Seed: `rental_hourly_rate` + `rental_duration_options`. |
+| Tests | IMPLEMENTED — `npm test` 168/168 PASS ✅ (6 test files). 62 Phase 05 tests + 106 prior. TC-RENT-CFG-01 to 05 (config errors). |
 | Deployment | NONE |
-| Git repository | VERIFIED — local + GitHub remote |
+| Git repository | VERIFIED — local + GitHub remote (commit `3783c61`) |
 
 ---
 
@@ -51,7 +51,7 @@
 | Phase 03 | Skates Module | **FINAL GATE PASSED ✅** | 16/16 tests, 34/34 total, both builds clean, UI verified. Commit `f12c5b7`. |
 | **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | 14 shared components, App Shell redesign, all pages migrated. 0 TS errors, 34/34 tests. Commit `c7ee6f6`. |
 | Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | 28 tests, 96/96 total, both builds clean. DEC-051–DEC-059. |
-| Phase 05 | Rental POS (Core) | **ENTRY GATE PASSED ✅** | DEC-060 through DEC-069 all resolved. Spec v1.1 implementation-ready. No blocking decisions remain. |
+| Phase 05 | Rental POS (Core) | **IMPLEMENTED — PENDING FINAL VERIFICATION** | DEC-060–DEC-070 all resolved. 168/168 tests pass. 2× remediation complete. |
 | Phase 06 | Payments & Treasury | PLANNED | Depends on Phase 05 |
 | Phase 07 | Returns & Inspection | PLANNED | Depends on Phase 05 |
 | Phase 08 | Damage Management | PLANNED | Depends on Phase 07 |

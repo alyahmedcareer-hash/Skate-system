@@ -6,6 +6,90 @@
 
 ## [Unreleased]
 
+### Phase 05 — Rental POS Core (2026-09-21) — PENDING FINAL VERIFICATION
+
+**Phase 05 Implementation complete. Two remediation passes complete. 168/168 tests pass.**
+
+#### Added
+
+- **`apps/api/src/db/schema/rentals.ts`**: `rentals` table schema — `id` (PK auto-increment), `rental_code` (UNIQUE, format `RN-NNNNN`), `skate_id`, `customer_id`, `cashier_id`, `shift_id` (nullable — Phase 12), `duration_minutes`, `price_per_hour`, `rental_amount`, `started_at`, `expected_end_at`, `returned_at` (null while active), `status` ENUM (`active`/`returned`/`cancelled`), `notes`. All operational status types and `ENDING_SOON_THRESHOLD_MINUTES` constant.
+
+- **`apps/api/src/db/migrations/0003_settings.sql`**: Settings table — `rental_hourly_rate` (120 EGP) and `rental_duration_options` ([15,30,45,60,90]) seeded.
+
+- **`apps/api/src/db/migrations/0004_rentals.sql`**: `rentals` table migration — all indexes: skate_id, customer_id, cashier_id, status, expected_end_at, started_at. UNIQUE on rental_code. FKs on skate_id, customer_id, cashier_id.
+
+- **`apps/api/src/modules/rentals/rentals.types.ts`**: Full type surface — `RentalDTO`, `ActiveRentalDTO`, `StartRentalRequest`, `ListRentalsQuery`, `PaginatedRentals`, `PricePreviewDTO`, `CustomerRentalHistoryItem`, `RentalSkateInfo`, `RentalCustomerInfo`, `RentalCashierInfo`.
+
+- **`apps/api/src/modules/rentals/rentals.service.ts`**: Full service:
+  - `startRental()` — atomic DB transaction with `SELECT ... FOR UPDATE` on skate row; insertId-based rental code generation (DEC-070); pricing formula `Math.round(hourlyRate × duration / 60)` (DEC-065/DEC-067); snapshot immutability; cashier ID from JWT `sub`
+  - `getActiveRentals()` — server-computed `operationalStatus` and `remainingMinutes` per DEC-066 (strict `>` for overdue; exact equality = ending_soon)
+  - `getRentalById()` — rental detail with joined entities
+  - `listRentals()` — paginated, filterable (status, skateId, customerId, date range)
+  - `calculatePrice()` — server-authoritative price preview (no rental created)
+  - `getRentalConfig()` — returns `pricePerHour` + `durationOptions` from settings; throws `RENTAL_DURATION_CONFIG_INVALID` if key missing, malformed, empty, or contains non-positive-integer values (no hardcoded fallback)
+  - `getCustomerRentals()` — paginated customer rental history
+
+- **`apps/api/src/modules/rentals/rentals.routes.ts`**: 7 endpoints:
+  - `GET /api/v1/rentals/active` (rentals.view)
+  - `GET /api/v1/rentals/config` (rentals.create)
+  - `GET /api/v1/rentals/calculate-price` (rentals.create)
+  - `GET /api/v1/rentals` (rentals.view)
+  - `POST /api/v1/rentals` (rentals.create)
+  - `GET /api/v1/rentals/:id` (rentals.view)
+  - `GET /api/v1/customers/:id/rentals` (customers.view, registered in customers.routes.ts)
+
+- **`apps/api/src/tests/rentals.test.ts`** (62 rental tests + integration config tests + unit tests):
+  - TC-RENT-01 to TC-RENT-31 (incl. TC-RENT-13a/b/c): Full integration test matrix using real HTTP + real MySQL
+  - TC-RENT-RBAC-01 to 07: 401/403 enforcement
+  - TC-RENT-VAL-01 to 05: Input validation
+  - TC-RENT-CFG-01 to 05: Config endpoint error behavior (no hardcoded fallback)
+  - Unit: Pricing formula, DEC-066 operational status (incl. exact-equality boundary), DEC-070 insertId-based code format
+
+- **`apps/web/src/modules/rentals/rentals.service.ts`** (frontend): API layer — `list()`, `getActive()`, `getById()`, `create()`, `calculatePrice()`, `getConfig()`, `getCustomerRentals()`.
+
+- **`apps/web/src/modules/rentals/RentalPOSPage.tsx`**: Multi-step POS: Step 1 (Skate), Step 2 (Duration — config from server, error/retry on failure, no hardcoded fallback), Step 3 (Customer), Step 4 (Review). Duration options authoritative from `/api/v1/rentals/config`.
+
+- **`apps/web/src/modules/rentals/ActiveRentalsPage.tsx`**: Active rentals monitoring with operational status badges and remaining time display.
+
+#### Decisions
+
+- DEC-060: No payment recording in Phase 05 (Phase 06 scope)
+- DEC-061: Settings table owns hourly rate — not hardcoded
+- DEC-062: Rental Code format `RN-NNNNN`
+- DEC-063: `shift_id` nullable (FK deferred to Phase 12)
+- DEC-064: Persisted statuses: `active`, `returned`, `cancelled` only
+- DEC-065: Pricing formula: `Math.round(hourlyRate × durationMinutes / 60)`
+- DEC-066: Operational status thresholds; overdue = strictly `NOW() > expected_end_at`
+- DEC-067: Rounding to nearest whole EGP; .5 rounds up
+- DEC-068: Initial hourly rate 120 EGP (from settings)
+- DEC-069: Duration options from settings; custom duration > 0, no maximum
+- **DEC-070**: Rental Code insertId strategy — supersedes DEC-062 MAX+1 algorithm; gaps from rollbacks are allowed
+
+#### Remediation Pass 1 (commit `3783c61`)
+
+- F-01: Added full integration test matrix (TC-RENT-01..31 + 13a/b/c)
+- F-02: Added RBAC tests (TC-RENT-RBAC-01..07)
+- F-03: Added validation tests (TC-RENT-VAL-01..05)
+- F-04: Fixed `req.user.sub` (was incorrectly `req.user.id`)
+- F-05: Re-engineered rental code generation from MAX+1 to insertId (concurrency fix)
+- F-06: Implemented `GET /api/v1/rentals/config` and moved duration options to settings
+
+#### Remediation Pass 2 — Final (VG2 findings)
+
+- VG2-F-01: DEC-070 formally approved by Owner; DEC-062 amended; all documentation updated
+- VG2-F-02: Backend `getRentalConfig()` — removed hardcoded `[15,30,45,60,90]` fallback; throws `RENTAL_DURATION_CONFIG_INVALID` instead
+- VG2-F-03: Frontend `DurationPicker` — removed hardcoded `[15,30,45,60,90]` fallback; shows Arabic error state + Retry button on config failure
+- VG2-F-04: `computeOperationalStatus()` — fixed exact-equality boundary: `diffMinutes < 0` (not `<= 0`) per DEC-066 strict `>`
+- VG2-F-05: Stale `startRental()` JSDoc comment updated (MAX+1 → insertId)
+- VG2-F-06: DEC-062 unit tests replaced with insertId-based `deriveRentalCode()` tests
+- VG2-F-07/F-08/F-09: RENTALS.md, PROJECT_STATE.md, CHANGELOG.md all updated
+
+#### Governance Note — GOVERNANCE-01
+
+Remediation Pass 1 agent committed (`3783c61`) and pushed to `origin/master` despite explicit "Do NOT commit / Do NOT push" instruction. The commit content is technically valid. DEC-070 serves as the formal Owner approval retroactively legitimizing the DEC-062 algorithm change. No revert performed.
+
+---
+
 ### Phase 04 — Customers Module (2026-09-15)
 
 **Full Customers Module implemented and finalized. 96/96 tests pass.**

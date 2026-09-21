@@ -1616,4 +1616,59 @@ Custom duration rules:
 
 ---
 
-*Last updated: 2026-09-21 (DEC-066 through DEC-069 added — Phase 05 Entry Gate Closure, final resolution of RD-05-001 through RD-05-004) by AI Agent*
+### DEC-070
+
+**Date:** 2026-09-21 (Phase 05 Final Remediation — Owner decision)  
+**Category:** Product — Rental Code Generation — Amendment to DEC-062  
+**Decision:** The Rental Code generation algorithm is amended. DEC-062 originally approved a `MAX + 1` strategy. Real concurrency verification revealed a race condition: two concurrent rentals for **different skates** both read the same `MAX` before either transaction commits, causing a `UNIQUE` constraint collision on `rental_code` even when no business conflict exists. The Owner approves replacing `MAX + 1` with an `insertId`-based strategy.
+
+**New Algorithm (supersedes DEC-062 generation algorithm only):**
+
+1. INSERT the rental row with a temporary unique placeholder `rental_code` (e.g., `TEMP-<timestamp>-<random>`)
+2. After the INSERT, read the auto-increment `insertId` of the newly created row
+3. Derive the final Rental Code: `'RN-' + String(insertId).padStart(5, '0')`
+4. UPDATE the rental row in the same transaction: `SET rental_code = finalCode WHERE id = insertId`
+5. COMMIT
+
+**Format remains unchanged:** `RN-NNNNN` (five-digit minimum zero-padding)
+
+Examples: `RN-00001`, `RN-00025`, `RN-00127`
+
+**Gaps are explicitly allowed:**
+
+If a transaction is rolled back after obtaining an auto-increment ID (e.g., rollback due to skate unavailability, customer inactive, or any other error), the ID is consumed by InnoDB and will not be recycled. This creates gaps in Rental Code numbering.
+
+Example acceptable sequence: `RN-00025`, `RN-00026`, `RN-00028` — `RN-00027` missing due to a rolled-back transaction.
+
+**Rules (all DEC-062 rules remain in force except rule 3 which is superseded):**
+
+1. Prefix is always `RN-`
+2. Five-digit zero padding (e.g., `00001` through `99999`; values above 99999 are padded to at least 5 digits — e.g., `RN-100000`)
+3. ~~Sequential MAX + 1~~ → **Derived from the auto-increment PK `insertId` of the inserted Rental row** ← *Supersedes DEC-062 rule 3*
+4. Never reuse a code — returned or cancelled rentals do not free their code
+5. `rental_code` column is UNIQUE (database constraint)
+6. Generation must be concurrency-safe — the `insertId` is globally unique even across concurrent transactions; no two INSERTs ever share an `insertId`
+7. Gaps caused by auto-increment consumption during rollback are **allowed and must never be backfilled**
+8. Continuous gap-free numbering is NOT required
+
+**Priority order:** uniqueness > concurrency safety > never reuse > stable human-readable format.
+
+**Continuous gap-free numbering is not a business requirement.**
+
+**Affected DEC-062 content:** The algorithm description (DEC-062 rule 3, the SQL pseudocode, and the `generateRentalCode(MAX+1)` helper reference) is superseded by this decision. All other DEC-062 content (format, prefix, padding, UNIQUE constraint, never-reuse rule) remains authoritative.
+
+**Reason:** The `insertId` strategy eliminates the concurrency race condition identified during Phase 05 verification. InnoDB auto-increment values are assigned atomically and never shared between concurrent transactions, guaranteeing uniqueness without requiring a read-then-write MAX operation.  
+
+**Impact:**
+- `rentals.service.ts` — `startRental()` uses INSERT with placeholder + UPDATE to final code within the same transaction
+- `docs/phases/PHASE_05_RENTAL_POS_CORE.md` — Rental Code Generation section updated
+- `apps/api/src/db/schema/rentals.ts` — comment updated
+- Unit tests for Rental Code updated to reflect insertId behavior
+
+**Affected Modules:** Rentals (Phase 05)  
+**Status:** APPROVED — Owner decision (Phase 05 Final Remediation, 2026-09-21)  
+**Source:** Owner decision — Phase 05 Final Remediation (GOVERNANCE-01 process note: prior remediation agent committed/pushed `3783c61` without explicit authority; this amendment is the formal owner approval that retroactively legitimizes the implementation change)
+
+---
+
+*Last updated: 2026-09-21 (DEC-070 added — Phase 05 Final Remediation: insertId-based Rental Code strategy approved, superseding DEC-062 generation algorithm; GOVERNANCE-01 noted; DEC-066 operational status boundary at exact equality clarified as NOT overdue per strict `>` rule) by AI Agent*

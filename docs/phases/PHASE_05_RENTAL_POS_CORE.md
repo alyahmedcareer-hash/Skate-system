@@ -279,18 +279,22 @@ const hourlyRate = parseFloat(rateSetting[0].value)
 
 ## Rental Code Generation
 
-Per DEC-062: Format `RN-NNNNN`, sequential MAX+1, inside rental creation transaction.
+Per DEC-062 as amended by DEC-070: Format `RN-NNNNN`, derived from the inserted Rental row's auto-increment `insertId`.
 
-**Algorithm:**
-1. Inside the `startRental()` DB transaction, execute:
-   ```sql
-   SELECT MAX(CAST(SUBSTRING(rental_code, 4) AS UNSIGNED)) as maxNum FROM rentals
-   ```
-2. If `maxNum` is NULL (no rentals yet): `nextNum = 1`
-3. Otherwise: `nextNum = maxNum + 1`
-4. Format: `'RN-' + String(nextNum).padStart(5, '0')`
-5. Codes above 99999 are padded to at least 5 digits (e.g., `RN-100000`)
-6. The UNIQUE constraint on `rental_code` is the final concurrency safety net
+**Algorithm (DEC-070):**
+1. Inside `startRental()`, INSERT the rental row with a temporary unique placeholder `rental_code` (e.g., `TEMP-<timestamp>-<random>`) to obtain the auto-increment ID
+2. Read `insertResult.insertId` — the auto-increment PK of the newly inserted row
+3. Derive the final Rental Code: `'RN-' + String(insertId).padStart(5, '0')`
+4. UPDATE the rental row within the same transaction: `SET rental_code = finalCode WHERE id = insertId`
+5. COMMIT
+
+**Why not MAX+1:**
+The original DEC-062 algorithm used `SELECT MAX(CAST(SUBSTRING(rental_code, 4) AS UNSIGNED)) + 1`. This creates a race condition when two concurrent transactions for **different skates** both read the same MAX before either commits, causing a UNIQUE constraint collision even when no business conflict exists. The Owner approved the insertId strategy via DEC-070.
+
+**Gaps are explicitly allowed (DEC-070):**
+If a transaction is rolled back after an INSERT, the auto-increment ID is consumed by InnoDB and not returned. This creates gaps in Rental Code numbering. Example: `RN-00025`, `RN-00026`, `RN-00028` — `RN-00027` missing because it was allocated to a rolled-back transaction. Gaps must NOT be backfilled.
+
+**Format:** `RN-NNNNN` — prefix `RN-`, minimum 5-digit zero-padding. Values above 99999 extend naturally (e.g., `RN-100000`).
 
 ---
 
@@ -344,7 +348,9 @@ The `FOR UPDATE` row lock prevents two concurrent cashiers from renting the same
 
 ### Rental Code Concurrency
 
-The `rental_code` MAX+1 generation runs inside the same transaction. The UNIQUE constraint on `rental_code` is the final safety net for edge cases.
+The `rental_code` is derived from the auto-increment `insertId` (DEC-070). The `insertId` is assigned atomically by InnoDB — no two concurrent INSERTs ever share an `insertId`. This guarantees unique rental codes without requiring a read-then-write MAX+1 operation inside the transaction.
+
+The UNIQUE constraint on `rental_code` remains as the final database-level safety net.
 
 ### Application Pre-Check
 
@@ -395,7 +401,7 @@ Register in `rentals.routes.ts` in this order to prevent path conflicts:
 6. Verify skate `status = 'available'` (422 if not)
 7. Read `rental_hourly_rate` from settings (422 if missing)
 8. `raw = hourlyRate × durationMinutes / 60`; `rental_amount = Math.round(raw)` — whole EGP, .5 rounds up (DEC-067)
-9. Generate `rental_code` (MAX+1, `RN-NNNNN`)
+9. Derive `rental_code` from `insertId` using `'RN-' + String(insertId).padStart(5, '0')` (DEC-070)
 10. `started_at = NOW()`
 11. `expected_end_at = started_at + INTERVAL durationMinutes MINUTE`
 12. INSERT into `rentals`
@@ -447,8 +453,9 @@ Register in `rentals.routes.ts` in this order to prevent path conflicts:
 **Business Logic:**
 1. Query `rentals WHERE status = 'active'`
 2. Compute `operationalStatus` server-side from `NOW()` vs `expected_end_at` (DEC-064, DEC-066):
-   - `NOW() > expected_end_at` → `'overdue'`
+   - `NOW() > expected_end_at` → `'overdue'` (strictly greater-than; at exact equality the rental is NOT overdue)
    - `remainingMinutes <= 5 AND remainingMinutes > 0` → `'ending_soon'` (5-minute threshold — DEC-066)
+   - `remainingMinutes = 0` at exact equality → `'ending_soon'` (not yet overdue)
    - Otherwise → `'normal'`
 3. Compute `remainingMinutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, NOW(), expected_end_at))`
 
@@ -881,4 +888,4 @@ All four previously unresolved items are now approved and recorded in the Decisi
 
 ---
 
-*Last updated: 2026-09-21 (Phase 05 Entry Gate Closure — RD-05-001 through RD-05-004 resolved as DEC-066 through DEC-069; specification fully implementation-ready; entry gate PASSED)*
+*Last updated: 2026-09-21 (Phase 05 Final Remediation — DEC-070: Rental Code insertId strategy approved and documented, MAX+1 references removed; DEC-066 operational status boundary clarified: exact equality NOT overdue; config endpoint error behavior corrected; documentation reconciled)*

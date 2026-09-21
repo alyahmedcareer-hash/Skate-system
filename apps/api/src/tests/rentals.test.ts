@@ -56,6 +56,12 @@
  *
  * IMPORTANT: Tests use the real DB and real HTTP. No mocking.
  * All test data is cleaned up in afterAll.
+ *
+ * TC-RENT-CFG-01: GET /rentals/config returns valid config
+ * TC-RENT-CFG-02: Missing rental_duration_options → explicit error (no fallback)
+ * TC-RENT-CFG-03: Malformed JSON in rental_duration_options → explicit error
+ * TC-RENT-CFG-04: Empty array in rental_duration_options → explicit error
+ * TC-RENT-CFG-05: Invalid values (zero, negative) in rental_duration_options → explicit error
  */
 
 import 'dotenv/config'
@@ -1145,7 +1151,9 @@ describe('Phase 05 — Operational Status Computation (DEC-064, DEC-066) — Uni
   function computeOperational(expectedEndAt: Date, now: Date): { opStatus: string; remainingMinutes: number } {
     const diffMs  = expectedEndAt.getTime() - now.getTime()
     const diffMin = diffMs / 60000
-    if (diffMin <= 0) return { opStatus: 'overdue', remainingMinutes: 0 }
+    // DEC-066: overdue only when NOW() > expected_end_at (strictly greater-than)
+    // At exact equality (diffMin === 0), the rental is NOT yet overdue.
+    if (diffMin < 0) return { opStatus: 'overdue', remainingMinutes: 0 }
     const remaining = Math.ceil(diffMin)
     if (remaining <= THRESHOLD_MINUTES) return { opStatus: 'ending_soon', remainingMinutes: remaining }
     return { opStatus: 'normal', remainingMinutes: remaining }
@@ -1168,6 +1176,21 @@ describe('Phase 05 — Operational Status Computation (DEC-064, DEC-066) — Uni
     const end = new Date('2026-01-01T10:03:00Z')
     expect(computeOperational(end, now).opStatus).toBe('ending_soon')
   })
+  it('DEC-066: exactly at expected_end_at (NOW === end) → ending_soon NOT overdue (DEC-066 strict >)', () => {
+    // DEC-066: overdue only when NOW() > expected_end_at.
+    // At exact equality the rental is NOT yet overdue.
+    const moment = new Date('2026-01-01T10:05:00Z')
+    const { opStatus, remainingMinutes } = computeOperational(moment, moment)  // same instant
+    expect(opStatus).toBe('ending_soon')  // diffMin === 0 → Math.ceil(0) = 0, but 0 <= 5 → ending_soon
+    expect(remainingMinutes).toBe(0)
+  })
+  it('DEC-066: 1 ms after expected_end_at → overdue, remainingMinutes=0', () => {
+    const end = new Date('2026-01-01T10:05:00.000Z')
+    const now = new Date(end.getTime() + 1)  // 1 ms after
+    const { opStatus, remainingMinutes } = computeOperational(end, now)
+    expect(opStatus).toBe('overdue')
+    expect(remainingMinutes).toBe(0)
+  })
   it('DEC-066: 1 second past end → overdue, remainingMinutes=0', () => {
     const now = new Date('2026-01-01T10:05:01Z')
     const end = new Date('2026-01-01T10:05:00Z')
@@ -1189,19 +1212,174 @@ describe('Phase 05 — Operational Status Computation (DEC-064, DEC-066) — Uni
   })
 })
 
-describe('Phase 05 — Rental Code Format (DEC-062) — Unit', () => {
-  function generateRentalCode(maxNum: number): string {
-    const nextNum = (maxNum || 0) + 1
-    return 'RN-' + String(nextNum).padStart(5, '0')
+describe('Phase 05 — Rental Code Format — insertId Strategy (DEC-062, DEC-070) — Unit', () => {
+
+  /**
+   * DEC-070: Rental codes are derived from the auto-increment insertId of the rental row.
+   * Format: RN-NNNNN (five-digit minimum zero padding).
+   * Gaps caused by rolled-back transactions are allowed.
+   * These unit tests verify the derivation function and format rules.
+   */
+
+  function deriveRentalCode(insertId: number): string {
+    return 'RN-' + String(insertId).padStart(5, '0')
   }
-  it('DEC-062: first rental code is RN-00001', () => {
-    expect(generateRentalCode(0)).toBe('RN-00001')
+
+  it('DEC-062/DEC-070: insertId=1 → RN-00001', () => {
+    expect(deriveRentalCode(1)).toBe('RN-00001')
   })
-  it('DEC-062: sequential increment', () => {
-    expect(generateRentalCode(1)).toBe('RN-00002')
-    expect(generateRentalCode(99999)).toBe('RN-100000')
+  it('DEC-062/DEC-070: insertId=127 → RN-00127', () => {
+    expect(deriveRentalCode(127)).toBe('RN-00127')
   })
-  it('DEC-062: code starts with RN- prefix', () => {
-    expect(generateRentalCode(42)).toMatch(/^RN-/)
+  it('DEC-062/DEC-070: insertId=99999 → RN-99999', () => {
+    expect(deriveRentalCode(99999)).toBe('RN-99999')
+  })
+  it('DEC-062/DEC-070: insertId=100000 → RN-100000 (beyond 5 digits, no truncation)', () => {
+    expect(deriveRentalCode(100000)).toBe('RN-100000')
+  })
+  it('DEC-062/DEC-070: codes are prefixed RN-', () => {
+    expect(deriveRentalCode(42)).toMatch(/^RN-/)
+  })
+  it('DEC-062/DEC-070: codes match RN-NNNNN+ format', () => {
+    expect(deriveRentalCode(1)).toMatch(/^RN-\d{5,}$/)
+    expect(deriveRentalCode(100000)).toMatch(/^RN-\d{5,}$/)
+  })
+  it('DEC-070: gaps are tolerated — non-consecutive insertIds produce non-consecutive codes', () => {
+    // Simulate a gap: insertId 27 was consumed by a rollback, 25 and 26 succeeded
+    const code25 = deriveRentalCode(25)
+    const code26 = deriveRentalCode(26)
+    const code28 = deriveRentalCode(28)  // 27 was rolled back
+    expect(code25).toBe('RN-00025')
+    expect(code26).toBe('RN-00026')
+    expect(code28).toBe('RN-00028')
+    // Verify codes are unique despite the gap
+    const codes = [code25, code26, code28]
+    const uniqueCodes = new Set(codes)
+    expect(uniqueCodes.size).toBe(codes.length)
+  })
+  it('DEC-070: insertId-derived codes are always greater than insertId-1 derived codes', () => {
+    // Sequential insertIds produce lexicographically and numerically ordered codes
+    for (let i = 1; i <= 10; i++) {
+      const prev = parseInt(deriveRentalCode(i).replace('RN-', ''), 10)
+      const next = parseInt(deriveRentalCode(i + 1).replace('RN-', ''), 10)
+      expect(next).toBeGreaterThan(prev)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// TC-RENT-CFG-01 through TC-RENT-CFG-05: Rental Config Endpoint
+// ---------------------------------------------------------------------------
+
+describe('Rentals — Config Endpoint (TC-RENT-CFG)', () => {
+
+  const ORIG_RATE     = '120'
+  const ORIG_DURATIONS = JSON.stringify([15, 30, 45, 60, 90])
+
+  async function setSettingDirect(key: string, value: string): Promise<void> {
+    await db.update(settings).set({ value }).where(eq(settings.key, key))
+  }
+
+  async function deleteSettingDirect(key: string): Promise<void> {
+    await db.delete(settings).where(eq(settings.key, key))
+  }
+
+  async function restoreSettings(): Promise<void> {
+    // Use raw SQL INSERT ... ON DUPLICATE KEY UPDATE to handle NOT NULL columns (label_ar etc.)
+    // The UNIQUE key on `key` column means this safely inserts if missing or updates if present.
+    await pool.execute(
+      `INSERT INTO settings (\`key\`, \`value\`, \`label_ar\`) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`,
+      ['rental_hourly_rate', ORIG_RATE, 'سعر الإيجار بالساعة'],
+    )
+    await pool.execute(
+      `INSERT INTO settings (\`key\`, \`value\`, \`label_ar\`) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`,
+      ['rental_duration_options', ORIG_DURATIONS, 'خيارات مدة الإيجار القياسية'],
+    )
+  }
+
+  beforeEach(async () => {
+    await restoreSettings()
+  })
+
+  afterEach(async () => {
+    await restoreSettings()
+  })
+
+  it('TC-RENT-CFG-01: GET /rentals/config returns valid config with rate and durations', async () => {
+    const res = await request
+      .get('/api/v1/rentals/config')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(typeof res.body.data.pricePerHour).toBe('number')
+    expect(res.body.data.pricePerHour).toBeGreaterThan(0)
+    expect(Array.isArray(res.body.data.durationOptions)).toBe(true)
+    expect(res.body.data.durationOptions.length).toBeGreaterThan(0)
+    for (const opt of res.body.data.durationOptions) {
+      expect(Number.isInteger(opt)).toBe(true)
+      expect(opt).toBeGreaterThan(0)
+    }
+  })
+
+  it('TC-RENT-CFG-02: Missing rental_duration_options → explicit RENTAL_DURATION_CONFIG_INVALID error (no fallback)', async () => {
+    await deleteSettingDirect('rental_duration_options')
+    const res = await request
+      .get('/api/v1/rentals/config')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(422)
+    expect(res.body.success).toBe(false)
+    // Must be an explicit error code — must NOT return a durationOptions array
+    expect(res.body.error?.code).toBe('RENTAL_DURATION_CONFIG_INVALID')
+    expect(res.body.data).toBeUndefined()
+  })
+
+  it('TC-RENT-CFG-03: Malformed JSON in rental_duration_options → explicit error', async () => {
+    await setSettingDirect('rental_duration_options', 'not-valid-json')
+    const res = await request
+      .get('/api/v1/rentals/config')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(422)
+    expect(res.body.success).toBe(false)
+    expect(res.body.error?.code).toBe('RENTAL_DURATION_CONFIG_INVALID')
+    expect(res.body.data).toBeUndefined()
+  })
+
+  it('TC-RENT-CFG-04: Empty array [] in rental_duration_options → explicit error', async () => {
+    await setSettingDirect('rental_duration_options', '[]')
+    const res = await request
+      .get('/api/v1/rentals/config')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(422)
+    expect(res.body.success).toBe(false)
+    expect(res.body.error?.code).toBe('RENTAL_DURATION_CONFIG_INVALID')
+    expect(res.body.data).toBeUndefined()
+  })
+
+  it('TC-RENT-CFG-05: Invalid values (zero, negative, non-integer) → explicit error', async () => {
+    // Test with zero included
+    await setSettingDirect('rental_duration_options', '[0, 30, 60]')
+    const res1 = await request
+      .get('/api/v1/rentals/config')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res1.status).toBe(422)
+    expect(res1.body.error?.code).toBe('RENTAL_DURATION_CONFIG_INVALID')
+
+    // Test with negative included
+    await setSettingDirect('rental_duration_options', '[-15, 30, 60]')
+    const res2 = await request
+      .get('/api/v1/rentals/config')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res2.status).toBe(422)
+    expect(res2.body.error?.code).toBe('RENTAL_DURATION_CONFIG_INVALID')
+
+    // Test with decimal (non-integer) included
+    await setSettingDirect('rental_duration_options', '[15.5, 30, 60]')
+    const res3 = await request
+      .get('/api/v1/rentals/config')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res3.status).toBe(422)
+    expect(res3.body.error?.code).toBe('RENTAL_DURATION_CONFIG_INVALID')
   })
 })

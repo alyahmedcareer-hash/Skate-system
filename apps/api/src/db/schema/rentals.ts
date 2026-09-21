@@ -60,8 +60,8 @@ export type RentalStatus = typeof RENTAL_STATUSES[number]
 
 export const RENTAL_OPERATIONAL_STATUSES = [
   'normal',      // remaining_time > 5 minutes
-  'ending_soon', // remaining_time <= 5 minutes AND > 0
-  'overdue',     // NOW() > expected_end_at
+  'ending_soon', // remaining_time <= 5 minutes AND > 0 (including exact 0 ms diff)
+  'overdue',     // NOW() strictly greater than expected_end_at (DEC-066)
 ] as const
 
 export type RentalOperationalStatus = typeof RENTAL_OPERATIONAL_STATUSES[number]
@@ -76,7 +76,8 @@ export const ENDING_SOON_THRESHOLD_MINUTES = 5
 export const rentals = mysqlTable('rentals', {
   id: int('id').primaryKey().autoincrement(),
 
-  // DEC-062: Format RN-NNNNN, sequential MAX+1, UNIQUE, never reused
+  // DEC-062 / DEC-070: Format RN-NNNNN, derived from insertId (PK), UNIQUE, never reused
+  // Gaps from rolled-back transactions are allowed. See DEC-070 for algorithm details.
   rentalCode: varchar('rental_code', { length: 50 }).notNull().unique(),
 
   // FK to skates — the physical skate being rented
@@ -121,7 +122,7 @@ export const rentals = mysqlTable('rentals', {
   createdAt: datetime('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: datetime('updated_at').notNull().default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
 }, (table) => ({
-  // DEC-062: UNIQUE on rental_code — final concurrency safety net
+  // DEC-062 / DEC-070: UNIQUE on rental_code — insertId-based, concurrency-safe
   rentalCodeIdx: uniqueIndex('rentals_rental_code_unique').on(table.rentalCode),
 
   // Performance indexes

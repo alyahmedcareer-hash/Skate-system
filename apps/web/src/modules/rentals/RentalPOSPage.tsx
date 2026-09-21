@@ -151,30 +151,37 @@ function DurationPicker({ skate, onSelect, onBack }: DurationPickerProps) {
   const [preview, setPreview]                   = useState<{ pricePerHour: number; rentalAmount: number } | null>(null)
   const [previewLoading, setPreviewLoading]     = useState(false)
   const [previewError, setPreviewError]         = useState<string | null>(null)
-  // F-06: Duration options from server — BR-26 (no hardcoded business constants)
+  // F-06 / DEC-070: Duration options are authoritative from server — no hardcoded fallback (BR-26)
   const [durationOptions, setDurationOptions]   = useState<number[]>([])
   const [configLoading, setConfigLoading]       = useState(true)
+  const [configError, setConfigError]           = useState<string | null>(null)
 
-  // Load configured durations from server on mount (F-06)
-  useEffect(() => {
+  // Load configured durations from server on mount (F-06, DEC-070)
+  // If configuration is missing, malformed, or unreachable — show error and block continuation.
+  // The POS must NOT substitute hardcoded durations when configuration is unavailable.
+  const loadConfig = useCallback(() => {
     setConfigLoading(true)
+    setConfigError(null)
     rentalsService.getConfig()
       .then(res => {
         const opts = res.data?.durationOptions
         if (Array.isArray(opts) && opts.length > 0) {
           setDurationOptions(opts)
         } else {
-          // Should not happen if seeded correctly — log and use safe default
-          console.warn('[RentalPOS] rental_duration_options not returned by server')
-          setDurationOptions([15, 30, 45, 60, 90])
+          // Server returned a success response but with invalid/empty duration list
+          setConfigError('تعذر تحميل خيارات مدة الإيجار — استجابة الخادم غير صالحة')
+          setDurationOptions([])
         }
       })
       .catch(() => {
-        // Server unreachable — safe fallback so POS remains usable
-        setDurationOptions([15, 30, 45, 60, 90])
+        // Server unreachable or returned a configuration error
+        setConfigError('تعذر الاتصال بالخادم لتحميل إعدادات الإيجار. يرجى المحاولة مجدداً.')
+        setDurationOptions([])
       })
       .finally(() => setConfigLoading(false))
   }, [])
+
+  useEffect(() => { loadConfig() }, [loadConfig])
 
   const effectiveDuration = useCustom
     ? (parseInt(customValue, 10) || 0)
@@ -217,6 +224,24 @@ function DurationPicker({ skate, onSelect, onBack }: DurationPickerProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 0' }}>
           <LoadingSpinner size="sm" />
           <span style={{ color: 'var(--color-text-secondary)' }}>جاري تحميل خيارات المدة...</span>
+        </div>
+      ) : configError ? (
+        <div style={{ padding: '16px 0' }} id="duration-config-error-container">
+          <Alert variant="danger">
+            {configError}
+          </Alert>
+          <Button
+            id="duration-config-retry"
+            variant="secondary"
+            size="sm"
+            onClick={loadConfig}
+            style={{ marginTop: 8 }}
+          >
+            إعادة المحاولة
+          </Button>
+          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: 12 }}>
+            لا يمكن المتابعة باستخدام الأزرار القياسية. يمكنك استخدام حقل المدة المخصصة أدناه إذا كنت تعرف المدة.
+          </p>
         </div>
       ) : (
       <div className="duration-grid">

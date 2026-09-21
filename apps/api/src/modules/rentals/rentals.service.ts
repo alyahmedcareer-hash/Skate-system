@@ -103,9 +103,11 @@ function calculateRentalAmount(hourlyRate: number, durationMinutes: number): num
  * DEC-066: Compute server-side operational status.
  * Threshold: ENDING_SOON_THRESHOLD_MINUTES (5 minutes)
  *
- * remaining_time > 5 min  → normal
- * remaining_time <= 5 AND > 0  → ending_soon
- * NOW() > expected_end_at      → overdue
+ * Boundary rules (DEC-066, DEC-070):
+ *   remaining_time > 5 min          → normal
+ *   remaining_time <= 5 AND > 0     → ending_soon
+ *   NOW() > expected_end_at         → overdue  (strict greater-than)
+ *   NOW() === expected_end_at       → NOT overdue (exactly at end = still ending_soon or normal)
  */
 function computeOperationalStatus(
   expectedEndAt: Date | string,
@@ -118,7 +120,9 @@ function computeOperationalStatus(
   const diffMs = endMs - nowMs
   const diffMinutes = diffMs / 60000  // signed: negative = overdue
 
-  if (diffMinutes <= 0) {
+  // DEC-066: overdue only when NOW() > expected_end_at (strictly greater-than)
+  // At exact equality (diffMinutes === 0), the rental is NOT yet overdue.
+  if (diffMinutes < 0) {
     return { operationalStatus: 'overdue', remainingMinutes: 0 }
   }
 
@@ -281,6 +285,10 @@ async function fetchRentalsJoined(whereClause?: ReturnType<typeof and>): Promise
  * Backed by the settings table — not hardcoded in application code.
  * Used by GET /api/v1/rentals/config.
  *
+ * DEC-070 / BR-26: Both settings keys are REQUIRED.
+ * If either is absent, malformed, or invalid, this method throws an explicit
+ * configuration error. It does NOT silently fall back to hardcoded values.
+ *
  * No Settings management UI is created in Phase 05.
  * This endpoint is Rental-module-specific and read-only.
  */
@@ -302,16 +310,30 @@ export async function getRentalConfig(): Promise<{
     throw new BusinessRuleError('إعدادات التسعير غير صالحة', 'PRICING_CONFIG_MISSING')
   }
 
-  let durationOptions: number[] = [15, 30, 45, 60, 90]  // fallback (should always be seeded)
-  if (durationsSetting[0]) {
-    try {
-      const parsed = JSON.parse(durationsSetting[0].value)
-      if (Array.isArray(parsed) && parsed.every(x => typeof x === 'number' && x > 0)) {
-        durationOptions = parsed
-      }
-    } catch {
-      // Malformed JSON — use fallback (already set above)
+  // --- Duration options: authoritative from settings, no hardcoded fallback (BR-26, DEC-070) ---
+  if (!durationsSetting[0]) {
+    throw new BusinessRuleError(
+      'إعداد مدد الإيجار القياسية غير موجود في الإعدادات',
+      'RENTAL_DURATION_CONFIG_INVALID',
+    )
+  }
+
+  let durationOptions: number[]
+  try {
+    const parsed = JSON.parse(durationsSetting[0].value)
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length === 0 ||
+      !parsed.every((x) => Number.isInteger(x) && x > 0)
+    ) {
+      throw new Error('invalid')
     }
+    durationOptions = parsed
+  } catch {
+    throw new BusinessRuleError(
+      'إعداد مدد الإيجار القياسية غير صالح — يجب أن يكون مصفوفة JSON من أعداد صحيحة موجبة',
+      'RENTAL_DURATION_CONFIG_INVALID',
+    )
   }
 
   return { pricePerHour, durationOptions }
@@ -348,12 +370,13 @@ export async function calculatePrice(durationMinutes: number): Promise<PricePrev
  *  6. SELECT skate FOR UPDATE (row-level lock)
  *  7. Verify skate status = 'available' (authoritative check inside TX)
  *  8. Calculate rental_amount (DEC-065, DEC-067)
- *  9. Generate rental_code via MAX+1 (inside TX)
+ *  9. INSERT with temporary placeholder code; derive final code from insertId (DEC-070)
  * 10. Capture server start time
  * 11. Calculate expected_end_at
  * 12. INSERT rental record
- * 13. UPDATE skate status = 'rented'
- * 14. COMMIT
+ * 13. UPDATE rental_code to RN-NNNNN using insertId
+ * 14. UPDATE skate status = 'rented'
+ * 15. COMMIT
  */
 export async function startRental(
   cashierId: number,
