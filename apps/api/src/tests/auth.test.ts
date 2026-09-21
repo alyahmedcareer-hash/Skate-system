@@ -123,7 +123,7 @@ describe('TC-AUTH-01: Login success', () => {
     expect(res.body.data.user.isActive).toBe(true)
     expect(Array.isArray(res.body.data.user.roles)).toBe(true)
     expect(Array.isArray(res.body.data.user.permissions)).toBe(true)
-    expect(res.body.data.user.permissions.length).toBe(42) // all 42 permissions for admin (updated: customers.deactivate added in Phase 04)
+    expect(res.body.data.user.permissions.length).toBe(44) // all 44 permissions seededmin (updated: customers.deactivate added in Phase 04)
 
     // HttpOnly refresh cookie must be set
     const cookies = res.headers['set-cookie'] as string[] | undefined

@@ -80,6 +80,7 @@ export interface StartRentalRequest {
   customerId:      number   // required integer > 0
   durationMinutes: number   // required integer > 0, no maximum (DEC-069)
   notes?:          string   // optional, max 1000 chars
+  payments:        { paymentMethodId: number; amount: number }[] // Phase 06 payments array
 }
 
 // ---------------------------------------------------------------------------

@@ -37,9 +37,9 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/mysql-core'
 import { sql } from 'drizzle-orm'
-import { skates } from './skates.js'
-import { customers } from './customers.js'
-import { users } from './users.js'
+import { skates } from './skates'
+import { customers } from './customers'
+import { users } from './users'
 
 // ---------------------------------------------------------------------------
 // Rental status values (persisted lifecycle) — DEC-064
@@ -122,9 +122,6 @@ export const rentals = mysqlTable('rentals', {
   createdAt: datetime('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: datetime('updated_at').notNull().default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
 }, (table) => ({
-  // DEC-062 / DEC-070: UNIQUE on rental_code — insertId-based, concurrency-safe
-  rentalCodeIdx: uniqueIndex('rentals_rental_code_unique').on(table.rentalCode),
-
   // Performance indexes
   skateIdIdx:       index('rentals_skate_id_idx').on(table.skateId),
   customerIdIdx:    index('rentals_customer_id_idx').on(table.customerId),

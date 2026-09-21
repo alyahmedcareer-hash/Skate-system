@@ -146,4 +146,27 @@ router.get(
   },
 )
 
+// ---------------------------------------------------------------------------
+// POST /api/v1/rentals/:id/cancel — cancel a rental and refund (Phase 06)
+// ---------------------------------------------------------------------------
+
+router.post(
+  '/:id/cancel',
+  authenticate,
+  requirePermission('rentals.create'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cashierId = (req as any).user?.sub
+      if (!cashierId) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'يجب تسجيل الدخول أولاً' } })
+        return
+      }
+      const data = await rentalSvc.cancelRental(parseInt(String(req.params['id']), 10), cashierId)
+      res.json({ success: true, data })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
 export default router

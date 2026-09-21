@@ -68,7 +68,7 @@ import 'dotenv/config'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import supertest from 'supertest'
 import bcrypt from 'bcryptjs'
-import { eq, like, and } from 'drizzle-orm'
+import { eq, like, and, sql } from 'drizzle-orm'
 
 import app from '../app.js'
 import { db, pool } from '../db/connection.js'
@@ -78,6 +78,7 @@ import {
 } from '../db/schema/index.js'
 import { skates } from '../db/schema/skates.js'
 import { rentals } from '../db/schema/rentals.js'
+import { paymentMethods, rentalPayments, treasuryMovements } from '../db/schema/payments.js'
 
 const request = supertest(app)
 
@@ -194,11 +195,20 @@ async function createCustomer(token: string, nid: string, name: string): Promise
 }
 
 /** Start a rental via the API — returns response. */
-async function startRental(token: string, skateId: number, customerId: number, durationMinutes = 30, notes?: string) {
+async function startRental(token: string, skateId: number, customerId: number, durationMinutes = 30, notes?: string, explicitPayments?: { paymentMethodId: number, amount: number }[]) {
+  let payments = explicitPayments
+  if (!payments) {
+    const [rateSetting] = await db.select().from(settings).where(eq(settings.key, 'rental_hourly_rate')).limit(1)
+    const rate = parseFloat(rateSetting?.value || '120')
+    const amount = Math.round((rate * durationMinutes) / 60)
+    const [pm] = await db.select().from(paymentMethods).where(eq(paymentMethods.isActive, true)).limit(1)
+    payments = [{ paymentMethodId: pm.id, amount }]
+  }
+
   return request
     .post('/api/v1/rentals')
     .set('Authorization', `Bearer ${token}`)
-    .send({ skateId, customerId, durationMinutes, notes })
+    .send({ skateId, customerId, durationMinutes, notes, payments })
 }
 
 /** Restore a skate's status back to 'available' in DB (for test teardown). */
@@ -304,11 +314,16 @@ afterAll(async () => {
   // Clean up rentals (hard delete for test isolation)
   if (createdRentalIds.length) {
     for (const id of createdRentalIds) {
+      await db.execute(sql`DELETE FROM rental_payments WHERE rental_id = ${id}`).catch(() => {})
+      await db.execute(sql`DELETE FROM treasury_movements WHERE reference_id = ${id}`).catch(() => {})
       await db.delete(rentals).where(eq(rentals.id, id)).catch(() => {})
     }
   }
   // Clean up any rentals that reference our test skates/customers
-  await db.delete(rentals).where(like(rentals.rentalCode, 'RN-%')).catch(() => {})
+  // Clean up any rentals that reference our test skates/customers
+  await db.execute(sql`DELETE FROM rental_payments WHERE rental_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code LIKE 'TR-%'))`).catch(() => {})
+  await db.execute(sql`DELETE FROM treasury_movements WHERE reference_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code LIKE 'TR-%'))`).catch(() => {})
+  await db.execute(sql`DELETE FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code LIKE 'TR-%')`).catch(() => {})
 
   // Restore skates and delete test skates
   await db.delete(skates).where(like(skates.skateCode, 'TR-%')).catch(() => {})
@@ -401,7 +416,7 @@ describe('Rentals — Pricing Formula (DEC-065, DEC-067)', () => {
     const res = await request
       .post('/api/v1/rentals')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ skateId: skateAvail2Id, customerId: custId1, durationMinutes: 30, rentalAmount: 999 })
+      .send({ skateId: skateAvail2Id, customerId: custId1, durationMinutes: 30, rentalAmount: 999, payments: [{ paymentMethodId: 1, amount: 60 }] })
 
     expect(res.status).toBe(201)
     // Server ignores any client-sent rentalAmount — always 60 for 30 min at 120 EGP/hr
@@ -1032,7 +1047,7 @@ describe('Rentals — RBAC', () => {
     const res = await request
       .post('/api/v1/rentals')
       .set('Authorization', `Bearer ${cashierToken}`)
-      .send({ skateId: skateAvail3Id, customerId: custId2, durationMinutes: 30 })
+      .send({ skateId: skateAvail3Id, customerId: custId2, durationMinutes: 30, payments: [{ paymentMethodId: 1, amount: 60 }] })
 
     expect(res.status).toBe(201)
     expect(res.body.data.cashier).toBeTruthy()

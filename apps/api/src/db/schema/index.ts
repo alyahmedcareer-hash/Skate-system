@@ -10,10 +10,11 @@
  * Phase 05: settings, rentals
  */
 
-export * from './users.js'
-export * from './auth.js'
-export * from './skates.js'
-export * from './customers.js'
-export * from './settings.js'
-export * from './rentals.js'
+export * from './users'
+export * from './auth'
+export * from './skates'
+export * from './customers'
+export * from './settings'
+export * from './rentals'
+export * from './payments'
 

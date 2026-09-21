@@ -19,8 +19,9 @@ import 'dotenv/config'
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db } from './connection.js'
-import { users, roles, permissions, userRoles, rolePermissions } from './schema/index.js'
-import { settings } from './schema/settings.js'
+import { users, roles, permissions, userRoles, rolePermissions } from './schema/index'
+import { settings } from './schema/settings'
+import { treasuryAccounts, paymentMethods } from './schema/payments'
 
 const BCRYPT_ROUNDS = 12
 
@@ -56,6 +57,9 @@ const ALL_PERMISSIONS: Array<{ key: string; labelAr: string; module: string }> =
   // Expenses
   { key: 'expenses.view',    labelAr: 'عرض المصروفات',            module: 'expenses' },
   { key: 'expenses.create',  labelAr: 'إضافة مصروف',              module: 'expenses' },
+  // Payments
+  { key: 'payments.view',    labelAr: 'عرض المدفوعات',            module: 'payments' },
+  { key: 'payments.create',  labelAr: 'إنشاء دفعة',               module: 'payments' },
   // Treasury
   { key: 'treasury.view',    labelAr: 'عرض الخزينة',              module: 'treasury' },
   { key: 'treasury.manage',  labelAr: 'إدارة الخزينة',            module: 'treasury' },
@@ -109,7 +113,7 @@ const DEFAULT_ROLES = [
       'rentals.view', 'rentals.create', 'rentals.return',
       'customers.view', 'customers.create', 'customers.edit',
       'skates.view',
-      // Note: 'payments.view' excluded — not in Phase 02 permission set (Phase 06)
+      'payments.view', 'payments.create',
       'sales.view', 'sales.create',
       'expenses.view', 'expenses.create',
       'shifts.view', 'shifts.manage',
@@ -283,6 +287,38 @@ async function seed() {
       console.log(`     Setting seeded: ${setting.key} = ${setting.value}`)
     } else {
       console.log(`     Setting exists: ${setting.key} (skipped)`)
+    }
+  }
+
+  // 5. Seed Phase 06 Treasury Accounts and Payment Methods
+  console.log('  → Seeding Phase 06 Treasury Accounts & Payment Methods...')
+
+  const TREASURY_ACCOUNTS = [
+    { name: 'Main Cash', nameAr: 'الخزينة الرئيسية' },
+    { name: 'Bank', nameAr: 'البنك' },
+    { name: 'Card', nameAr: 'بطاقة ائتمان' },
+    { name: 'InstaPay', nameAr: 'انستا باي' },
+    { name: 'Other', nameAr: 'أخرى' }
+  ]
+
+  for (const acc of TREASURY_ACCOUNTS) {
+    let existingAcc = (await db.select().from(treasuryAccounts).where(eq(treasuryAccounts.name, acc.name)).limit(1))[0]
+    if (!existingAcc) {
+      const [result] = await db.insert(treasuryAccounts).values({
+        name: acc.name,
+        nameAr: acc.nameAr
+      })
+      console.log(`     Treasury Account seeded: ${acc.name}`)
+      
+      // Automatically create a 1:1 mapped Payment Method with the same name
+      await db.insert(paymentMethods).values({
+        name: acc.name,
+        nameAr: acc.nameAr,
+        treasuryAccountId: result.insertId
+      })
+      console.log(`     Payment Method seeded: ${acc.name}`)
+    } else {
+      console.log(`     Treasury Account exists: ${acc.name} (skipped)`)
     }
   }
 

@@ -48,7 +48,8 @@ import { rentals, ENDING_SOON_THRESHOLD_MINUTES } from '../../db/schema/rentals.
 import { skates } from '../../db/schema/skates.js'
 import { customers } from '../../db/schema/customers.js'
 import { users } from '../../db/schema/users.js'
-import { settings } from '../../db/schema/settings.js'
+import { settings } from '../../db/schema/settings'
+import { paymentMethods, rentalPayments, treasuryMovements, treasuryAccounts } from '../../db/schema/payments'
 import {
   NotFoundError,
   ValidationError,
@@ -396,6 +397,21 @@ export async function startRental(
     throw new ValidationError('الملاحظات تتجاوز الحد الأقصى 1000 حرف')
   }
 
+  // --- Validate payments array (Phase 06) ---
+  if (!Array.isArray(data.payments) || data.payments.length === 0) {
+    throw new ValidationError('المدفوعات مطلوبة')
+  }
+  let requestedTotalPayment = 0
+  for (const p of data.payments) {
+    if (!p.paymentMethodId || !Number.isInteger(p.paymentMethodId) || p.paymentMethodId <= 0) {
+      throw new ValidationError('معرف طريقة الدفع غير صالح')
+    }
+    if (typeof p.amount !== 'number' || p.amount <= 0) {
+      throw new ValidationError('مبلغ الدفعة غير صالح')
+    }
+    requestedTotalPayment += p.amount
+  }
+
   // --- Pre-flight: skate exists (application-layer check for better UX) ---
   const [skateRow] = await db.select().from(skates).where(eq(skates.id, data.skateId)).limit(1)
   if (!skateRow) throw new NotFoundError('الزلاجة غير موجودة')
@@ -478,6 +494,51 @@ export async function startRental(
       "UPDATE skates SET status = 'rented', updated_at = NOW() WHERE id = ?",
       [data.skateId],
     )
+
+    // Phase 06: Process payments
+    // 1. Validate payment total exactly matches rentalAmount
+    if (Math.abs(requestedTotalPayment - rentalAmount) > 0.001) {
+      await connection.rollback()
+      throw new BusinessRuleError('إجمالي المدفوعات لا يساوي قيمة الإيجار', 'INVALID_PAYMENT_TOTAL')
+    }
+
+    // 2. Lock and verify all payment methods
+    const paymentMethodIds = data.payments.map(p => p.paymentMethodId)
+    const placeholders = paymentMethodIds.map(() => '?').join(',')
+    const [pmRows] = await connection.execute<any[]>(
+      `SELECT id, treasury_account_id, is_active FROM payment_methods WHERE id IN (${placeholders}) FOR UPDATE`,
+      paymentMethodIds
+    )
+
+    for (const p of data.payments) {
+      const pm = pmRows.find(row => row.id === p.paymentMethodId)
+      if (!pm) {
+        await connection.rollback()
+        throw new NotFoundError(`طريقة الدفع رقم ${p.paymentMethodId} غير موجودة`)
+      }
+      if (!pm.is_active) {
+        await connection.rollback()
+        throw new BusinessRuleError(`طريقة الدفع رقم ${p.paymentMethodId} غير مفعلة`, 'PAYMENT_METHOD_INACTIVE')
+      }
+
+      // INSERT rental_payments
+      await connection.execute(
+        `INSERT INTO rental_payments (rental_id, payment_method_id, amount, cashier_id, created_at) VALUES (?, ?, ?, ?, NOW())`,
+        [newRentalId, p.paymentMethodId, p.amount, cashierId]
+      )
+
+      // INSERT treasury_movements
+      await connection.execute(
+        `INSERT INTO treasury_movements (treasury_account_id, amount, type, reference_type, reference_id, cashier_id, notes, created_at) VALUES (?, ?, 'in', 'rental_payment', ?, ?, ?, NOW())`,
+        [pm.treasury_account_id, p.amount, newRentalId, cashierId, `Rental ${rentalCode} Payment`]
+      )
+
+      // UPDATE treasury_accounts balance
+      await connection.execute(
+        `UPDATE treasury_accounts SET balance = balance + ?, updated_at = NOW() WHERE id = ?`,
+        [p.amount, pm.treasury_account_id]
+      )
+    }
 
     await connection.commit()
   } catch (err) {
@@ -660,4 +721,77 @@ export async function getCustomerRentals(
       totalPages: Math.ceil(Number(total) / perPage),
     },
   }
+}
+
+/**
+ * Cancel an active rental (Phase 06).
+ * Reverts skate to 'available', marks rental as 'cancelled'.
+ * Automatically refunds any upfront payments via compensating treasury movements.
+ */
+export async function cancelRental(rentalId: number, cashierId: number): Promise<RentalDTO> {
+  const connection = await pool.getConnection()
+
+  try {
+    await connection.beginTransaction()
+
+    // 1. Lock the rental
+    const [rentalRows] = await connection.execute<any[]>(
+      'SELECT id, skate_id, status FROM rentals WHERE id = ? FOR UPDATE',
+      [rentalId]
+    )
+    const rental = rentalRows[0]
+    if (!rental) {
+      await connection.rollback()
+      throw new NotFoundError(`الإيجار رقم ${rentalId} غير موجود`)
+    }
+    if (rental.status !== 'active') {
+      await connection.rollback()
+      throw new BusinessRuleError('لا يمكن إلغاء إيجار غير نشط', 'RENTAL_NOT_ACTIVE')
+    }
+
+    // 2. Fetch payments for this rental with treasury_account info
+    const [paymentRows] = await connection.execute<any[]>(
+      `SELECT rp.id, rp.amount, pm.treasury_account_id 
+       FROM rental_payments rp
+       JOIN payment_methods pm ON rp.payment_method_id = pm.id
+       WHERE rp.rental_id = ?`,
+      [rentalId]
+    )
+
+    // 3. Process refunds if there are payments
+    for (const pay of paymentRows) {
+      // INSERT refund treasury_movement (out)
+      await connection.execute(
+        `INSERT INTO treasury_movements (treasury_account_id, amount, type, reference_type, reference_id, cashier_id, notes, created_at) VALUES (?, ?, 'out', 'rental_refund', ?, ?, ?, NOW())`,
+        [pay.treasury_account_id, pay.amount, rentalId, cashierId, `Refund for cancelled rental ${rentalId}`]
+      )
+
+      // UPDATE treasury_accounts balance (deduct)
+      await connection.execute(
+        `UPDATE treasury_accounts SET balance = balance - ?, updated_at = NOW() WHERE id = ?`,
+        [pay.amount, pay.treasury_account_id]
+      )
+    }
+
+    // 4. Mark rental as cancelled
+    await connection.execute(
+      "UPDATE rentals SET status = 'cancelled', updated_at = NOW() WHERE id = ?",
+      [rentalId]
+    )
+
+    // 5. Release the skate
+    await connection.execute(
+      "UPDATE skates SET status = 'available', updated_at = NOW() WHERE id = ?",
+      [rental.skate_id]
+    )
+
+    await connection.commit()
+  } catch (err) {
+    try { await connection.rollback() } catch { /* ignore rollback error */ }
+    throw err
+  } finally {
+    connection.release()
+  }
+
+  return getRental(rentalId)
 }

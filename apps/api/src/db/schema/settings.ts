@@ -26,7 +26,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/mysql-core'
 import { sql } from 'drizzle-orm'
-import { users } from './users.js'
+import { users } from './users'
 
 // ---------------------------------------------------------------------------
 // settings table
@@ -48,6 +48,4 @@ export const settings = mysqlTable('settings', {
 
   // NULL for system-seeded values — updated_by tracks manual changes
   updatedBy: int('updated_by').references(() => users.id),
-}, (table) => ({
-  keyIdx: uniqueIndex('settings_key_unique').on(table.key),
-}))
+})
