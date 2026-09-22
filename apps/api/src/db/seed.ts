@@ -269,6 +269,12 @@ async function seed() {
       value:   '[15, 30, 45, 60, 90]',
       labelAr: 'خيارات مدة الإيجار بالدقائق',
     },
+    {
+      key:     'late_fee_per_minute',
+      // Phase 07: Late fee per minute
+      value:   '2',
+      labelAr: 'رسوم التأخير لكل دقيقة',
+    },
   ]
 
   for (const setting of RENTAL_SETTINGS) {

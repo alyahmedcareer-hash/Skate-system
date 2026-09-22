@@ -49,6 +49,9 @@ function formatRemaining(mins: number): string {
   return m > 0 ? `${h}س ${m}د` : `${h}س`
 }
 
+import { ReturnRentalModal } from './ReturnRentalModal'
+import { PermissionGate } from '../../components/PermissionGate'
+
 // ---------------------------------------------------------------------------
 // Active Rental Card
 // ---------------------------------------------------------------------------
@@ -56,9 +59,10 @@ function formatRemaining(mins: number): string {
 interface ActiveRentalCardProps {
   rental: ActiveRentalDTO
   onViewDetail: (id: number) => void
+  onReturn: (rental: ActiveRentalDTO) => void
 }
 
-function ActiveRentalCard({ rental, onViewDetail }: ActiveRentalCardProps) {
+function ActiveRentalCard({ rental, onViewDetail, onReturn }: ActiveRentalCardProps) {
   const badgeStatus = operationalStatusToBadge(rental.operationalStatus)
   const opLabel     = getOperationalStatusLabel(rental.operationalStatus)
 
@@ -112,13 +116,24 @@ function ActiveRentalCard({ rental, onViewDetail }: ActiveRentalCardProps) {
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
           {formatDate(rental.startedAt)}
         </span>
-        <IconButton
-          icon={Eye}
-          label="عرض التفاصيل"
-          onClick={() => onViewDetail(rental.id)}
-          size="sm"
-          variant="ghost"
-        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <PermissionGate permission="rentals.return">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onReturn(rental)}
+            >
+              إرجاع الزلاجة
+            </Button>
+          </PermissionGate>
+          <IconButton
+            icon={Eye}
+            label="عرض التفاصيل"
+            onClick={() => onViewDetail(rental.id)}
+            size="sm"
+            variant="ghost"
+          />
+        </div>
       </div>
     </div>
   )
@@ -136,6 +151,15 @@ export default function ActiveRentalsPage() {
   const [error, setError]             = useState<string | null>(null)
   const [refreshing, setRefreshing]   = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+
+  // Return Modal State
+  const [returnModalOpen, setReturnModalOpen] = useState(false)
+  const [selectedRentalForReturn, setSelectedRentalForReturn] = useState<ActiveRentalDTO | null>(null)
+
+  const handleReturnClick = (rental: ActiveRentalDTO) => {
+    setSelectedRentalForReturn(rental)
+    setReturnModalOpen(true)
+  }
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
@@ -213,7 +237,7 @@ export default function ActiveRentalsPage() {
               </h2>
               <div className="rental-cards-grid">
                 {overdue.map(r => (
-                  <ActiveRentalCard key={r.id} rental={r} onViewDetail={id => navigate(`/rentals/${id}`)} />
+                  <ActiveRentalCard key={r.id} rental={r} onViewDetail={id => navigate(`/rentals/${id}`)} onReturn={handleReturnClick} />
                 ))}
               </div>
             </div>
@@ -227,7 +251,7 @@ export default function ActiveRentalsPage() {
               </h2>
               <div className="rental-cards-grid">
                 {endingSoon.map(r => (
-                  <ActiveRentalCard key={r.id} rental={r} onViewDetail={id => navigate(`/rentals/${id}`)} />
+                  <ActiveRentalCard key={r.id} rental={r} onViewDetail={id => navigate(`/rentals/${id}`)} onReturn={handleReturnClick} />
                 ))}
               </div>
             </div>
@@ -241,13 +265,22 @@ export default function ActiveRentalsPage() {
               </h2>
               <div className="rental-cards-grid">
                 {normal.map(r => (
-                  <ActiveRentalCard key={r.id} rental={r} onViewDetail={id => navigate(`/rentals/${id}`)} />
+                  <ActiveRentalCard key={r.id} rental={r} onViewDetail={id => navigate(`/rentals/${id}`)} onReturn={handleReturnClick} />
                 ))}
               </div>
             </div>
           )}
         </>
       )}
+
+      <ReturnRentalModal
+        isOpen={returnModalOpen}
+        onClose={() => setReturnModalOpen(false)}
+        rental={selectedRentalForReturn}
+        onSuccess={() => {
+          load(true) // Refresh list after successful return
+        }}
+      />
 
       <style>{`
         .active-rentals-section { margin-bottom: var(--space-6); }

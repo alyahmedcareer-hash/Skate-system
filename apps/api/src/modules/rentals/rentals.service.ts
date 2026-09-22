@@ -296,10 +296,12 @@ async function fetchRentalsJoined(whereClause?: ReturnType<typeof and>): Promise
 export async function getRentalConfig(): Promise<{
   pricePerHour:    number
   durationOptions: number[]
+  lateFeePerMinute: number
 }> {
-  const [rateSetting, durationsSetting] = await Promise.all([
+  const [rateSetting, durationsSetting, lateFeeSetting] = await Promise.all([
     db.select().from(settings).where(eq(settings.key, 'rental_hourly_rate')).limit(1),
     db.select().from(settings).where(eq(settings.key, 'rental_duration_options')).limit(1),
+    db.select().from(settings).where(eq(settings.key, 'late_fee_per_minute')).limit(1),
   ])
 
   if (!rateSetting[0]) {
@@ -337,7 +339,12 @@ export async function getRentalConfig(): Promise<{
     )
   }
 
-  return { pricePerHour, durationOptions }
+  if (!lateFeeSetting[0]) {
+    throw new BusinessRuleError('إعداد رسوم التأخير غير متوفر', 'LATE_FEE_CONFIG_MISSING')
+  }
+  const lateFeePerMinute = parseFloat(lateFeeSetting[0].value)
+
+  return { pricePerHour, durationOptions, lateFeePerMinute }
 }
 
 /**
@@ -783,6 +790,191 @@ export async function cancelRental(rentalId: number, cashierId: number): Promise
     await connection.execute(
       "UPDATE skates SET status = 'available', updated_at = NOW() WHERE id = ?",
       [rental.skate_id]
+    )
+
+    await connection.commit()
+  } catch (err) {
+    try { await connection.rollback() } catch { /* ignore rollback error */ }
+    throw err
+  } finally {
+    connection.release()
+  }
+
+  return getRental(rentalId)
+}
+
+/**
+ * Return a rental and process late fee / inspection (Phase 07).
+ */
+export async function returnRental(
+  rentalId: number,
+  cashierId: number,
+  data: import('./rentals.types.js').ReturnRentalRequest
+): Promise<RentalDTO> {
+  // Read late_fee_per_minute from settings
+  const [feeSetting] = await db.select().from(settings).where(eq(settings.key, 'late_fee_per_minute')).limit(1)
+  if (!feeSetting) {
+    throw new BusinessRuleError('إعداد رسوم التأخير غير متوفر', 'LATE_FEE_CONFIG_MISSING')
+  }
+  const lateFeePerMinute = parseFloat(feeSetting.value)
+
+  const connection = await pool.getConnection()
+
+  try {
+    await connection.beginTransaction()
+
+    // 1. Lock rental
+    const [rentalRows] = await connection.execute<any[]>(
+      'SELECT id, skate_id, status, expected_end_at FROM rentals WHERE id = ? FOR UPDATE',
+      [rentalId]
+    )
+    const rental = rentalRows[0]
+    if (!rental) {
+      await connection.rollback()
+      throw new NotFoundError(`الإيجار رقم ${rentalId} غير موجود`)
+    }
+    if (rental.status !== 'active') {
+      await connection.rollback()
+      throw new BusinessRuleError('لا يمكن إرجاع إيجار غير نشط', 'RENTAL_NOT_ACTIVE')
+    }
+
+    // 2. Lock skate
+    const [skateRows] = await connection.execute<any[]>(
+      'SELECT id, status FROM skates WHERE id = ? FOR UPDATE',
+      [rental.skate_id]
+    )
+    const skate = skateRows[0]
+    if (!skate) {
+      await connection.rollback()
+      throw new NotFoundError(`الزلاجة غير موجودة`)
+    }
+
+    // 3. Calculate late fee
+    const now = new Date()
+    const expectedEnd = new Date(rental.expected_end_at)
+    let lateMinutes = 0
+    let calculatedFee = 0
+
+    if (now > expectedEnd) {
+      const diffMs = now.getTime() - expectedEnd.getTime()
+      lateMinutes = Math.ceil(diffMs / 60000)
+      calculatedFee = Math.round(lateMinutes * lateFeePerMinute)
+    }
+
+    // 4. Validate accounting rule
+    let collectedFee = 0
+    if (data.payments && Array.isArray(data.payments)) {
+      for (const p of data.payments) {
+        if (typeof p.amount !== 'number' || p.amount <= 0) {
+          await connection.rollback()
+          throw new ValidationError('مبلغ الدفعة غير صالح')
+        }
+        collectedFee += p.amount
+      }
+    }
+
+    const waivedFee = data.waivedFee ? parseFloat(String(data.waivedFee)) : 0
+    if (waivedFee < 0) {
+      await connection.rollback()
+      throw new ValidationError('مبلغ الإعفاء لا يمكن أن يكون سالباً')
+    }
+
+    if (Math.abs(calculatedFee - (collectedFee + waivedFee)) > 0.001) {
+      await connection.rollback()
+      throw new BusinessRuleError(
+        `الرسوم المحسوبة (${calculatedFee}) يجب أن تساوي المدفوع (${collectedFee}) + المعفى (${waivedFee})`,
+        'INVALID_LATE_FEE_TOTAL'
+      )
+    }
+
+    // 5. Process Payments
+    if (collectedFee > 0) {
+      const paymentMethodIds = data.payments.map(p => p.paymentMethodId)
+      const placeholders = paymentMethodIds.map(() => '?').join(',')
+      const [pmRows] = await connection.execute<any[]>(
+        `SELECT id, treasury_account_id, is_active FROM payment_methods WHERE id IN (${placeholders}) FOR UPDATE`,
+        paymentMethodIds
+      )
+
+      for (const p of data.payments) {
+        const pm = pmRows.find(row => row.id === p.paymentMethodId)
+        if (!pm) {
+          await connection.rollback()
+          throw new NotFoundError(`طريقة الدفع رقم ${p.paymentMethodId} غير موجودة`)
+        }
+        if (!pm.is_active) {
+          await connection.rollback()
+          throw new BusinessRuleError(`طريقة الدفع رقم ${p.paymentMethodId} غير مفعلة`, 'PAYMENT_METHOD_INACTIVE')
+        }
+
+        // INSERT rental_payments (with payment_type = 'late_fee')
+        await connection.execute(
+          `INSERT INTO rental_payments (rental_id, payment_method_id, amount, payment_type, cashier_id, created_at) VALUES (?, ?, ?, 'late_fee', ?, NOW())`,
+          [rentalId, p.paymentMethodId, p.amount, cashierId]
+        )
+
+        // INSERT treasury_movements (with reference_type = 'late_fee_payment')
+        await connection.execute(
+          `INSERT INTO treasury_movements (treasury_account_id, amount, type, reference_type, reference_id, cashier_id, notes, created_at) VALUES (?, ?, 'in', 'late_fee_payment', ?, ?, ?, NOW())`,
+          [pm.treasury_account_id, p.amount, rentalId, cashierId, `Late fee payment for rental ${rentalId}`]
+        )
+
+        // UPDATE treasury_accounts balance
+        await connection.execute(
+          `UPDATE treasury_accounts SET balance = balance + ?, updated_at = NOW() WHERE id = ?`,
+          [p.amount, pm.treasury_account_id]
+        )
+      }
+    }
+
+    // 6. Insert late fee record
+    if (calculatedFee > 0 || lateMinutes > 0) {
+      await connection.execute(
+        `INSERT INTO late_fee_records (rental_id, late_minutes, calculated_fee, collected_fee, waived_fee, waived_by, waiver_reason, waived_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          rentalId,
+          lateMinutes,
+          calculatedFee,
+          collectedFee,
+          waivedFee,
+          waivedFee > 0 ? cashierId : null,
+          waivedFee > 0 ? (data.waiverReason ?? null) : null,
+          waivedFee > 0 ? now : null
+        ]
+      )
+    }
+
+    // 7. Insert inspection
+    const ins = data.inspection
+    await connection.execute(
+      `INSERT INTO inspections (rental_id, skate_id, inspected_by, wheels_condition, brake_condition, strap_condition, bearings_condition, body_condition, other_notes, maintenance_required, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        rentalId,
+        rental.skate_id,
+        cashierId,
+        ins.wheelsCondition,
+        ins.brakeCondition,
+        ins.strapCondition,
+        ins.bearingsCondition,
+        ins.bodyCondition,
+        ins.otherNotes ?? null,
+        ins.maintenanceRequired ? 1 : 0
+      ]
+    )
+
+    // 8. Update rental
+    await connection.execute(
+      "UPDATE rentals SET status = 'returned', returned_at = NOW(), updated_at = NOW() WHERE id = ?",
+      [rentalId]
+    )
+
+    // 9. Update skate status
+    const nextSkateStatus = ins.maintenanceRequired ? 'maintenance' : 'available'
+    await connection.execute(
+      "UPDATE skates SET status = ?, updated_at = NOW() WHERE id = ?",
+      [nextSkateStatus, rental.skate_id]
     )
 
     await connection.commit()

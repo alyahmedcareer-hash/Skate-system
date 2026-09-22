@@ -10,16 +10,16 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | Phase 06 (Payments & Treasury) **FINAL GATE PASSED ✅** |
-| **Current Phase** | Phase 06 COMPLETE. Phase 07 (Returns & Inspection) is NEXT. |
-| **Current Milestone** | Phase 06: Payments & Treasury — COMPLETE ✅ |
-| **Last Completed Phase** | Phase 06 — Payments & Treasury — 2026-09-21 |
-| **Active Work** | None — Phase 06 Closure Gate complete |
+| **Overall Status** | Phase 07 (Returns & Inspection) **FINAL GATE PASSED ✅** |
+| **Current Phase** | Phase 07 COMPLETE. Phase 08 (Damage Management) is NEXT. |
+| **Current Milestone** | Phase 07: Returns & Inspection — COMPLETE ✅ |
+| **Last Completed Phase** | Phase 07 — Returns & Inspection — 2026-09-22 |
+| **Active Work** | None — Phase 07 Closure Gate complete |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-22 — Phase 06 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), 176/176 tests ✅, `vite build` clean ✅, `drizzle-kit check` clean ✅ |
-| **Last Git Commit** | `cab5a19` — feat(web): integrate Phase 06 payments in RentalPOS |
+| **Last Verification** | 2026-09-22 — Phase 07 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), 183/183 tests ✅, `vite build` clean ✅, `drizzle-kit check` clean ✅ |
+| **Last Git Commit** | `pending` — feat(rentals): integrate Phase 07 returns workflow |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
-| **Recommended Next Action** | Begin Phase 07 — Returns & Inspection |
+| **Recommended Next Action** | Begin Phase 08 — Damage Management |
 
 ---
 
@@ -52,8 +52,8 @@
 | **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | |
 | Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | |
 | Phase 05 | Rental POS (Core) | **FINAL GATE PASSED ✅** | |
-| Phase 06 | Payments & Treasury | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. |
-| Phase 07 | Returns & Inspection | PLANNED | Depends on Phase 05 |
+| Phase 06 | Payments & Treasury | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-21. |
+| Phase 07 | Returns & Inspection | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. Skate return workflow, late fee calculation, condition reporting, waivers RBAC. |
 | Phase 08 | Damage Management | PLANNED | Depends on Phase 07 |
 | Phase 09 | Maintenance | PLANNED | Depends on Phase 08 |
 | Phase 10 | Reservations | PLANNED | Depends on Phases 03, 04 |

@@ -1,0 +1,2 @@
+ALTER TABLE `treasury_movements` MODIFY COLUMN `reference_type` enum('rental_payment','rental_refund','late_fee_payment','expense','other') NOT NULL;--> statement-breakpoint
+ALTER TABLE `rental_payments` ADD `payment_type` enum('rental','late_fee','damage_charge') DEFAULT 'rental' NOT NULL;

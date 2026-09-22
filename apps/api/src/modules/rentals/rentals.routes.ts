@@ -169,4 +169,38 @@ router.post(
   },
 )
 
+// ---------------------------------------------------------------------------
+// POST /api/v1/rentals/:id/return — return a rental and process late fee (Phase 07)
+// ---------------------------------------------------------------------------
+
+router.post(
+  '/:id/return',
+  authenticate,
+  requirePermission('rentals.return'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cashierId = (req as any).user?.sub
+      const userPermissions = (req as any).authUser?.permissions || []
+      const canWaive = userPermissions.includes('waivers.approve')
+
+      if (!cashierId) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'يجب تسجيل الدخول أولاً' } })
+        return
+      }
+      
+      // If the request includes a waiver, the user must have waivers.approve permission
+      const waivedFee = req.body.waivedFee ? parseFloat(String(req.body.waivedFee)) : 0;
+      if (waivedFee > 0 && !canWaive) {
+        res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'لا تملك صلاحية الموافقة على التنازل عن الرسوم' } })
+        return
+      }
+
+      const data = await rentalSvc.returnRental(parseInt(String(req.params['id']), 10), cashierId, req.body)
+      res.json({ success: true, data })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
 export default router

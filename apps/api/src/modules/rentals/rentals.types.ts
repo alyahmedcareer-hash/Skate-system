@@ -84,6 +84,26 @@ export interface StartRentalRequest {
 }
 
 // ---------------------------------------------------------------------------
+// Request body — POST /api/v1/rentals/:id/return (Phase 07)
+// ---------------------------------------------------------------------------
+
+export interface ReturnRentalRequest {
+  waivedFee: number
+  waiverReason?: string
+  payments: { paymentMethodId: number; amount: number }[] // For late fee, if any
+  inspection: {
+    wheelsCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    brakeCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    strapCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    bearingsCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    bodyCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    maintenanceRequired: boolean
+    otherNotes?: string
+  }
+}
+
+
+// ---------------------------------------------------------------------------
 // Query filters — GET /api/v1/rentals
 // ---------------------------------------------------------------------------
 

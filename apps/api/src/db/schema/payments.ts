@@ -41,6 +41,7 @@ export const rentalPayments = mysqlTable('rental_payments', {
     .notNull()
     .references(() => paymentMethods.id),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  paymentType: mysqlEnum('payment_type', ['rental', 'late_fee', 'damage_charge']).notNull().default('rental'),
   cashierId: int('cashier_id')
     .notNull()
     .references(() => users.id),
@@ -54,7 +55,7 @@ export const treasuryMovements = mysqlTable('treasury_movements', {
     .references(() => treasuryAccounts.id),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   type: mysqlEnum('type', ['in', 'out']).notNull(),
-  referenceType: mysqlEnum('reference_type', ['rental_payment', 'rental_refund', 'expense', 'other']).notNull(),
+  referenceType: mysqlEnum('reference_type', ['rental_payment', 'rental_refund', 'late_fee_payment', 'expense', 'other']).notNull(),
   referenceId: int('reference_id'),
   cashierId: int('cashier_id')
     .notNull()

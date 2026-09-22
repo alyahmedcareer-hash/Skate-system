@@ -6,6 +6,19 @@
 
 ## [Unreleased]
 
+### Phase 07 — Returns & Inspection
+
+#### Added
+
+- [Phase 07] Implement Skate Return workflow (`ReturnRentalModal`, `POST /api/v1/rentals/:id/return`).
+- [Phase 07] Add Late Fee calculations based on configurable settings (`late_fee_per_minute`).
+- [Phase 07] Add Inspection form (`inspections` table) to report condition and flag `maintenance_required`.
+- [Phase 07] Add fee waiver functionality with RBAC (`waivers.approve` permission, restricted to Administrator).
+- [Phase 07] Add `payment_type` (`rental`, `late_fee`) to `rental_payments` table for distinct late fee tracking.
+- [Phase 07] Integration with Treasury for automatic late-fee recording (`late_fee_payment` reference_type).
+
+---
+
 ### Phase 06 — Rental Payment Integration
 
 #### Added

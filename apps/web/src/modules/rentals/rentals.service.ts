@@ -197,7 +197,7 @@ export const rentalsService = {
    * Frontend must NOT define standard durations as a business constant (BR-26).
    */
   getConfig: () =>
-    api.get<{ success: boolean; data: { pricePerHour: number; durationOptions: number[] } }>('/api/v1/rentals/config'),
+    api.get<{ success: boolean; data: { pricePerHour: number; durationOptions: number[]; lateFeePerMinute: number } }>('/api/v1/rentals/config'),
 
   /**
    * GET /api/v1/customers/:id/rentals — customer rental history (DEC-055)
@@ -206,4 +206,25 @@ export const rentalsService = {
     api.get<{ success: boolean; data: CustomerRentalHistoryItem[]; pagination: PaginationMeta }>(
       `/api/v1/customers/${customerId}/rentals${buildQuery(params ?? {})}`,
     ),
+
+  /**
+   * POST /api/v1/rentals/:id/return — return a rental and process late fee (Phase 07)
+   */
+  return: (id: number, body: ReturnRentalBody) =>
+    api.post<{ success: boolean; data: RentalDTO }>(`/api/v1/rentals/${id}/return`, body),
+}
+
+export interface ReturnRentalBody {
+  waivedFee: number
+  waiverReason?: string
+  payments: { paymentMethodId: number; amount: number }[]
+  inspection: {
+    wheelsCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    brakeCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    strapCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    bearingsCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    bodyCondition: 'good' | 'minor_damage' | 'damaged' | 'broken'
+    maintenanceRequired: boolean
+    otherNotes?: string
+  }
 }
