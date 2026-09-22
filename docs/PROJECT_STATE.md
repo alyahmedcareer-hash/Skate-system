@@ -10,16 +10,16 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | Phase 05 (Rental POS Core) **FINAL GATE PASSED ✅** |
-| **Current Phase** | Phase 05 COMPLETE. Phase 06 (Payments & Treasury) is NEXT. |
-| **Current Milestone** | Phase 05: Rental POS — schema, API, frontend, 170 tests — COMPLETE ✅ |
-| **Last Completed Phase** | Phase 05 — Rental POS Core — 2026-09-21 |
-| **Active Work** | None — Phase 05 Closure Gate complete |
+| **Overall Status** | Phase 06 (Payments & Treasury) **FINAL GATE PASSED ✅** |
+| **Current Phase** | Phase 06 COMPLETE. Phase 07 (Returns & Inspection) is NEXT. |
+| **Current Milestone** | Phase 06: Payments & Treasury — COMPLETE ✅ |
+| **Last Completed Phase** | Phase 06 — Payments & Treasury — 2026-09-21 |
+| **Active Work** | None — Phase 06 Closure Gate complete |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-21 — Phase 05 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), 170/170 tests ✅, `vite build` clean ✅, `drizzle-kit check` clean ✅ |
-| **Last Git Commit** | `f7bc21a` — fix(rentals): resolve final Phase 05 verification findings |
+| **Last Verification** | 2026-09-22 — Phase 06 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), 176/176 tests ✅, `vite build` clean ✅, `drizzle-kit check` clean ✅ |
+| **Last Git Commit** | `cab5a19` — feat(web): integrate Phase 06 payments in RentalPOS |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
-| **Recommended Next Action** | Begin Phase 06 — Payments & Treasury specification |
+| **Recommended Next Action** | Begin Phase 07 — Returns & Inspection |
 
 ---
 
@@ -31,13 +31,13 @@
 | Visual Design Reference | VERIFIED — complete |
 | Governance documentation | COMPLETED |
 | Architecture documentation | COMPLETED — updated with Phase 04 decisions |
-| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, RENTALS.md ✅, PHASE_02 spec ✅, PHASE_03 spec ✅, PHASE_04 spec ✅, PHASE_05 spec ✅ |
-| Source code — Frontend | VERIFIED ✅ — Phase 05: RentalPOSPage, ActiveRentalsPage, rentals.service.ts. Built ✅ zero TS errors. |
-| Source code — Backend | VERIFIED ✅ — Phase 05: rentals schema, types, service (7 functions), routes (7 endpoints). Built ✅ zero TS errors. |
-| Database | VERIFIED ✅ — 5 migrations applied. 9 tables. Seed: `rental_hourly_rate` + `rental_duration_options`. |
-| Tests | VERIFIED ✅ — `npm test` 170/170 PASS (6 test files). 74 Phase 05 tests (31 integration + 7 RBAC + 5 VAL + 5 CFG + 8 op-status unit + 8 code-format unit + 10 pricing unit) + 96 prior. |
+| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, RENTALS.md ✅, PHASE_06 spec ✅ |
+| Source code — Frontend | VERIFIED ✅ — Phase 06: RentalPOS payments, payments.service.ts. Built ✅ zero TS errors. |
+| Source code — Backend | VERIFIED ✅ — Phase 06: payments, treasury schema, routes, services. Built ✅ zero TS errors. |
+| Database | VERIFIED ✅ — 6 migrations applied. 12 tables. Seed: treasury accounts. |
+| Tests | VERIFIED ✅ — `npm test` 176/176 PASS (7 test files). |
 | Deployment | NONE |
-| Git repository | VERIFIED ✅ — local + GitHub remote (commit `f7bc21a`) |
+| Git repository | VERIFIED ✅ — local + GitHub remote (commit `cab5a19`) |
 
 ---
 
@@ -46,13 +46,13 @@
 | Phase | Name | Status | Notes |
 |---|---|---|---|
 | Phase 00 | Governance & Documentation | COMPLETED | This initialization |
-| Phase 01 | Foundation & Project Setup | COMPLETED | FINAL GATE: APPROVED. Commits `f7d2810`, `35cc75a`. |
-| Phase 02 | Authentication & Permissions | **FINAL GATE PASSED** | JWT auth, RBAC, 18/18 tests pass. Latest commit `647817c`. |
-| Phase 03 | Skates Module | **FINAL GATE PASSED ✅** | 16/16 tests, 34/34 total, both builds clean, UI verified. Commit `f12c5b7`. |
-| **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | 14 shared components, App Shell redesign, all pages migrated. 0 TS errors, 34/34 tests. Commit `c7ee6f6`. |
-| Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | 28 tests, 96/96 total, both builds clean. DEC-051–DEC-059. |
-| Phase 05 | Rental POS (Core) | **FINAL GATE PASSED ✅** | DEC-060–DEC-070 all resolved. 170/170 tests pass. Closure Gate complete 2026-09-21. |
-| Phase 06 | Payments & Treasury | PLANNED | Depends on Phase 05 |
+| Phase 01 | Foundation & Project Setup | COMPLETED | FINAL GATE: APPROVED. |
+| Phase 02 | Authentication & Permissions | **FINAL GATE PASSED** | |
+| Phase 03 | Skates Module | **FINAL GATE PASSED ✅** | |
+| **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | |
+| Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | |
+| Phase 05 | Rental POS (Core) | **FINAL GATE PASSED ✅** | |
+| Phase 06 | Payments & Treasury | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. |
 | Phase 07 | Returns & Inspection | PLANNED | Depends on Phase 05 |
 | Phase 08 | Damage Management | PLANNED | Depends on Phase 07 |
 | Phase 09 | Maintenance | PLANNED | Depends on Phase 08 |
@@ -73,13 +73,13 @@
 | Module | Frontend | Backend | Database | API | Tests | Docs |
 |---|---|---|---|---|---|---|
 | Auth | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (18/18) ✅ | VERIFIED ✅ |
-| Users/Permissions | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ (RBAC Remediation COMPLETE) | IMPLEMENTED ✅ | IMPLEMENTED ✅ (permissions endpoint wired) | VERIFIED (49/49) ✅ | VERIFIED ✅ |
+| Users/Permissions | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (49/49) ✅ | VERIFIED ✅ |
 | Dashboard | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Skates | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (16/16) ✅ | VERIFIED ✅ |
 | Customers | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | IMPLEMENTED ✅ | VERIFIED (28/28) ✅ | COMPLETE ✅ |
 | Rentals | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (74/74) ✅ | VERIFIED ✅ |
-| Payments | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
-| Treasury | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
+| Payments | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (6/6) ✅ | VERIFIED ✅ |
+| Treasury | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Returns/Inspection | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Damage | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Maintenance | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
