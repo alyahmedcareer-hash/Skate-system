@@ -17,9 +17,13 @@ import {
   PageLoader,
   Button,
 } from '../../components/ui'
+import { PermissionGate } from '../../components/PermissionGate'
+import { ReturnRentalModal } from './ReturnRentalModal'
+import { CreateDamageReportModal } from './CreateDamageReportModal'
 import {
   rentalsService,
   type RentalDTO,
+  type ActiveRentalDTO,
   getRentalStatusLabel,
   lifetimeStatusToBadge,
   getOperationalStatusLabel,
@@ -89,7 +93,12 @@ export default function RentalDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError]   = useState<string | null>(null)
 
-  useEffect(() => {
+  // Modals state
+  const [returnModalOpen, setReturnModalOpen] = useState(false)
+  const [damageModalOpen, setDamageModalOpen] = useState(false)
+  const [damageInspectionId, setDamageInspectionId] = useState<number | null>(null)
+
+  const fetchRental = () => {
     const numId = parseInt(id ?? '', 10)
     if (!numId) { setError('معرّف الإيجار غير صالح'); setLoading(false); return }
 
@@ -98,7 +107,19 @@ export default function RentalDetailPage() {
       .then(res => setRental(res.data))
       .catch(() => setError('الإيجار غير موجود'))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchRental()
   }, [id])
+
+  const handleReturnSuccess = (hasDamage?: boolean, inspectionId?: number) => {
+    fetchRental()
+    if (hasDamage && inspectionId) {
+      setDamageInspectionId(inspectionId)
+      setDamageModalOpen(true)
+    }
+  }
 
   if (loading) return <PageLoader />
   if (error || !rental) return (
@@ -112,6 +133,12 @@ export default function RentalDetailPage() {
 
   const isActive = rental.status === 'active'
   const { opStatus, remainingMinutes } = isActive ? computeOperational(rental.expectedEndAt) : { opStatus: 'normal' as const, remainingMinutes: 0 }
+
+  const activeRentalDTO: ActiveRentalDTO | null = isActive ? {
+    ...rental,
+    operationalStatus: opStatus,
+    remainingMinutes: remainingMinutes
+  } : null
 
   return (
     <div className="page-container">
@@ -143,6 +170,16 @@ export default function RentalDetailPage() {
             </div>
           </div>
         </div>
+        {isActive && (
+          <PermissionGate permission="rentals.return">
+            <Button
+              variant="primary"
+              onClick={() => setReturnModalOpen(true)}
+            >
+              إرجاع الزلاجة
+            </Button>
+          </PermissionGate>
+        )}
       </div>
 
       {/* Remaining time banner — active rentals only */}
@@ -213,11 +250,20 @@ export default function RentalDetailPage() {
 
       </div>
 
-      {/* Phase 05 boundary notice */}
-      <div style={{ marginTop: 24, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--color-info-bg)', color: 'var(--color-info-text)', fontSize: 'var(--font-size-sm)' }}>
-        <Clock size={14} style={{ display: 'inline', marginInlineEnd: 6 }} />
-        تسجيل الإعادة والدفع سيكون متاحاً في المراحل القادمة (06 و07)
-      </div>
+      <ReturnRentalModal
+        isOpen={returnModalOpen}
+        onClose={() => setReturnModalOpen(false)}
+        rental={activeRentalDTO}
+        onSuccess={handleReturnSuccess}
+      />
+
+      <CreateDamageReportModal
+        isOpen={damageModalOpen}
+        onClose={() => setDamageModalOpen(false)}
+        rental={activeRentalDTO}
+        inspectionId={damageInspectionId}
+        onSuccess={() => fetchRental()}
+      />
 
       <style>{`
         .remaining-banner {
