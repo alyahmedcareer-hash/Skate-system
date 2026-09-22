@@ -42,6 +42,9 @@ import { damageRouter } from './modules/damage/damage.routes.js'
 // Phase 09 routes
 import maintenanceRoutes from './modules/maintenance/maintenance.routes.js'
 
+// Phase 10 routes
+import { reservationsRouter } from './modules/reservations/reservations.routes.js'
+
 // ---------------------------------------------------------------------------
 // Express app
 // ---------------------------------------------------------------------------
@@ -52,10 +55,10 @@ const app = express()
 // Global middleware
 // ---------------------------------------------------------------------------
 
-// CORS — allow frontend dev server and production origin
+// CORS — allow frontend dev server and production origin (handling localhost/127.0.0.1 mismatch)
 app.use(
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: [env.CORS_ORIGIN, env.CORS_ORIGIN.replace('localhost', '127.0.0.1'), env.CORS_ORIGIN.replace('127.0.0.1', 'localhost')],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,  // required for HttpOnly cookie on refresh (DEC-025)
@@ -158,6 +161,12 @@ app.use('/api/v1/damages', damageRouter)
 // ---------------------------------------------------------------------------
 
 app.use('/api/v1/maintenance', maintenanceRoutes)
+
+// ---------------------------------------------------------------------------
+// Phase 10 routes
+// ---------------------------------------------------------------------------
+
+app.use('/api/v1/reservations', reservationsRouter)
 
 // ---------------------------------------------------------------------------
 // 404 handler — must come before error handler, after all routes

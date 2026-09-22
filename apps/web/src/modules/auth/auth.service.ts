@@ -6,7 +6,7 @@
  * DEC-025: Refresh token is in HttpOnly cookie — never accessed by this code
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001'
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3001'
 
 export interface LoginRequest {
   email: string
