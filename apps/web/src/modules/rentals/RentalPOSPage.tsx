@@ -17,7 +17,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Ticket, ChevronRight, ChevronLeft, Clock, User, Search, Plus, CheckCircle } from 'lucide-react'
 import {
   Button,
@@ -32,6 +32,7 @@ import { PermissionGate } from '../../components/PermissionGate'
 import { rentalsService } from './rentals.service'
 import { customersService, type CustomerListItemDTO, type CreateCustomerBody } from '../customers/customers.service'
 import { skatesService, type SkateDTO } from '../skates/skates.service'
+import { reservationsService } from '../reservations/reservations.service'
 import { formatCurrency } from '../../utils/currency'
 import { paymentsService, type PaymentMethodDTO } from '../payments/payments.service'
 import { Trash2 } from 'lucide-react'
@@ -757,8 +758,10 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 
 export default function RentalPOSPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { showToast } = useToast()
 
+  const [reservationId, setReservationId] = useState<number | null>(null)
   const [step, setStep]                   = useState(1)
   const [selectedSkate, setSelectedSkate] = useState<SkateDTO | null>(null)
   const [durationMinutes, setDuration]    = useState(0)
@@ -769,6 +772,22 @@ export default function RentalPOSPage() {
   const [submitting, setSubmitting]       = useState(false)
   const [submitError, setSubmitError]     = useState<string | null>(null)
 
+  useEffect(() => {
+    const resId = searchParams.get('reservationId')
+    if (resId) {
+      setReservationId(Number(resId))
+      reservationsService.getReservation(Number(resId))
+        .then(res => {
+          setSelectedSkate(res.skate as unknown as SkateDTO)
+          setCustomer(res.customer as unknown as CustomerListItemDTO)
+          setStep(2)
+        })
+        .catch(() => {
+          showToast({ type: 'error', title: 'فشل تحميل بيانات الحجز' })
+        })
+    }
+  }, [searchParams])
+
   const handleConfirm = async (payments: { paymentMethodId: number; amount: number }[]) => {
     if (!selectedSkate || !selectedCustomer) return
     setSubmitting(true); setSubmitError(null)
@@ -778,6 +797,7 @@ export default function RentalPOSPage() {
         customerId:      selectedCustomer.id,
         durationMinutes,
         notes:           notes.trim() || undefined,
+        reservationId:   reservationId || undefined,
         payments,
       })
       showToast({ type: 'success', title: `تم بدء الإيجار: ${res.data.rentalCode}` })

@@ -452,6 +452,49 @@ export async function startRental(
       throw new BusinessRuleError('الزلاجة غير متاحة للاستئجار', 'SKATE_NOT_AVAILABLE')
     }
 
+    // Check for active reservations for this skate right now
+    const now = new Date()
+    const [overlapRows] = await connection.execute<any[]>(
+      `SELECT id, customer_id FROM reservations 
+       WHERE skate_id = ? 
+       AND status IN ('pending', 'confirmed') 
+       AND reserved_from <= ? 
+       AND reserved_until > ?`,
+      [data.skateId, now, now]
+    )
+
+    if (overlapRows.length > 0) {
+      if (!data.reservationId || overlapRows[0].id !== data.reservationId) {
+        await connection.rollback()
+        throw new BusinessRuleError('الزلاجة محجوزة حاليا ولا يمكن استئجارها', 'SKATE_RESERVED')
+      }
+    }
+
+    // Fulfill reservation if provided
+    if (data.reservationId) {
+      const [resRows] = await connection.execute<any[]>(
+        'SELECT id, status, customer_id, skate_id FROM reservations WHERE id = ? FOR UPDATE',
+        [data.reservationId]
+      )
+      if (!resRows[0]) {
+        await connection.rollback()
+        throw new NotFoundError('الحجز غير موجود')
+      }
+      if (resRows[0].status !== 'pending' && resRows[0].status !== 'confirmed') {
+        await connection.rollback()
+        throw new BusinessRuleError('لا يمكن تنفيذ حجز غير نشط', 'RESERVATION_NOT_ACTIVE')
+      }
+      if (resRows[0].customer_id !== data.customerId || resRows[0].skate_id !== data.skateId) {
+        await connection.rollback()
+        throw new BusinessRuleError('بيانات الحجز لا تتطابق مع طلب الإيجار', 'RESERVATION_MISMATCH')
+      }
+      
+      await connection.execute(
+        "UPDATE reservations SET status = 'fulfilled', updated_at = NOW() WHERE id = ?",
+        [data.reservationId]
+      )
+    }
+
     // Calculate rental amount (DEC-065, DEC-067)
     const rentalAmount = calculateRentalAmount(hourlyRate, data.durationMinutes)
 

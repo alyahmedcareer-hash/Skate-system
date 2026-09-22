@@ -59,10 +59,13 @@ describe('Returns API (Phase 07)', () => {
     try {
       // Clean up for tests
       await connection.execute('DELETE FROM late_fee_records')
+      await connection.execute('DELETE FROM maintenance_parts')
+      await connection.execute('DELETE FROM maintenance_records')
       await connection.execute('DELETE FROM inspections')
       await connection.execute('DELETE FROM treasury_movements')
       await connection.execute('DELETE FROM rental_payments')
       await connection.execute('DELETE FROM rentals')
+      await connection.execute('DELETE FROM reservations')
       await connection.execute('DELETE FROM skates')
       await connection.execute('DELETE FROM customers')
 
@@ -90,11 +93,13 @@ describe('Returns API (Phase 07)', () => {
     const connection = await pool.getConnection()
     try {
       await connection.execute('DELETE FROM late_fee_records')
+      await connection.execute('DELETE FROM maintenance_parts')
       await connection.execute('DELETE FROM maintenance_records')
       await connection.execute('DELETE FROM inspections')
       await connection.execute('DELETE FROM treasury_movements')
       await connection.execute('DELETE FROM rental_payments')
       await connection.execute('DELETE FROM rentals')
+      await connection.execute('DELETE FROM reservations')
       await connection.execute('DELETE FROM skates')
       await connection.execute('DELETE FROM customers')
     } finally {

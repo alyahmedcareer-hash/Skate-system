@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import {
+  Calendar,
   LayoutDashboard,
   Package,
   Users,
@@ -48,6 +49,7 @@ import RentalPOSPage from './modules/rentals/RentalPOSPage'
 import RentalDetailPage from './modules/rentals/RentalDetailPage'
 import DamagesPage from './modules/damage/DamagesPage'
 import MaintenancePage from './modules/maintenance/MaintenancePage'
+import { ReservationsPage } from './modules/reservations/ReservationsPage'
 
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
@@ -74,6 +76,7 @@ const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'لوحة التحكم', to: '/', exact: true },
   { icon: Package,         label: 'الزلاجات',    to: '/skates',      permission: 'skates.view' },
   { icon: Users,           label: 'العملاء',     to: '/customers',   permission: 'customers.view' },
+  { icon: Calendar,        label: 'الحجوزات',    to: '/reservations', permission: 'reservations.view' },
   { icon: Ticket,          label: 'الإيجارات',   to: '/rentals',     permission: 'rentals.view' },
   { icon: AlertTriangle,   label: 'أضرار الزلاجات', to: '/damages',  permission: 'damage.view' },
   { icon: Landmark,        label: 'الخزينة',     to: '/treasury',    permission: 'treasury.view' },
@@ -1036,6 +1039,14 @@ export default function App() {
                     fallback={<NoAccessPage permission="rentals.view" />}
                   >
                     <RentalsPage />
+                  </PermissionGate>
+                } />
+                <Route path="/reservations" element={
+                  <PermissionGate
+                    permission="reservations.view"
+                    fallback={<NoAccessPage permission="reservations.view" />}
+                  >
+                    <ReservationsPage />
                   </PermissionGate>
                 } />
                 <Route path="/rentals/new" element={

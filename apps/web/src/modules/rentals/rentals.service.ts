@@ -95,6 +95,7 @@ export interface StartRentalBody {
   customerId:      number
   durationMinutes: number
   notes?:          string
+  reservationId?:  number
   payments:        { paymentMethodId: number; amount: number }[]
 }
 
