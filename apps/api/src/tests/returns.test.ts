@@ -219,12 +219,24 @@ describe('Returns API (Phase 07)', () => {
   })
 
   it('should process late return with full fee payment', async () => {
-    // late by 10 mins + execution ms -> ceil to 11 mins -> 22 EGP
+    // late by 10 mins
     const rentalId = await createActiveRental(15, -10 * 60000)
     
+    // Dynamically calculate what the backend will expect because of mysql time truncation
+    const connectionForCheck = await pool.getConnection()
+    let expectedFee = 20
+    try {
+      const [rRows] = await connectionForCheck.execute<any>('SELECT expected_end_at FROM rentals WHERE id = ?', [rentalId])
+      const expectedEnd = new Date(rRows[0].expected_end_at).getTime()
+      const diffMs = Date.now() - expectedEnd
+      expectedFee = Math.ceil(diffMs / 60000) * 2
+    } finally {
+      connectionForCheck.release()
+    }
+
     const payload = {
       waivedFee: 0,
-      payments: [{ paymentMethodId: pmId, amount: 22 }],
+      payments: [{ paymentMethodId: pmId, amount: expectedFee }],
       inspection: {
         wheelsCondition: 'minor_damage',
         brakeCondition: 'good',
@@ -257,28 +269,40 @@ describe('Returns API (Phase 07)', () => {
       // Check late fee record
       const [lfRows] = await connection.execute<any>('SELECT * FROM late_fee_records WHERE rental_id = ?', [rentalId])
       expect(lfRows.length).toBe(1)
-      expect(parseFloat(lfRows[0].calculated_fee)).toBe(22)
-      expect(parseFloat(lfRows[0].collected_fee)).toBe(22)
+      expect(parseFloat(lfRows[0].calculated_fee)).toBe(expectedFee)
+      expect(parseFloat(lfRows[0].collected_fee)).toBe(expectedFee)
 
       // Check payments & treasury
       const [pmtRows] = await connection.execute<any>("SELECT * FROM rental_payments WHERE rental_id = ? AND payment_type = 'late_fee'", [rentalId])
       expect(pmtRows.length).toBe(1)
-      expect(parseFloat(pmtRows[0].amount)).toBe(22)
+      expect(parseFloat(pmtRows[0].amount)).toBe(expectedFee)
 
       const [trRows] = await connection.execute<any>("SELECT * FROM treasury_movements WHERE reference_id = ? AND reference_type = 'late_fee_payment'", [rentalId])
       expect(trRows.length).toBe(1)
-      expect(parseFloat(trRows[0].amount)).toBe(22)
+      expect(parseFloat(trRows[0].amount)).toBe(expectedFee)
     } finally {
       connection.release()
     }
   })
 
   it('should process late return with full waiver', async () => {
-    // late by 10 mins + execution ms -> ceil to 11 mins -> 22 EGP
+    // late by 10 mins
     const rentalId = await createActiveRental(15, -10 * 60000)
     
+    // Dynamically calculate what the backend will expect because of mysql time truncation
+    const connectionForCheck = await pool.getConnection()
+    let expectedFee = 20
+    try {
+      const [rRows] = await connectionForCheck.execute<any>('SELECT expected_end_at FROM rentals WHERE id = ?', [rentalId])
+      const expectedEnd = new Date(rRows[0].expected_end_at).getTime()
+      const diffMs = Date.now() - expectedEnd
+      expectedFee = Math.ceil(diffMs / 60000) * 2
+    } finally {
+      connectionForCheck.release()
+    }
+    
     const payload = {
-      waivedFee: 22,
+      waivedFee: expectedFee,
       waiverReason: 'Apology to customer',
       payments: [],
       inspection: {
@@ -293,18 +317,22 @@ describe('Returns API (Phase 07)', () => {
 
     const res = await request(app)
       .post(`/api/v1/rentals/${rentalId}/return`)
-      .set('Authorization', `Bearer ${adminToken}`) // Admin has waive perm
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(payload)
 
-    if (res.status !== 200) console.log('WAIVER TEST ERROR:', res.body)
     expect(res.status).toBe(200)
 
     const connection = await pool.getConnection()
     try {
       const [lfRows] = await connection.execute<any>('SELECT * FROM late_fee_records WHERE rental_id = ?', [rentalId])
       expect(lfRows.length).toBe(1)
-      expect(parseFloat(lfRows[0].waived_fee)).toBe(22)
-      expect(lfRows[0].waiver_reason).toBe('Apology to customer')
+      expect(parseFloat(lfRows[0].calculated_fee)).toBe(expectedFee)
+      expect(parseFloat(lfRows[0].waived_fee)).toBe(expectedFee)
+      expect(parseFloat(lfRows[0].collected_fee)).toBe(0)
+
+      // Ensure no late fee payments or treasury movements created for 0 amount
+      const [pmtRows] = await connection.execute<any>("SELECT * FROM rental_payments WHERE rental_id = ? AND payment_type = 'late_fee'", [rentalId])
+      expect(pmtRows.length).toBe(0)
     } finally {
       connection.release()
     }

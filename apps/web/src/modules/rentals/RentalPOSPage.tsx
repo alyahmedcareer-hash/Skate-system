@@ -344,7 +344,7 @@ function CustomerPicker({ onSelect, onBack }: CustomerPickerProps) {
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState<string | null>(null)
   const [showCreate, setShowCreate]   = useState(false)
-  const [createForm, setCreateForm]   = useState<CreateCustomerBody>({ name: '', phone: '' })
+  const [createForm, setCreateForm]   = useState<CreateCustomerBody>({ name: '', phone: '', nationalId: '' })
   const [creating, setCreating]       = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const { showToast } = useToast()
@@ -374,7 +374,12 @@ function CustomerPicker({ onSelect, onBack }: CustomerPickerProps) {
     }
     setCreating(true); setCreateError(null)
     try {
-      const res = await customersService.create(createForm)
+      const payload: CreateCustomerBody = {
+        name: createForm.name.trim(),
+        phone: createForm.phone.trim(),
+        nationalId: createForm.nationalId?.trim() || undefined,
+      }
+      const res = await customersService.create(payload)
       showToast({ type: 'success', title: `تم إضافة العميل: ${res.data.name}` })
       const listRes = await customersService.list({ q: res.data.phone, isActive: '1' })
       const found = listRes.data.find(c => c.id === res.data.id)
@@ -385,7 +390,7 @@ function CustomerPicker({ onSelect, onBack }: CustomerPickerProps) {
           id: res.data.id,
           name: res.data.name,
           phone: res.data.phone,
-          nationalIdMasked: '—',
+          nationalIdMasked: res.data.nationalId ? '***' : '—',
           registrationDate: res.data.registrationDate,
           notes: res.data.notes,
           isActive: res.data.isActive,
@@ -484,6 +489,14 @@ function CustomerPicker({ onSelect, onBack }: CustomerPickerProps) {
                 onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))}
                 required
                 style={{ marginTop: 8 }}
+              />
+              <Input
+                id="new-customer-national-id"
+                label="الرقم القومي (اختياري)"
+                value={createForm.nationalId || ''}
+                onChange={e => setCreateForm(f => ({ ...f, nationalId: e.target.value }))}
+                style={{ marginTop: 8 }}
+                dir="ltr"
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <Button id="create-customer-submit" variant="primary" loading={creating} onClick={handleCreate}>
