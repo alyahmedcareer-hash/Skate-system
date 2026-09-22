@@ -10,16 +10,16 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | Phase 07 (Returns & Inspection) **FINAL GATE PASSED ✅** |
-| **Current Phase** | Phase 07 COMPLETE. Phase 08 (Damage Management) is NEXT. |
-| **Current Milestone** | Phase 07: Returns & Inspection — COMPLETE ✅ |
-| **Last Completed Phase** | Phase 07 — Returns & Inspection — 2026-09-22 |
-| **Active Work** | None — Phase 07 Closure Gate complete |
+| **Overall Status** | Phase 08 (Damage Management) **FINAL GATE PASSED ✅** |
+| **Current Phase** | Phase 08 COMPLETE. Phase 09 (Maintenance) is NEXT. |
+| **Current Milestone** | Phase 08: Damage Management — COMPLETE ✅ |
+| **Last Completed Phase** | Phase 08 — Damage Management — 2026-09-22 |
+| **Active Work** | None — Phase 08 Closure Gate complete |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-22 — Phase 07 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), 183/183 tests ✅, `vite build` clean ✅, `drizzle-kit check` clean ✅ |
-| **Last Git Commit** | `pending` — feat(rentals): integrate Phase 07 returns workflow |
+| **Last Verification** | 2026-09-22 — Phase 08 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), 184/184 tests ✅, `vite build` clean ✅ |
+| **Last Git Commit** | `pending` — feat(damage): integrate Phase 08 damage management |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
-| **Recommended Next Action** | Begin Phase 08 — Damage Management |
+| **Recommended Next Action** | Begin Phase 09 — Maintenance |
 
 ---
 
@@ -32,10 +32,10 @@
 | Governance documentation | COMPLETED |
 | Architecture documentation | COMPLETED — updated with Phase 04 decisions |
 | Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, RENTALS.md ✅, PHASE_06 spec ✅ |
-| Source code — Frontend | VERIFIED ✅ — Phase 06: RentalPOS payments, payments.service.ts. Built ✅ zero TS errors. |
-| Source code — Backend | VERIFIED ✅ — Phase 06: payments, treasury schema, routes, services. Built ✅ zero TS errors. |
-| Database | VERIFIED ✅ — 6 migrations applied. 12 tables. Seed: treasury accounts. |
-| Tests | VERIFIED ✅ — `npm test` 176/176 PASS (7 test files). |
+| Source code — Frontend | VERIFIED ✅ — Phase 08: Damage Reports, Customer Charges, Waivers, Returns Integration. Built ✅ zero TS errors. |
+| Source code — Backend | VERIFIED ✅ — Phase 08: damage schema, routes, services, waivers, tests. Built ✅ zero TS errors. |
+| Database | VERIFIED ✅ — Phase 08 schema active. |
+| Tests | VERIFIED ✅ — `npm test` 184/184 PASS (8 test files). |
 | Deployment | NONE |
 | Git repository | VERIFIED ✅ — local + GitHub remote (commit `cab5a19`) |
 
@@ -54,7 +54,7 @@
 | Phase 05 | Rental POS (Core) | **FINAL GATE PASSED ✅** | |
 | Phase 06 | Payments & Treasury | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-21. |
 | Phase 07 | Returns & Inspection | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. Skate return workflow, late fee calculation, condition reporting, waivers RBAC. |
-| Phase 08 | Damage Management | PLANNED | Depends on Phase 07 |
+| Phase 08 | Damage Management | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. Damage reports, customer charges, payment collection, waivers. |
 | Phase 09 | Maintenance | PLANNED | Depends on Phase 08 |
 | Phase 10 | Reservations | PLANNED | Depends on Phases 03, 04 |
 | Phase 11 | Sales POS | PLANNED | Depends on Phase 06 |
@@ -80,8 +80,8 @@
 | Rentals | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (74/74) ✅ | VERIFIED ✅ |
 | Payments | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (6/6) ✅ | VERIFIED ✅ |
 | Treasury | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
-| Returns/Inspection | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
-| Damage | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
+| Returns/Inspection | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
+| Damage | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Maintenance | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Reservations | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Sales POS | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |

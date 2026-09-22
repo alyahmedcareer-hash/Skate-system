@@ -1,0 +1,1 @@
+ALTER TABLE `treasury_movements` MODIFY COLUMN `reference_type` enum('rental_payment','rental_refund','late_fee_payment','damage_charge_payment','expense','other') NOT NULL;

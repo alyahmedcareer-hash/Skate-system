@@ -10,7 +10,7 @@ interface ReturnRentalModalProps {
   isOpen: boolean
   onClose: () => void
   rental: ActiveRentalDTO | null
-  onSuccess: () => void
+  onSuccess: (hasDamage?: boolean, inspectionId?: number) => void
 }
 
 export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: ReturnRentalModalProps) {
@@ -161,9 +161,11 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
     }
 
     try {
-      await rentalsService.return(rental.id, payload)
+      const res = await rentalsService.return(rental.id, payload)
       showToast({ type: 'success', title: 'تم إنهاء الإيجار وإعادة الزلاجة بنجاح' })
-      onSuccess()
+      
+      const hasDamage = [wheelsCondition, brakeCondition, strapCondition, bearingsCondition, bodyCondition].some(c => c === 'damaged' || c === 'broken')
+      onSuccess(hasDamage, res.data.lastInspectionId)
       onClose()
     } catch (err: unknown) {
       const errObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string }

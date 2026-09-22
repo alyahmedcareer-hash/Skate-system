@@ -50,6 +50,7 @@ function formatRemaining(mins: number): string {
 }
 
 import { ReturnRentalModal } from './ReturnRentalModal'
+import { CreateDamageReportModal } from './CreateDamageReportModal'
 import { PermissionGate } from '../../components/PermissionGate'
 
 // ---------------------------------------------------------------------------
@@ -156,9 +157,21 @@ export default function ActiveRentalsPage() {
   const [returnModalOpen, setReturnModalOpen] = useState(false)
   const [selectedRentalForReturn, setSelectedRentalForReturn] = useState<ActiveRentalDTO | null>(null)
 
+  // Damage Report Modal State
+  const [damageModalOpen, setDamageModalOpen] = useState(false)
+  const [damageInspectionId, setDamageInspectionId] = useState<number | null>(null)
+
   const handleReturnClick = (rental: ActiveRentalDTO) => {
     setSelectedRentalForReturn(rental)
     setReturnModalOpen(true)
+  }
+
+  const handleReturnSuccess = (hasDamage?: boolean, inspectionId?: number) => {
+    load()
+    if (hasDamage && inspectionId && selectedRentalForReturn) {
+      setDamageInspectionId(inspectionId)
+      setDamageModalOpen(true)
+    }
   }
 
   const load = useCallback(async (isRefresh = false) => {
@@ -277,9 +290,15 @@ export default function ActiveRentalsPage() {
         isOpen={returnModalOpen}
         onClose={() => setReturnModalOpen(false)}
         rental={selectedRentalForReturn}
-        onSuccess={() => {
-          load(true) // Refresh list after successful return
-        }}
+        onSuccess={handleReturnSuccess}
+      />
+
+      <CreateDamageReportModal
+        isOpen={damageModalOpen}
+        onClose={() => setDamageModalOpen(false)}
+        rental={selectedRentalForReturn}
+        inspectionId={damageInspectionId}
+        onSuccess={() => load()}
       />
 
       <style>{`

@@ -211,7 +211,7 @@ export const rentalsService = {
    * POST /api/v1/rentals/:id/return — return a rental and process late fee (Phase 07)
    */
   return: (id: number, body: ReturnRentalBody) =>
-    api.post<{ success: boolean; data: RentalDTO }>(`/api/v1/rentals/${id}/return`, body),
+    api.post<{ success: boolean; data: RentalDTO & { lastInspectionId: number } }>(`/api/v1/rentals/${id}/return`, body),
 }
 
 export interface ReturnRentalBody {

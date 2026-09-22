@@ -18,6 +18,7 @@ import {
   Landmark,
   Wrench,
   BarChart2,
+  AlertTriangle,
   UserCog,
   KeyRound,
   Settings,
@@ -45,6 +46,7 @@ import RentalsPage from './modules/rentals/RentalsPage'
 import ActiveRentalsPage from './modules/rentals/ActiveRentalsPage'
 import RentalPOSPage from './modules/rentals/RentalPOSPage'
 import RentalDetailPage from './modules/rentals/RentalDetailPage'
+import DamagesPage from './modules/damage/DamagesPage'
 
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
@@ -72,6 +74,7 @@ const NAV_ITEMS = [
   { icon: Package,         label: 'الزلاجات',    to: '/skates',      permission: 'skates.view' },
   { icon: Users,           label: 'العملاء',     to: '/customers',   permission: 'customers.view' },
   { icon: Ticket,          label: 'الإيجارات',   to: '/rentals',     permission: 'rentals.view' },
+  { icon: AlertTriangle,   label: 'أضرار الزلاجات', to: '/damages',  permission: 'damage.view' },
   { icon: Landmark,        label: 'الخزينة',     to: '/treasury',    permission: 'treasury.view' },
   { icon: Wrench,          label: 'الصيانة',     to: '/maintenance', permission: 'maintenance.view' },
   { icon: BarChart2,       label: 'التقارير',    to: '/reports',     permission: 'reports.view' },
@@ -1056,6 +1059,14 @@ export default function App() {
                     fallback={<NoAccessPage permission="rentals.view" />}
                   >
                     <RentalDetailPage />
+                  </PermissionGate>
+                } />
+                <Route path="/damages" element={
+                  <PermissionGate
+                    permission="damage.view"
+                    fallback={<NoAccessPage permission="damage.view" />}
+                  >
+                    <DamagesPage />
                   </PermissionGate>
                 } />
                 <Route path="/treasury" element={<PlaceholderPage title="الخزينة" phase="المرحلة 06" />} />

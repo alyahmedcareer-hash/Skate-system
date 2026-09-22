@@ -40,6 +40,7 @@ const ALL_PERMISSIONS: Array<{ key: string; labelAr: string; module: string }> =
   { key: 'damage.view',      labelAr: 'عرض تقارير الأضرار',       module: 'damage' },
   { key: 'damage.create',    labelAr: 'إضافة تقرير ضرر',          module: 'damage' },
   { key: 'damage.waive',     labelAr: 'التنازل عن رسوم الضرر',   module: 'damage' },
+  { key: 'damage.collect_charge', labelAr: 'تحصيل رسوم الضرر',    module: 'damage' },
   // Maintenance
   { key: 'maintenance.view',     labelAr: 'عرض سجلات الصيانة',    module: 'maintenance' },
   { key: 'maintenance.create',   labelAr: 'إضافة طلب صيانة',      module: 'maintenance' },
@@ -118,7 +119,7 @@ const DEFAULT_ROLES = [
       'expenses.view', 'expenses.create',
       'shifts.view', 'shifts.manage',
       'reservations.view', 'reservations.create', 'reservations.edit', 'reservations.cancel',
-      'damage.view', 'damage.create',
+      'damage.view', 'damage.create', 'damage.collect_charge',
     ],
   },
   {

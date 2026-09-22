@@ -55,7 +55,7 @@ export const treasuryMovements = mysqlTable('treasury_movements', {
     .references(() => treasuryAccounts.id),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   type: mysqlEnum('type', ['in', 'out']).notNull(),
-  referenceType: mysqlEnum('reference_type', ['rental_payment', 'rental_refund', 'late_fee_payment', 'expense', 'other']).notNull(),
+  referenceType: mysqlEnum('reference_type', ['rental_payment', 'rental_refund', 'late_fee_payment', 'damage_charge_payment', 'expense', 'other']).notNull(),
   referenceId: int('reference_id'),
   cashierId: int('cashier_id')
     .notNull()

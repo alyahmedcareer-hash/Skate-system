@@ -810,7 +810,7 @@ export async function returnRental(
   rentalId: number,
   cashierId: number,
   data: import('./rentals.types.js').ReturnRentalRequest
-): Promise<RentalDTO> {
+): Promise<RentalDTO & { lastInspectionId: number }> {
   // Read late_fee_per_minute from settings
   const [feeSetting] = await db.select().from(settings).where(eq(settings.key, 'late_fee_per_minute')).limit(1)
   if (!feeSetting) {
@@ -947,7 +947,7 @@ export async function returnRental(
 
     // 7. Insert inspection
     const ins = data.inspection
-    await connection.execute(
+    const [insResult] = await connection.execute<any>(
       `INSERT INTO inspections (rental_id, skate_id, inspected_by, wheels_condition, brake_condition, strap_condition, bearings_condition, body_condition, other_notes, maintenance_required, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
@@ -963,6 +963,7 @@ export async function returnRental(
         ins.maintenanceRequired ? 1 : 0
       ]
     )
+    const inspectionId = insResult.insertId
 
     // 8. Update rental
     await connection.execute(
@@ -978,12 +979,13 @@ export async function returnRental(
     )
 
     await connection.commit()
+    
+    const rentalDto = await getRental(rentalId)
+    return { ...rentalDto, lastInspectionId: inspectionId }
   } catch (err) {
     try { await connection.rollback() } catch { /* ignore rollback error */ }
     throw err
   } finally {
     connection.release()
   }
-
-  return getRental(rentalId)
 }
