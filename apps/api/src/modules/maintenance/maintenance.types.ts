@@ -8,7 +8,7 @@ export interface CreateMaintenanceRecordPayload {
 export interface UpdateMaintenanceRecordPayload {
   problemDescription?: string
   repairDescription?: string
-  status?: 'pending' | 'in_progress' | 'completed'
+  status?: 'pending' | 'in_progress'
 }
 
 export interface CompleteMaintenanceRecordPayload {
