@@ -5,8 +5,13 @@
 ---
 
 ## [Unreleased]
+- **Phase 11 (Sales POS) Completed**: 
+  - Added new backend tables for products, categories, sales, sale_items, and sale_payments.
+  - Developed strict inventory management with backend transaction locking (`SELECT ... FOR UPDATE`) to prevent overselling.
+  - Integrated sales POS and product management into the web interface.
+  - Included ability to cancel completed sales, securely rolling back inventory quantities.
 
-### Phase 07 — Returns & Inspection
+## [2026-09-22] - Phase 10 Maintenance & Reservations
 
 #### Added
 

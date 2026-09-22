@@ -123,7 +123,7 @@ describe('TC-AUTH-01: Login success', () => {
     expect(res.body.data.user.isActive).toBe(true)
     expect(Array.isArray(res.body.data.user.roles)).toBe(true)
     expect(Array.isArray(res.body.data.user.permissions)).toBe(true)
-    expect(res.body.data.user.permissions.length).toBe(45) // updated in Phase 08
+    expect(res.body.data.user.permissions.length).toBe(48) // updated to 48 in Phase 118
 
     // HttpOnly refresh cookie must be set
     const cookies = res.headers['set-cookie'] as string[] | undefined

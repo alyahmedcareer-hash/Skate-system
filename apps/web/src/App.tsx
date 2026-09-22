@@ -31,6 +31,9 @@ import {
   PanelRightOpen,
   Construction,
   ShieldOff,
+  ShoppingCart,
+  ListOrdered,
+  Tags,
 } from 'lucide-react'
 import { useAuth } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -50,6 +53,11 @@ import RentalDetailPage from './modules/rentals/RentalDetailPage'
 import DamagesPage from './modules/damage/DamagesPage'
 import MaintenancePage from './modules/maintenance/MaintenancePage'
 import { ReservationsPage } from './modules/reservations/ReservationsPage'
+
+// Phase 11 — Sales POS
+import ProductsPage from './modules/products/ProductsPage'
+import SalesPOSPage from './modules/sales/SalesPOSPage'
+import SalesPage from './modules/sales/SalesPage'
 
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
@@ -75,6 +83,9 @@ function NoAccessPage({ permission }: { permission: string }) {
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'لوحة التحكم', to: '/', exact: true },
   { icon: Package,         label: 'الزلاجات',    to: '/skates',      permission: 'skates.view' },
+  { icon: Tags,            label: 'المنتجات',     to: '/products',   permission: 'products.view' },
+  { icon: ShoppingCart,    label: 'نقطة البيع',  to: '/sales-pos',   permission: 'sales.create' },
+  { icon: ListOrdered,     label: 'سجل المبيعات',to: '/sales',       permission: 'sales.view' },
   { icon: Users,           label: 'العملاء',     to: '/customers',   permission: 'customers.view' },
   { icon: Calendar,        label: 'الحجوزات',    to: '/reservations', permission: 'reservations.view' },
   { icon: Ticket,          label: 'الإيجارات',   to: '/rentals',     permission: 'rentals.view' },
@@ -1039,6 +1050,30 @@ export default function App() {
                     fallback={<NoAccessPage permission="rentals.view" />}
                   >
                     <RentalsPage />
+                  </PermissionGate>
+                } />
+                <Route path="/products" element={
+                  <PermissionGate
+                    permission="products.view"
+                    fallback={<NoAccessPage permission="products.view" />}
+                  >
+                    <ProductsPage />
+                  </PermissionGate>
+                } />
+                <Route path="/sales-pos" element={
+                  <PermissionGate
+                    permission="sales.create"
+                    fallback={<NoAccessPage permission="sales.create" />}
+                  >
+                    <SalesPOSPage />
+                  </PermissionGate>
+                } />
+                <Route path="/sales" element={
+                  <PermissionGate
+                    permission="sales.view"
+                    fallback={<NoAccessPage permission="sales.view" />}
+                  >
+                    <SalesPage />
                   </PermissionGate>
                 } />
                 <Route path="/reservations" element={

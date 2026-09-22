@@ -24,6 +24,9 @@ import authRoutes from './modules/auth/auth.routes.js'
 import usersRoutes from './modules/users/users.routes.js'
 import rolesRoutes from './modules/users/roles.routes.js'
 
+import { productsRouter } from './modules/products/products.routes.js'
+import { salesRouter } from './modules/sales/sales.routes.js'
+
 // Phase 03 routes
 import skatesRoutes from './modules/skates/skates.routes.js'
 
@@ -131,6 +134,9 @@ app.use('/api/v1/roles', rolesRoutes)
 // ---------------------------------------------------------------------------
 
 app.use('/api/v1/skates', skatesRoutes)
+
+app.use('/api/v1/products', productsRouter)
+app.use('/api/v1/sales', salesRouter)
 
 // ---------------------------------------------------------------------------
 // Phase 04 routes

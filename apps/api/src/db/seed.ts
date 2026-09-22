@@ -92,6 +92,10 @@ const ALL_PERMISSIONS: Array<{ key: string; labelAr: string; module: string }> =
   // Sales
   { key: 'sales.view',       labelAr: 'عرض المبيعات',             module: 'sales' },
   { key: 'sales.create',     labelAr: 'إنشاء فاتورة بيع',         module: 'sales' },
+  { key: 'sales.cancel',     labelAr: 'إلغاء فاتورة بيع',         module: 'sales' },
+  // Products
+  { key: 'products.view',    labelAr: 'عرض المنتجات',             module: 'products' },
+  { key: 'products.manage',  labelAr: 'إدارة المنتجات',           module: 'products' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -116,6 +120,7 @@ const DEFAULT_ROLES = [
       'skates.view',
       'payments.view', 'payments.create',
       'sales.view', 'sales.create',
+      'products.view',
       'expenses.view', 'expenses.create',
       'shifts.view', 'shifts.manage',
       'reservations.view', 'reservations.create', 'reservations.edit', 'reservations.cancel',

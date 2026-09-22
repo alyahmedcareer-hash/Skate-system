@@ -36,7 +36,8 @@ d:/Skate system/
     ├── modules/                 — Per-module documentation
     │   ├── AUTH.md              — VERIFIED (Phase 02)
     │   ├── USERS_PERMISSIONS.md — VERIFIED (Phase 02)
-    │   └── SKATES.md            — VERIFIED (Phase 03 — updated pre-implementation 2026-09-10)
+    │   ├── SKATES.md            — VERIFIED (Phase 03 — updated pre-implementation 2026-09-10)
+    │   └── sales.md             — PLANNED (Phase 11)
     ├── phases/                  — Phase plans
     │   ├── PHASE_02_AUTHENTICATION_AND_PERMISSIONS.md — VERIFIED (full spec, Phase 02 Final Gate)
     │   ├── PHASE_03_SKATES_MODULE.md — VERIFIED (full spec written 2026-09-10)
@@ -108,10 +109,15 @@ d:/Skate system/
 │   │           │   ├── customers.service.ts — VERIFIED (Phase 04)
 │   │           │   ├── CustomersPage.tsx    — VERIFIED (Phase 04 — list, search, filter, create/edit modals, deactivate)
 │   │           │   └── CustomerProfilePage.tsx — VERIFIED (Phase 04 — profile, full NID, edit/deactivate/activate)
-│   │           └── rentals/              — [PHASE 05 — VERIFIED ✅]
-│   │               ├── rentals.service.ts   — VERIFIED (Phase 05 — API layer: list, getActive, getById, create, calculatePrice, getConfig, getCustomerRentals)
-│   │               ├── RentalPOSPage.tsx    — VERIFIED (Phase 05 — multi-step POS; config from server; no hardcoded fallback; error/retry state)
-│   │               └── ActiveRentalsPage.tsx — VERIFIED (Phase 05 — active rentals with operational status badges)
+│   │           ├── rentals/              — [PHASE 05 — VERIFIED ✅]
+│   │           │   ├── rentals.service.ts   — VERIFIED (Phase 05 — API layer: list, getActive, getById, create, calculatePrice, getConfig, getCustomerRentals)
+│   │           │   ├── RentalPOSPage.tsx    — VERIFIED (Phase 05 — multi-step POS; config from server; no hardcoded fallback; error/retry state)
+│   │           │   └── ActiveRentalsPage.tsx — VERIFIED (Phase 05 — active rentals with operational status badges)
+│   │           ├── products/             — [PHASE 11]
+│   │           │   └── ProductsPage.tsx  — PLANNED (Phase 11)
+│   │           └── sales/                — [PHASE 11]
+│   │               ├── SalesPOSPage.tsx  — PLANNED (Phase 11)
+│   │               └── SalesHistoryPage.tsx — PLANNED (Phase 11)
 │   └── api/                     — Backend (VERIFIED — Phase 03 COMPLETE)
 │       ├── .env.example           — VERIFIED (updated Phase 02)
 │       ├── package.json           — VERIFIED (test, db:seed scripts added)
@@ -171,10 +177,18 @@ d:/Skate system/
 │               │   ├── customers.types.ts  — VERIFIED (Phase 04)
 │               │   ├── customers.service.ts — VERIFIED (Phase 04)
 │               │   └── customers.routes.ts  — VERIFIED (Phase 04)
-│               └── rentals/         — [PHASE 05 — VERIFIED ✅]
-│                   ├── rentals.types.ts  — VERIFIED (Phase 05)
-│                   ├── rentals.service.ts — VERIFIED (Phase 05: 7 functions incl. startRental, getRentalConfig, computeOperationalStatus)
-│                   └── rentals.routes.ts  — VERIFIED (Phase 05: 7 endpoints)
+│               ├── rentals/         — [PHASE 05 — VERIFIED ✅]
+│               │   ├── rentals.types.ts  — VERIFIED (Phase 05)
+│               │   ├── rentals.service.ts — VERIFIED (Phase 05: 7 functions incl. startRental, getRentalConfig, computeOperationalStatus)
+│               │   └── rentals.routes.ts  — VERIFIED (Phase 05: 7 endpoints)
+│               ├── products/        — [PHASE 11]
+│               │   ├── products.types.ts — PLANNED (Phase 11)
+│               │   ├── products.service.ts — PLANNED (Phase 11)
+│               │   └── products.routes.ts  — PLANNED (Phase 11)
+│               └── sales/           — [PHASE 11]
+│                   ├── sales.types.ts — PLANNED (Phase 11)
+│                   ├── sales.service.ts — PLANNED (Phase 11)
+│                   └── sales.routes.ts  — PLANNED (Phase 11)
 ├── tests/                       — Integration tests (top-level placeholder; actual tests in apps/api/src/tests/)
 ├── scripts/                     — PLACEHOLDER
 ├── KOSHK_SKATE_VISUAL_DESIGN_REFERENCE.md  — VERIFIED (source document)
@@ -216,7 +230,9 @@ apps/web/src/
     ├── users/              — VERIFIED (Phase 02 + 03.5 migration)
     ├── skates/             — VERIFIED (Phase 03 + 03.5 migration)
     ├── customers/          — VERIFIED (Phase 04 — COMPLETE ✅)
-    └── ...
+    ├── rentals/            — VERIFIED (Phase 05 — COMPLETE ✅)
+    ├── products/           — PLANNED (Phase 11)
+    └── sales/              — PLANNED (Phase 11)
 ```
 
 Verified API migrations:
@@ -240,7 +256,7 @@ For each module: where to find code, documentation, database tables, and API rou
 ### MODULE: AUTH
 
 | Area | Path | Status |
-|---|---|
+|---|---|---|
 | Frontend | `apps/web/src/modules/auth/` | VERIFIED (Phase 02) |
 | Backend | `apps/api/src/modules/auth/` | VERIFIED (Phase 02) |
 | Database tables | `users`, `roles`, `permissions`, `user_roles`, `role_permissions` | VERIFIED (Phase 02) |
@@ -256,7 +272,7 @@ For each module: where to find code, documentation, database tables, and API rou
 ### MODULE: USERS & PERMISSIONS
 
 | Area | Path | Status |
-|---|---|
+|---|---|---|
 | Frontend | `apps/web/src/modules/users/` | VERIFIED (Phase 02) |
 | Backend | `apps/api/src/modules/users/` | VERIFIED (Phase 02) |
 | Database tables | `users`, `roles`, `permissions`, `user_roles`, `role_permissions` | VERIFIED (Phase 02) |
@@ -414,10 +430,10 @@ For each module: where to find code, documentation, database tables, and API rou
 
 | Area | Path | Status |
 |---|---|---|
-| Frontend | `apps/web/src/modules/reservations/` | PLANNED |
-| Backend | `apps/api/src/modules/reservations/` | PLANNED |
-| Database tables | `reservations` | PLANNED |
-| API routes | `/api/v1/reservations` | PLANNED |
+| Frontend | `apps/web/src/modules/reservations/` | PLANNED (Phase 10) |
+| Backend | `apps/api/src/modules/reservations/` | PLANNED (Phase 10) |
+| Database tables | `reservations` | PLANNED (Phase 10) |
+| API routes | `POST /api/v1/reservations`, `GET /api/v1/reservations` | PLANNED (Phase 10) |
 | Documentation | `docs/modules/RESERVATIONS.md` | PLANNED |
 | Tests | `tests/reservations/` | PLANNED |
 
