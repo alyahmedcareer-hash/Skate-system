@@ -47,6 +47,7 @@ import ActiveRentalsPage from './modules/rentals/ActiveRentalsPage'
 import RentalPOSPage from './modules/rentals/RentalPOSPage'
 import RentalDetailPage from './modules/rentals/RentalDetailPage'
 import DamagesPage from './modules/damage/DamagesPage'
+import MaintenancePage from './modules/maintenance/MaintenancePage'
 
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
@@ -1070,7 +1071,14 @@ export default function App() {
                   </PermissionGate>
                 } />
                 <Route path="/treasury" element={<PlaceholderPage title="الخزينة" phase="المرحلة 06" />} />
-                <Route path="/maintenance" element={<PlaceholderPage title="الصيانة" phase="المرحلة 09" />} />
+                <Route path="/maintenance" element={
+                  <PermissionGate
+                    permission="maintenance.view"
+                    fallback={<NoAccessPage permission="maintenance.view" />}
+                  >
+                    <MaintenancePage />
+                  </PermissionGate>
+                } />
                 <Route path="/reports" element={<PlaceholderPage title="التقارير" phase="المرحلة 13" />} />
                 <Route path="/settings" element={<PlaceholderPage title="الإعدادات" phase="المرحلة متأخرة" />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

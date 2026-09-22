@@ -36,8 +36,11 @@ import rentalsRoutes from './modules/rentals/rentals.routes.js'
 // Phase 06 routes
 import paymentsRoutes from './modules/payments/payments.routes.js'
 
-// Phase 07 routes
+// Phase 08 routes
 import { damageRouter } from './modules/damage/damage.routes.js'
+
+// Phase 09 routes
+import maintenanceRoutes from './modules/maintenance/maintenance.routes.js'
 
 // ---------------------------------------------------------------------------
 // Express app
@@ -149,6 +152,12 @@ app.use('/api/v1/payments', paymentsRoutes)
 // ---------------------------------------------------------------------------
 
 app.use('/api/v1/damages', damageRouter)
+
+// ---------------------------------------------------------------------------
+// Phase 09 routes
+// ---------------------------------------------------------------------------
+
+app.use('/api/v1/maintenance', maintenanceRoutes)
 
 // ---------------------------------------------------------------------------
 // 404 handler — must come before error handler, after all routes

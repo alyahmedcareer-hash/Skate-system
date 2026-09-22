@@ -21,6 +21,8 @@ describe('Returns API (Phase 07)', () => {
       const hash = await bcrypt.hash(password, 12)
       
       await connection.execute("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE email = ?)", [email])
+      await connection.execute("DELETE FROM maintenance_records WHERE created_by IN (SELECT id FROM users WHERE email = ?)", [email])
+      await connection.execute("DELETE FROM inspections WHERE inspected_by IN (SELECT id FROM users WHERE email = ?)", [email])
       await connection.execute("DELETE FROM users WHERE email = ?", [email])
       
       const [uRes] = await connection.execute<any>(
@@ -88,6 +90,7 @@ describe('Returns API (Phase 07)', () => {
     const connection = await pool.getConnection()
     try {
       await connection.execute('DELETE FROM late_fee_records')
+      await connection.execute('DELETE FROM maintenance_records')
       await connection.execute('DELETE FROM inspections')
       await connection.execute('DELETE FROM treasury_movements')
       await connection.execute('DELETE FROM rental_payments')
@@ -110,7 +113,7 @@ describe('Returns API (Phase 07)', () => {
       const [rRes] = await connection.execute<any>(
         `INSERT INTO rentals (rental_code, skate_id, customer_id, cashier_id, duration_minutes, price_per_hour, rental_amount, started_at, expected_end_at, status, created_at, updated_at)
          VALUES (?, ?, ?, 1, ?, 120, 30, NOW(), ?, 'active', NOW(), NOW())`,
-        [`TEST-${Date.now()}`, skateId, customerId, minutes, expectedEnd]
+        [`RN-${Date.now()}`, skateId, customerId, minutes, expectedEnd]
       )
       
       await connection.execute("UPDATE skates SET status = 'rented' WHERE id = ?", [skateId])

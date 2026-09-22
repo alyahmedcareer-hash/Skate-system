@@ -17,9 +17,9 @@
  *   NOTE: When implementing Phase 09, add maintenance completion check in updateSkate().
  */
 
-import { eq, sql, and, like } from 'drizzle-orm'
+import { eq, or, and, sql, notInArray } from 'drizzle-orm'
 import { db } from '../../db/connection.js'
-import { skates, WORKFLOW_ONLY_STATUSES } from '../../db/schema/skates.js'
+import { skates, maintenanceRecords, WORKFLOW_ONLY_STATUSES } from '../../db/schema/index.js'
 import {
   NotFoundError,
   ConflictError,
@@ -262,8 +262,29 @@ export async function updateSkate(id: number, body: UpdateSkateRequest): Promise
         'SKATE_STATUS_NOT_ALLOWED',
       )
     }
-    // TD-002: DEC-007 (maintenance→available requires completed maintenance record)
-    // is deferred to Phase 09. No check here yet.
+    // DEC-007 (maintenance→available requires completed maintenance record)
+    if (rows[0].status === 'maintenance' && body.status === 'available') {
+      const [pendingMaint] = await db
+        .select({ id: maintenanceRecords.id })
+        .from(maintenanceRecords)
+        .where(
+          and(
+            eq(maintenanceRecords.skateId, id),
+            or(
+              eq(maintenanceRecords.status, 'pending'),
+              eq(maintenanceRecords.status, 'in_progress')
+            )
+          )
+        )
+        .limit(1)
+
+      if (pendingMaint) {
+        throw new BusinessRuleError(
+          'لا يمكن تحويل الزلاجة إلى حالة "متاح" لوجود سجل صيانة غير مكتمل',
+          'PENDING_MAINTENANCE'
+        )
+      }
+    }
     updates.status = body.status
   }
 

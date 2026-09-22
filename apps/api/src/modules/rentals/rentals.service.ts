@@ -978,6 +978,15 @@ export async function returnRental(
       [nextSkateStatus, rental.skate_id]
     )
 
+    // DEC-007: Phase 09 automatic maintenance record creation
+    if (ins.maintenanceRequired) {
+      await connection.execute(
+        `INSERT INTO maintenance_records (skate_id, inspection_id, created_by, status, created_at, updated_at) 
+         VALUES (?, ?, ?, 'pending', NOW(), NOW())`,
+        [rental.skate_id, inspectionId, cashierId]
+      )
+    }
+
     await connection.commit()
     
     const rentalDto = await getRental(rentalId)

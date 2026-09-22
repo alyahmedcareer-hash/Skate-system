@@ -74,6 +74,13 @@ export async function createDamageReport(
         "UPDATE skates SET status = 'maintenance', updated_at = NOW() WHERE id = ?",
         [data.skateId]
       )
+
+      // DEC-007: Phase 09 automatic maintenance record creation
+      await connection.execute(
+        `INSERT INTO maintenance_records (skate_id, damage_report_id, created_by, status, created_at, updated_at) 
+         VALUES (?, ?, ?, 'pending', NOW(), NOW())`,
+        [data.skateId, insertId, cashierId]
+      )
     }
 
     await connection.commit()
