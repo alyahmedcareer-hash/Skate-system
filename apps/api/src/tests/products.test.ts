@@ -42,6 +42,12 @@ describe('Products API', () => {
   })
 
   afterAll(async () => {
+    const testProds = await db.select().from(products).where(like(products.name, '%Test%'))
+    if (testProds.length) {
+      const pIds = testProds.map(p => p.id)
+      const { saleItems } = await import('../db/schema/sales.js')
+      await db.delete(saleItems).where(inArray(saleItems.productId, pIds))
+    }
     await db.delete(products).where(like(products.name, '%Test%'))
     await db.delete(productCategories).where(like(productCategories.name, '%Test%'))
   })

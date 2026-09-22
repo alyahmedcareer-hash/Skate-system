@@ -6,6 +6,7 @@ import { users, userRoles, roles } from '../db/schema/index.js'
 import { treasuryMovements, paymentMethods } from '../db/schema/payments.js'
 import { eq, desc, like } from 'drizzle-orm'
 import { sales, saleItems, salePayments } from '../db/schema/sales.js'
+import { inArray } from 'drizzle-orm'
 import { productCategories, products } from '../db/schema/products.js'
 import bcrypt from 'bcryptjs'
 
@@ -69,6 +70,11 @@ describe('Sales API', () => {
       await db.delete(saleItems).where(eq(saleItems.saleId, saleId))
       await db.delete(sales).where(eq(sales.id, saleId))
     }
+    const testProds = await db.select().from(products).where(like(products.name, '%Test%'))
+    if (testProds.length) {
+      const pIds = testProds.map(p => p.id)
+      await db.delete(saleItems).where(inArray(saleItems.productId, pIds))
+    }
     await db.delete(products).where(like(products.name, '%Test%'))
     await db.delete(productCategories).where(like(productCategories.name, '%Test%'))
   })
@@ -95,6 +101,7 @@ describe('Sales API', () => {
     const prodRes = await request(app).get(`/api/v1/products/${productId}`)
       .set('Authorization', `Bearer ${adminToken}`)
     expect(prodRes.body.data.stockQuantity).toBe(3) // 5 - 2
+
 
     // Verify treasury movement IN
     const movs = await db.select().from(treasuryMovements).where(eq(treasuryMovements.referenceId, saleId)).orderBy(desc(treasuryMovements.id))
