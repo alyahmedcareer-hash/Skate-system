@@ -20,6 +20,12 @@ import * as schema from './schema/index.js'
 // Connection pool — shared across all requests
 // ---------------------------------------------------------------------------
 
+// SAFETY GUARD: Prevent tests from destroying development data
+if (env.NODE_ENV === 'test' && env.DB_NAME !== 'koshk_skate_test') {
+  console.error(`FATAL: Test environment is attempting to connect to non-test database: ${env.DB_NAME}`)
+  process.exit(1)
+}
+
 export const pool = mysql.createPool({
   host:     env.DB_HOST,
   port:     env.DB_PORT,

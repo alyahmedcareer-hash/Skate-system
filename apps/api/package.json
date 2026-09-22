@@ -13,9 +13,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
+    "db:migrate:test": "dotenv -e .env.test -- drizzle-kit migrate",
+    "db:seed:test": "dotenv -e .env.test -- tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "test": "dotenv -e .env -- cross-env NODE_ENV=test vitest run",
-    "test:watch": "dotenv -e .env -- cross-env NODE_ENV=test vitest"
+    "test": "dotenv -e .env.test -- cross-env NODE_ENV=test vitest run",
+    "test:watch": "dotenv -e .env.test -- cross-env NODE_ENV=test vitest"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

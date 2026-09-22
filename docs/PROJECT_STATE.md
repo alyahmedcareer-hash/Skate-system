@@ -14,6 +14,9 @@
 | **Current Phase** | Phase 09 COMPLETE. Phase 10 is NEXT. |
 | **Current Milestone** | Phase 09: Maintenance — COMPLETE ✅ |
 | **Last Completed Phase** | Phase 09 — Maintenance — 2026-09-23 |
+| **Environment** | Node.js (ESM), Vite, React 19, Drizzle ORM, MySQL 8 |
+| **Databases** | `koshk_skate` (Development/Demo), `koshk_skate_test` (Automated Tests Only — **WARNING: Tests must never run against development DB.**) |
+| **Project Goal** | End-to-end POS and ERP for a roller skating rink |
 | **Active Work** | None — Phase 09 Closure Gate complete |
 | **Blocked Work** | None |
 | **Last Verification** | 2026-09-23 — Phase 09 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), tests ✅, `vite build` clean ✅ |

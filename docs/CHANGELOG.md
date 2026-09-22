@@ -16,6 +16,11 @@
 - [Phase 07] Add fee waiver functionality with RBAC (`waivers.approve` permission, restricted to Administrator).
 - [Phase 07] Add `payment_type` (`rental`, `late_fee`) to `rental_payments` table for distinct late fee tracking.
 - [Phase 07] Integration with Treasury for automatic late-fee recording (`late_fee_payment` reference_type).
+- [Phase 07] Full integration with Returns and Damage Reporting for automatic creation.
+
+#### Changed
+
+- **CRITICAL [2026-09-22] DB Isolation:** Separated test database (`koshk_skate_test`) from development database (`koshk_skate`). Added safety guards to `connection.ts` and `package.json` to guarantee automated tests (`npm run test`) can never destroy development manual data. Tests must run using `.env.test`.
 
 ---
 
