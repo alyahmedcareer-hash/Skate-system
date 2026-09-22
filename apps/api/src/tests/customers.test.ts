@@ -61,9 +61,9 @@ const ADMIN_EMAIL    = process.env.SEED_ADMIN_EMAIL    ?? 'admin@koshkskate.com'
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Koshk@12345'
 
 // Unique test data to avoid clashing with other tests
-const TEST_NATIONAL_ID  = 'TEST99999999901'
-const TEST_NATIONAL_ID2 = 'TEST99999999902'
-const TEST_NATIONAL_ID3 = 'TEST99999999903'  // For TC-CUST-17 (duplicate NID on update)
+const TEST_NATIONAL_ID  = '29901019999901'
+const TEST_NATIONAL_ID2 = '29901019999902'
+const TEST_NATIONAL_ID3 = '29901019999903'  // For TC-CUST-17 (duplicate NID on update)
 const TEST_PHONE        = '01099999999'
 
 // ---------------------------------------------------------------------------
@@ -449,14 +449,27 @@ describe('Customers — CRUD', () => {
     expect(res.body.success).toBe(false)
   })
 
-  it('TC-CUST-VAL-03: Create — nationalId exceeds 50 chars → 400', async () => {
+  it('TC-CUST-VAL-03: Create — nationalId less than 14 digits → 400', async () => {
     const res = await request
       .post('/api/v1/customers')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        name:       'اختبار رقم قومي طويل',
+        name:       'اختبار رقم قومي قصير',
         phone:      '01011111111',
-        nationalId: '1'.repeat(51),
+        nationalId: '1234567890123', // 13 digits
+      })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+
+  it('TC-CUST-VAL-04: Create — nationalId non-digits → 400', async () => {
+    const res = await request
+      .post('/api/v1/customers')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name:       'اختبار رقم قومي حروف',
+        phone:      '01011111111',
+        nationalId: '1234567890123A', // 14 chars but contains a letter
       })
     expect(res.status).toBe(400)
     expect(res.body.success).toBe(false)

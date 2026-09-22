@@ -372,6 +372,12 @@ function CustomerPicker({ onSelect, onBack }: CustomerPickerProps) {
       setCreateError('الاسم ورقم الهاتف مطلوبان')
       return
     }
+    if (createForm.nationalId && createForm.nationalId.trim() !== '') {
+      if (!/^\d{14}$/.test(createForm.nationalId.trim())) {
+        setCreateError('الرقم القومي يجب أن يتكون من 14 رقمًا')
+        return
+      }
+    }
     setCreating(true); setCreateError(null)
     try {
       const payload: CreateCustomerBody = {

@@ -199,8 +199,10 @@ export async function createCustomer(data: CreateCustomerRequest): Promise<Custo
   if (data.phone.trim().length > MAX_PHONE_LENGTH) {
     throw new ValidationError(`رقم الهاتف لا يمكن أن يتجاوز ${MAX_PHONE_LENGTH} حرفاً`)
   }
-  if (data.nationalId && data.nationalId.trim().length > MAX_NATIONAL_ID_LENGTH) {
-    throw new ValidationError(`الرقم القومي لا يمكن أن يتجاوز ${MAX_NATIONAL_ID_LENGTH} حرفاً`)
+  if (data.nationalId && data.nationalId.trim() !== '') {
+    if (!/^\d{14}$/.test(data.nationalId.trim())) {
+      throw new ValidationError('الرقم القومي يجب أن يتكون من 14 رقمًا')
+    }
   }
 
   const today = new Date().toISOString().split('T')[0]  // YYYY-MM-DD
@@ -281,8 +283,8 @@ export async function updateCustomer(id: number, data: UpdateCustomerRequest): P
   }
   if (data.nationalId !== undefined) {
     const trimmedNid = data.nationalId?.trim() || null
-    if (trimmedNid && trimmedNid.length > MAX_NATIONAL_ID_LENGTH) {
-      throw new ValidationError(`الرقم القومي لا يمكن أن يتجاوز ${MAX_NATIONAL_ID_LENGTH} حرفاً`)
+    if (trimmedNid && !/^\d{14}$/.test(trimmedNid)) {
+      throw new ValidationError('الرقم القومي يجب أن يتكون من 14 رقمًا')
     }
     updateValues.nationalId = trimmedNid
   }

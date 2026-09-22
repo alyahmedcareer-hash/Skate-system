@@ -106,9 +106,9 @@ const SKATE_LOST     = 'TR-LOST-001'
 const SKATE_RESERVED = 'TR-RESV-001'
 
 // Unique customer NID prefix so cleanup is reliable
-const CUST_NID_1  = 'TRENT00001'
-const CUST_NID_2  = 'TRENT00002'
-const CUST_NID_3  = 'TRENT00003'  // inactive customer
+const CUST_NID_1  = '99999999901111'
+const CUST_NID_2  = '99999999901112'
+const CUST_NID_3  = '99999999901113'  // inactive customer
 
 // ---------------------------------------------------------------------------
 // Shared state
@@ -296,7 +296,7 @@ beforeAll(async () => {
   skateResvId    = await createSkate(SKATE_RESERVED, 'reserved')
 
   // --- Create test customers ---
-  await db.delete(customers).where(like(customers.nationalId, 'TRENT%'))
+  await db.delete(customers).where(like(customers.nationalId, '99999999901%'))
 
   custId1 = await createCustomer(adminToken, CUST_NID_1, 'عميل إيجار 1')
   custId2 = await createCustomer(adminToken, CUST_NID_2, 'عميل إيجار 2')
@@ -329,7 +329,7 @@ afterAll(async () => {
   await db.delete(skates).where(like(skates.skateCode, 'TR-%')).catch(() => {})
 
   // Clean up test customers
-  await db.delete(customers).where(like(customers.nationalId, 'TRENT%')).catch(() => {})
+  await db.delete(customers).where(like(customers.nationalId, '99999999901%')).catch(() => {})
 
   // Clean up test users
   for (const uid of [cashierUserId, maintenUserId, nopermUserId]) {
