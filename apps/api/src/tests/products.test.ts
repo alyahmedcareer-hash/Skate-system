@@ -1,7 +1,21 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
-import { app } from '../../app.js'
-import { getTestToken } from '../../../tests/setup.js'
+import app from '../app.js'
+import { db } from '../db/connection.js'
+import { users, userRoles, roles } from '../db/schema/index.js'
+import bcrypt from 'bcryptjs'
+import { eq, like, inArray } from 'drizzle-orm'
+import { productCategories, products } from '../db/schema/products.js'
+
+async function loginAdmin(): Promise<string> {
+  const res = await request(app).post('/api/v1/auth/login').send({ email: 'admin@koshkskate.com', password: process.env.SEED_ADMIN_PASSWORD ?? 'Koshk@12345' })
+  return res.body.data.accessToken
+}
+
+async function loginCashier(): Promise<string> {
+  const res = await request(app).post('/api/v1/auth/login').send({ email: 'productcashier@test.com', password: 'password' })
+  return res.body.data.accessToken
+}
 
 describe('Products API', () => {
   let adminToken: string
@@ -10,8 +24,26 @@ describe('Products API', () => {
   let productId: number
 
   beforeAll(async () => {
-    adminToken = await getTestToken('Administrator')
-    cashierToken = await getTestToken('Cashier')
+    // Ensure Cashier user exists with Cashier role
+    const existing = await db.select().from(users).where(eq(users.email, 'productcashier@test.com')).limit(1)
+    if (!existing.length) {
+      const [res] = await db.insert(users).values({
+        name: 'Product Cashier',
+        email: 'productcashier@test.com',
+        passwordHash: await bcrypt.hash('password', 12),
+        isActive: true,
+      })
+      const cashierRole = await db.select().from(roles).where(eq(roles.name, 'Cashier')).limit(1)
+      await db.insert(userRoles).values({ userId: res.insertId, roleId: cashierRole[0].id })
+    }
+
+    adminToken = await loginAdmin()
+    cashierToken = await loginCashier()
+  })
+
+  afterAll(async () => {
+    await db.delete(products).where(like(products.name, '%Test%'))
+    await db.delete(productCategories).where(like(productCategories.name, '%Test%'))
   })
 
   it('Admin can create a category', async () => {
@@ -19,10 +51,13 @@ describe('Products API', () => {
       .post('/api/v1/products/categories')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        name: 'Spare Parts',
-        nameAr: 'قطع غيار'
+        name: 'Spare Parts Test',
+        nameAr: 'قطع غيار تست'
       })
     
+    if (res.status !== 201) {
+      console.log('Category creation failed:', res.body)
+    }
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
     categoryId = res.body.data.id
@@ -33,8 +68,8 @@ describe('Products API', () => {
       .post('/api/v1/products')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        name: 'Wheel 80mm',
-        nameAr: 'عجلة 80 مم',
+        name: 'Wheel 80mm Test',
+        nameAr: 'عجلة 80 مم تست',
         categoryId,
         price: 150,
         stockQuantity: 10
@@ -50,8 +85,8 @@ describe('Products API', () => {
       .post('/api/v1/products')
       .set('Authorization', `Bearer ${cashierToken}`)
       .send({
-        name: 'Bearing',
-        nameAr: 'رمان بلي',
+        name: 'Bearing Test',
+        nameAr: 'رمان بلي تست',
         categoryId,
         price: 50,
         stockQuantity: 20
@@ -65,6 +100,9 @@ describe('Products API', () => {
       .get('/api/v1/products')
       .set('Authorization', `Bearer ${cashierToken}`)
     
+    if (res.status !== 200) {
+      console.log('Cashier view products failed:', res.body)
+    }
     expect(res.status).toBe(200)
     expect(res.body.data.length).toBeGreaterThan(0)
   })
@@ -77,6 +115,9 @@ describe('Products API', () => {
         stockQuantity: 15
       })
     
+    if (res.status !== 200) {
+      console.log('Admin adjust stock failed:', res.body)
+    }
     expect(res.status).toBe(200)
     expect(res.body.data.stockQuantity).toBe(15)
   })

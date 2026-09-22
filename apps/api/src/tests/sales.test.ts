@@ -1,9 +1,23 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import request from 'supertest'
-import { app } from '../../app.js'
-import { getTestToken, getDb } from '../../../tests/setup.js'
-import { treasuryMovements, treasuryAccounts, paymentMethods } from '../../db/schema/payments.js'
-import { eq, desc } from 'drizzle-orm'
+import app from '../app.js'
+import { db } from '../db/connection.js'
+import { users, userRoles, roles } from '../db/schema/index.js'
+import { treasuryMovements, paymentMethods } from '../db/schema/payments.js'
+import { eq, desc, like } from 'drizzle-orm'
+import { sales, saleItems, salePayments } from '../db/schema/sales.js'
+import { productCategories, products } from '../db/schema/products.js'
+import bcrypt from 'bcryptjs'
+
+async function loginAdmin(): Promise<string> {
+  const res = await request(app).post('/api/v1/auth/login').send({ email: 'admin@koshkskate.com', password: process.env.SEED_ADMIN_PASSWORD ?? 'Koshk@12345' })
+  return res.body.data.accessToken
+}
+
+async function loginCashier(): Promise<string> {
+  const res = await request(app).post('/api/v1/auth/login').send({ email: 'salescashier@test.com', password: 'password' })
+  return res.body.data.accessToken
+}
 
 describe('Sales API', () => {
   let adminToken: string
@@ -15,24 +29,48 @@ describe('Sales API', () => {
   let saleId: number
 
   beforeAll(async () => {
-    adminToken = await getTestToken('Administrator')
-    cashierToken = await getTestToken('Cashier')
+    // Ensure Cashier user exists with Cashier role
+    const existing = await db.select().from(users).where(eq(users.email, 'salescashier@test.com')).limit(1)
+    if (!existing.length) {
+      const [r] = await db.insert(users).values({
+        name: 'Sales Cashier',
+        email: 'salescashier@test.com',
+        passwordHash: await bcrypt.hash('password', 12),
+        isActive: true,
+      })
+      const cashierRole = await db.select().from(roles).where(eq(roles.name, 'Cashier')).limit(1)
+      await db.insert(userRoles).values({ userId: r.insertId, roleId: cashierRole[0].id })
+    }
+
+    adminToken = await loginAdmin()
+    cashierToken = await loginCashier()
     
     // Setup Category & Product
     const catRes = await request(app).post('/api/v1/products/categories')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Accessories', nameAr: 'إكسسوارات' })
+      .send({ name: 'Accessories Test', nameAr: 'إكسسوارات تست' })
     categoryId = catRes.body.data.id
 
     const prodRes = await request(app).post('/api/v1/products')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Helmet', nameAr: 'خوذة', categoryId, price: 200, stockQuantity: 5 })
+      .send({ name: 'Helmet Test', nameAr: 'خوذة تست', categoryId, price: 200, stockQuantity: 5 })
     productId = prodRes.body.data.id
 
     // Setup Treasury/Payment Method (from seed)
-    const pmRes = await getDb().select().from(paymentMethods).limit(1)
+    const pmRes = await db.select().from(paymentMethods).limit(1)
     paymentMethodId = pmRes[0].id
     treasuryAccountId = pmRes[0].treasuryAccountId
+  })
+
+  afterAll(async () => {
+    // Teardown test data
+    if (saleId) {
+      await db.delete(salePayments).where(eq(salePayments.saleId, saleId))
+      await db.delete(saleItems).where(eq(saleItems.saleId, saleId))
+      await db.delete(sales).where(eq(sales.id, saleId))
+    }
+    await db.delete(products).where(like(products.name, '%Test%'))
+    await db.delete(productCategories).where(like(productCategories.name, '%Test%'))
   })
 
   it('Creates a sale, deducts stock, and records treasury movement', async () => {
@@ -59,7 +97,6 @@ describe('Sales API', () => {
     expect(prodRes.body.data.stockQuantity).toBe(3) // 5 - 2
 
     // Verify treasury movement IN
-    const db = getDb()
     const movs = await db.select().from(treasuryMovements).where(eq(treasuryMovements.referenceId, saleId)).orderBy(desc(treasuryMovements.id))
     const salePaymentMovement = movs.find(m => m.referenceType === 'sale_payment')
     expect(salePaymentMovement).toBeDefined()
@@ -123,7 +160,6 @@ describe('Sales API', () => {
     expect(prodRes.body.data.stockQuantity).toBe(5) // 3 + 2
 
     // Verify treasury movement OUT
-    const db = getDb()
     const movs = await db.select().from(treasuryMovements).where(eq(treasuryMovements.referenceId, saleId)).orderBy(desc(treasuryMovements.id))
     const refundMovement = movs.find(m => m.referenceType === 'sale_refund')
     expect(refundMovement).toBeDefined()
