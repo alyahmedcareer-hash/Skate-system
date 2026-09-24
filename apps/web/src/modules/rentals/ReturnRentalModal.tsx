@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { CheckCircle } from 'lucide-react'
 import { Modal, Button, Alert, Input, LoadingSpinner, Badge, useToast } from '../../components/ui'
 import { rentalsService, type ActiveRentalDTO, type ReturnRentalBody } from './rentals.service'
@@ -36,6 +36,7 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
   const [waivedFee, setWaivedFee] = useState(0)
   const [waiverReason, setWaiverReason] = useState('')
   const [payments, setPayments] = useState<{ methodId: number; amount: string }[]>([])
+  const modalBodyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -62,13 +63,26 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
         paymentsService.listMethods()
       ]).then(([configRes, methodsRes]) => {
         if (!active) return
-        setLateFeePerMinute(configRes.data.lateFeePerMinute || 0)
+        const lateFeePerMin = configRes.data.lateFeePerMinute || 0
+        setLateFeePerMinute(lateFeePerMin)
         
+        let initialLateFee = 0
+        if (rental && rental.operationalStatus === 'overdue' && lateFeePerMin > 0) {
+          const endMs = new Date(rental.expectedEndAt).getTime()
+          const nowMs = Date.now()
+          const diffMs = nowMs - endMs
+          if (diffMs > 0) {
+            const lateMinutes = Math.ceil(diffMs / 60000)
+            initialLateFee = lateMinutes * lateFeePerMin
+          }
+        }
+
         const fetchedMethods = methodsRes.data || []
         setMethods(fetchedMethods)
-        if (fetchedMethods.length > 0) {
-          // Initialize payment array, but amount is updated below
-          setPayments([{ methodId: fetchedMethods[0].id, amount: '' }])
+        if (fetchedMethods.length > 0 && initialLateFee > 0) {
+          setPayments([{ methodId: fetchedMethods[0].id, amount: initialLateFee.toString() }])
+        } else {
+          setPayments([])
         }
         setMethodsLoading(false)
       }).catch(() => {
@@ -82,11 +96,18 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
     }
   }, [isOpen])
 
+  const [nowMs, setNowMs] = useState(Date.now())
+
+  useEffect(() => {
+    if (!isOpen) return
+    const interval = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [isOpen])
+
   // Calculate Late Fee locally
   let expectedLateFee = 0
   if (rental && rental.operationalStatus === 'overdue' && lateFeePerMinute > 0) {
     const endMs = new Date(rental.expectedEndAt).getTime()
-    const nowMs = Date.now()
     const diffMs = nowMs - endMs
     if (diffMs > 0) {
       const lateMinutes = Math.ceil(diffMs / 60000)
@@ -94,16 +115,18 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
     }
   }
 
-  // Update default payment amount when late fee or waived fee changes
-  useEffect(() => {
-    const remainingToPay = Math.max(0, expectedLateFee - waivedFee)
+  // Update default payment amount when waived fee changes manually
+  const handleWaivedFeeChange = (valStr: string) => {
+    const val = Math.min(expectedLateFee, Math.max(0, parseFloat(valStr) || 0))
+    setWaivedFee(val)
+    
+    const remainingToPay = Math.max(0, expectedLateFee - val)
     if (payments.length === 1 && remainingToPay > 0) {
       setPayments([{ ...payments[0], amount: remainingToPay.toString() }])
     } else if (remainingToPay === 0) {
       setPayments([])
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expectedLateFee, waivedFee])
+  }
 
   if (!isOpen || !rental) return null
 
@@ -129,11 +152,13 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
   const handleSubmit = async () => {
     if (expectedLateFee > 0 && !isExact) {
       setError('إجمالي المدفوعات لا يساوي رسوم التأخير المتبقية')
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (waivedFee > 0 && !waiverReason.trim()) {
       setError('يرجى ذكر سبب التنازل عن الرسوم')
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -170,6 +195,7 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
     } catch (err: unknown) {
       const errObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string }
       setError(errObj?.response?.data?.error?.message ?? errObj?.message ?? 'حدث خطأ أثناء إنهاء الإيجار')
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setLoading(false)
     }
@@ -177,7 +203,7 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="تسجيل إعادة الزلاجة" size="lg">
-      <div className="return-rental-form">
+      <div className="return-rental-form" ref={modalBodyRef} style={{ maxHeight: '70vh', overflowY: 'auto', padding: '2px' }}>
         {error && <Alert variant="danger" style={{ marginBottom: 16 }}>{error}</Alert>}
 
         <div className="summary-section">
@@ -190,6 +216,13 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
               <label style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>الزلاجة</label>
               <div style={{ fontWeight: 'var(--font-weight-medium)' }}>{rental.skate.skateCode} - مقاس {rental.skate.size}</div>
             </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', marginBottom: 16 }}>
+            <span style={{ fontWeight: 'var(--font-weight-bold)', fontSize: 'var(--font-size-sm)' }}>سعر الإيجار الأساسي:</span>
+            <span style={{ fontWeight: 'var(--font-weight-bold)', color: 'var(--color-primary)', fontSize: 'var(--font-size-sm)' }}>
+              {formatCurrency(rental.rentalAmount)}
+            </span>
           </div>
         </div>
 
@@ -216,7 +249,7 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
                   min="0"
                   max={expectedLateFee}
                   value={waivedFee}
-                  onChange={e => setWaivedFee(Math.min(expectedLateFee, Math.max(0, parseFloat(e.target.value) || 0)))}
+                  onChange={e => handleWaivedFeeChange(e.target.value)}
                 />
                 <Input
                   id="waiver-reason"

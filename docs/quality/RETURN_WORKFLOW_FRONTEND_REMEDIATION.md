@@ -2,36 +2,50 @@
 
 ## 1. Original Problem
 The Skate Return workflow logic was successfully implemented in the backend (Phase 06/07) and the UI Modals (`ReturnRentalModal` and `CreateDamageReportModal`) were built and wired correctly on the `ActiveRentalsPage`. 
-However, the `RentalDetailPage.tsx` was skipped during this integration and continued to show a stale Phase 05 placeholder message: `"تسجيل الإعادة والدفع سيكون متاحاً في المراحل القادمة (06 و07)"`. 
+However, the `RentalDetailPage.tsx` was skipped during this integration and continued to show a stale Phase 05 placeholder message.
 
-Because `RentalDetailPage` is the primary screen reached when a user clicks a rental from the `CustomerProfilePage`, this missing integration caused a UI dead-end where the user could not return the skate without navigating to the global active rentals list.
+During further testing, users reported that the "إرجاع" button on the Return Modal was occasionally getting "stuck at the final action". Furthermore, the returned rental UI did not separate the late fee from the base rental amount in an invoice format as requested.
 
-## 2. Root Cause
-The `RentalDetailPage.tsx` was not updated when the Return feature was merged in Phase 07. The stale alert div remained hardcoded, and the necessary "إرجاع الزلاجة" trigger button and Modal components were absent.
+## 2. Identified Bugs & Fixes
+
+### A. Final Return Action Button Disabled (Stuck)
+- **Issue**: The completion button was unclickable when a late fee applied.
+- **Root Cause**: The `useEffect` intended to update the `payments` state with the `expectedLateFee` was ignoring the `payments` array in its dependency list. Because the initial `payments` fetch was asynchronous, the `useEffect` fired before `payments` existed and never re-fired when it was populated, leaving the default amount empty (making the payment non-exact).
+- **Fix**: Replaced the flawed `useEffect` with direct initialization in the API `Promise.all` `.then()` block and `handleWaivedFeeChange`.
+
+### B. Post-Return Modal State Swallowing (Flicker)
+- **Issue**: Opening `CreateDamageReportModal` on a successful return failed or flickered because the page remounted entirely.
+- **Root Cause**: `onSuccess` invoked `load()` on the parent page which set `loading = true`, destroying the component tree and its modals.
+- **Fix**: Adjusted `ActiveRentalsPage` and `RentalDetailPage` to use a `isRefresh` / `refreshing = true` state for post-mutation updates to preserve DOM state.
+
+### C. Return Invoice Breakdown
+- **Issue**: The returned rental details didn't separate the base amount from late fees.
+- **Root Cause**: Backend API `getRental` did not return late fee details.
+- **Fix**: 
+  - Updated backend `rentals.service.ts` to `LEFT JOIN` `late_fee_records` and append `lateFeeDetails` to `RentalDTO`.
+  - Built an `invoice-section` UI directly within `RentalDetailPage.tsx` to conditionally display for `returned` rentals, respecting the required design system (dashed border, monospace amounts, inline late fee breakdown).
 
 ## 3. Files Changed
 - `apps/web/src/modules/rentals/RentalDetailPage.tsx`
+- `apps/web/src/modules/rentals/ReturnRentalModal.tsx`
+- `apps/web/src/modules/rentals/ActiveRentalsPage.tsx`
+- `apps/web/src/modules/rentals/rentals.service.ts` (Frontend DTO)
+- `apps/api/src/modules/rentals/rentals.types.ts` (Backend DTO)
+- `apps/api/src/modules/rentals/rentals.service.ts` (Backend DB Joins)
 
-## 4. Remediation Implemented
-- **Removed Obsolete UI**: Deleted the Phase 05 stale warning banner.
-- **Restored Action**: Added the "إرجاع الزلاجة" (Return Skate) primary action button to the Header of `RentalDetailPage`, wrapped securely in `<PermissionGate permission="rentals.return">`.
-- **Component Reuse**: Imported the exact `ReturnRentalModal` and `CreateDamageReportModal` components used by `ActiveRentalsPage.tsx`. No business logic, endpoints, or state management logic was duplicated or altered. 
-- **Type Compatibility**: The `RentalDetailPage` uses `RentalDTO`, while the modal requires `ActiveRentalDTO`. Since `RentalDetailPage` already computes the dynamic remaining time (`opStatus`, `remainingMinutes`), a clean localized cast was used to construct the `ActiveRentalDTO` prior to passing it to the modal.
-- **Success Cycle**: Added a `handleReturnSuccess` callback. Upon a successful return, it automatically triggers `fetchRental()` to refresh the UI immediately, converting the status from `active` to `returned`. If damage was reported, it automatically triggers the Damage Modal using the exact pattern established in `ActiveRentalsPage.tsx`.
-
-## 5. Business Rules Preserved
+## 4. Business Rules Preserved
 - The existing backend API contract (`POST /api/v1/rentals/:id/return`) remains untouched.
 - Late fee math is preserved via `ReturnRentalModal`.
-- Split payment behavior is preserved via `ReturnRentalModal`.
 - Role-based permissions (`rentals.return` and `waivers.approve` via backend validation) remain enforced.
+- **Financial Exactness**: The frontend explicitly reads the actual inserted `late_fee_records` data directly from the backend via the `getRental` endpoint instead of independently recalculating the historical late fee.
 
-## 6. Testing & Verification
+## 5. Testing & Verification
 
 ### Build Result
 - `tsc -b && vite build` passed successfully.
 
 ### Backend Tests
-- Backend `returns.test.ts` (189 total rental tests) remain untouched and passing.
+- Backend tests ran successfully, including `returns.test.ts` and `rentals.test.ts` (207 tests passed).
 
 ### Browser E2E Result
 **BROWSER E2E: NOT VERIFIED — BROWSER BLOCKED**
@@ -41,12 +55,10 @@ Automated UI testing is currently impossible due to a recurring Playwright drive
 Until automated E2E tests are unblocked, perform the following exact manual verification on `http://localhost:5173`:
 1. Log in as an Administrator.
 2. Navigate to Customers -> Open a Customer with an Active Rental.
-3. Scroll to "سجل الإيجارات" and click the Active Rental to open `RentalDetailPage`.
-4. Verify the message "تسجيل الإعادة والدفع سيكون متاحاً..." is GONE.
-5. Verify the "إرجاع الزلاجة" button appears at the top.
-6. Click "إرجاع الزلاجة". The Return Modal should appear.
-7. Fill out the inspection (select a damaged part to test the damage workflow).
-8. Ensure the Late Fee mathematically matches if the rental is overdue.
-9. Click Submit.
-10. Verify the Damage Modal automatically opens. Fill it out and submit.
-11. Verify the Rental Detail Page immediately refreshes and the status badge turns to "Returned" (or "Maintenance"). The Return button should disappear.
+3. Click "إرجاع الزلاجة". The Return Modal should appear.
+4. Fill out the inspection (select a damaged part to test the damage workflow).
+5. Ensure the Late Fee automatically populates the payment amount if overdue (The button will not be disabled).
+6. Click Submit.
+7. Verify the Damage Modal automatically opens without flickering/page disappearing. Fill it out and submit.
+8. Verify the Rental Detail Page immediately refreshes. 
+9. Look for the "إيصال / فاتورة إرجاع" (Invoice) section and verify that the Base Amount and Late Fee are neatly separated, and the total matches.

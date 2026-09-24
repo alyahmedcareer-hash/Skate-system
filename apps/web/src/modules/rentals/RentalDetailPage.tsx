@@ -91,6 +91,7 @@ export default function RentalDetailPage() {
 
   const [rental, setRental] = useState<RentalDTO | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError]   = useState<string | null>(null)
 
   // Modals state
@@ -98,15 +99,17 @@ export default function RentalDetailPage() {
   const [damageModalOpen, setDamageModalOpen] = useState(false)
   const [damageInspectionId, setDamageInspectionId] = useState<number | null>(null)
 
-  const fetchRental = () => {
+  const fetchRental = (isRefresh = false) => {
     const numId = parseInt(id ?? '', 10)
     if (!numId) { setError('معرّف الإيجار غير صالح'); setLoading(false); return }
 
-    setLoading(true)
+    if (isRefresh) setRefreshing(true)
+    else setLoading(true)
+
     rentalsService.get(numId)
       .then(res => setRental(res.data))
       .catch(() => setError('الإيجار غير موجود'))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }
 
   useEffect(() => {
@@ -114,7 +117,7 @@ export default function RentalDetailPage() {
   }, [id])
 
   const handleReturnSuccess = (hasDamage?: boolean, inspectionId?: number) => {
-    fetchRental()
+    fetchRental(true)
     if (hasDamage && inspectionId) {
       setDamageInspectionId(inspectionId)
       setDamageModalOpen(true)
@@ -191,6 +194,40 @@ export default function RentalDetailPage() {
               ? 'تجاوز الإيجار الوقت المحدد'
               : `الوقت المتبقي: ${formatRemaining(remainingMinutes, opStatus)}`}
           </span>
+        </div>
+      )}
+
+      {/* Return Invoice (Returned Rentals Only) */}
+      {rental.status === 'returned' && (
+        <div className="invoice-section">
+          <h2 className="invoice-title"><Receipt size={18} /> إيصال / فاتورة إرجاع</h2>
+          
+          <div className="invoice-body">
+            {/* Base Amount */}
+            <div className="invoice-row">
+              <span className="invoice-label">المبلغ الأساسي للإيجار</span>
+              <span className="invoice-amount">{formatCurrency(rental.rentalAmount)}</span>
+            </div>
+
+            {/* Late Fee */}
+            {rental.lateFeeDetails && rental.lateFeeDetails.calculatedFee > 0 && (
+              <div className="invoice-row invoice-row--late">
+                <div className="invoice-label-stack">
+                  <span className="invoice-label">رسوم التأخير</span>
+                  <span className="invoice-subtext">مدة التأخير: {rental.lateFeeDetails.lateMinutes} دقيقة</span>
+                </div>
+                <span className="invoice-amount">{formatCurrency(rental.lateFeeDetails.calculatedFee)}</span>
+              </div>
+            )}
+
+            {/* Total */}
+            <div className="invoice-row invoice-row--total">
+              <span className="invoice-label">الإجمالي</span>
+              <span className="invoice-amount">
+                {formatCurrency(rental.rentalAmount + (rental.lateFeeDetails?.calculatedFee || 0))}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -314,6 +351,63 @@ export default function RentalDetailPage() {
         .detail-row--highlight { background: var(--color-primary-subtle); margin: 0 -4px; padding: 8px 4px; border-radius: var(--radius-sm); }
         .detail-label { font-size: var(--font-size-sm); color: var(--color-text-secondary); white-space: nowrap; }
         .detail-value { font-size: var(--font-size-sm); color: var(--color-text-primary); font-weight: var(--font-weight-medium); text-align: left; }
+        
+        .invoice-section {
+          background: var(--color-surface);
+          border: 2px dashed var(--color-border);
+          border-radius: var(--radius-lg);
+          padding: var(--space-5);
+          margin-bottom: var(--space-6);
+        }
+        .invoice-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: var(--font-size-lg);
+          font-weight: var(--font-weight-bold);
+          color: var(--color-text-primary);
+          margin: 0 0 var(--space-4);
+          padding-bottom: var(--space-3);
+          border-bottom: 2px solid var(--color-border);
+        }
+        .invoice-body {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .invoice-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 0;
+        }
+        .invoice-row--late {
+          color: var(--color-danger-text);
+        }
+        .invoice-row--total {
+          border-top: 2px solid var(--color-border-subtle);
+          padding-top: 16px;
+          margin-top: 4px;
+          font-size: var(--font-size-lg);
+          font-weight: var(--font-weight-bold);
+        }
+        .invoice-label {
+          font-weight: var(--font-weight-medium);
+        }
+        .invoice-label-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .invoice-subtext {
+          font-size: var(--font-size-xs);
+          color: var(--color-danger-text);
+          opacity: 0.8;
+        }
+        .invoice-amount {
+          font-family: var(--font-family-mono);
+          font-weight: var(--font-weight-bold);
+        }
       `}</style>
     </div>
   )

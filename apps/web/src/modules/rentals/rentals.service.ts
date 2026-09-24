@@ -50,6 +50,10 @@ export interface RentalDTO {
   returnedAt:      string | null
   status:          RentalStatus
   notes:           string | null
+  lateFeeDetails?: {
+    lateMinutes:   number
+    calculatedFee: number
+  }
   createdAt:       string
   updatedAt:       string
   [key: string]:   unknown  // DataTable generic constraint

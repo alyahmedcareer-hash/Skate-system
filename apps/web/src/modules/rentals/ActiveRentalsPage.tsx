@@ -167,7 +167,7 @@ export default function ActiveRentalsPage() {
   }
 
   const handleReturnSuccess = (hasDamage?: boolean, inspectionId?: number) => {
-    load()
+    load(true)
     if (hasDamage && inspectionId && selectedRentalForReturn) {
       setDamageInspectionId(inspectionId)
       setDamageModalOpen(true)

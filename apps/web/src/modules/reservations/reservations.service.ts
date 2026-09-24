@@ -81,29 +81,29 @@ export const reservationsService = {
     if (query?.from) params.append('from', query.from)
     if (query?.to) params.append('to', query.to)
 
-    const response = await api.get<{ success: boolean; data: PaginatedReservations }>(
+    const response = await api.get<PaginatedReservations>(
       `/api/v1/reservations?${params.toString()}`
     )
-    return response.data
+    return response
   },
 
   async getReservation(id: number): Promise<Reservation> {
-    const response = await api.get<{ success: boolean; data: Reservation }>(`/api/v1/reservations/${id}`)
-    return response.data
+    const response = await api.get<Reservation>(`/api/v1/reservations/${id}`)
+    return response
   },
 
   async createReservation(data: CreateReservationRequest): Promise<Reservation> {
-    const response = await api.post<{ success: boolean; data: Reservation }>('/api/v1/reservations', data)
-    return response.data
+    const response = await api.post<Reservation>('/api/v1/reservations', data)
+    return response
   },
 
   async updateReservation(id: number, data: UpdateReservationRequest): Promise<Reservation> {
-    const response = await api.put<{ success: boolean; data: Reservation }>(`/api/v1/reservations/${id}`, data)
-    return response.data
+    const response = await api.put<Reservation>(`/api/v1/reservations/${id}`, data)
+    return response
   },
 
   async cancelReservation(id: number): Promise<Reservation> {
-    const response = await api.post<{ success: boolean; data: Reservation }>(`/api/v1/reservations/${id}/cancel`)
-    return response.data
+    const response = await api.post<Reservation>(`/api/v1/reservations/${id}/cancel`)
+    return response
   },
 }

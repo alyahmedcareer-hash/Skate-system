@@ -50,6 +50,7 @@ import { customers } from '../../db/schema/customers.js'
 import { users } from '../../db/schema/users.js'
 import { settings } from '../../db/schema/settings'
 import { paymentMethods, rentalPayments, treasuryMovements, treasuryAccounts } from '../../db/schema/payments'
+import { lateFeeRecords } from '../../db/schema/inspections.js'
 import {
   NotFoundError,
   ValidationError,
@@ -194,6 +195,8 @@ interface RawRentalRow {
   customerPhone?: string
   customerNationalId?: string | null
   cashierName?: string
+  lateMinutes?: number | null
+  calculatedFee?: string | number | null
 }
 
 function rawToDTO(row: RawRentalRow): RentalDTO {
@@ -214,6 +217,14 @@ function rawToDTO(row: RawRentalRow): RentalDTO {
     name: row.cashierName ?? '',
   }
 
+  let lateFeeDetails: { lateMinutes: number; calculatedFee: number } | undefined = undefined
+  if (row.lateMinutes != null && row.calculatedFee != null) {
+    lateFeeDetails = {
+      lateMinutes: row.lateMinutes,
+      calculatedFee: parseFloat(String(row.calculatedFee))
+    }
+  }
+
   return {
     id:              row.id,
     rentalCode:      row.rentalCode,
@@ -229,6 +240,7 @@ function rawToDTO(row: RawRentalRow): RentalDTO {
     returnedAt:      isoDate(row.returnedAt),
     status:          row.status,
     notes:           row.notes,
+    lateFeeDetails,
     createdAt:       isoDateNotNull(row.createdAt),
     updatedAt:       isoDateNotNull(row.updatedAt),
   }
@@ -265,11 +277,14 @@ async function fetchRentalsJoined(whereClause?: ReturnType<typeof and>): Promise
       customerPhone:       customers.phone,
       customerNationalId:  customers.nationalId,
       cashierName:         users.name,
+      lateMinutes:         lateFeeRecords.lateMinutes,
+      calculatedFee:       lateFeeRecords.calculatedFee,
     })
     .from(rentals)
     .leftJoin(skates,    eq(rentals.skateId,    skates.id))
     .leftJoin(customers, eq(rentals.customerId, customers.id))
     .leftJoin(users,     eq(rentals.cashierId,  users.id))
+    .leftJoin(lateFeeRecords, eq(rentals.id, lateFeeRecords.rentalId))
     .where(whereClause)
     .orderBy(desc(rentals.startedAt))
 
