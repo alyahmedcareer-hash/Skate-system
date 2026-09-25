@@ -78,7 +78,7 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - Created this canonical Phase 13 document.
 
 ## 17. Git Commits
-- Backend API implemented and verified in commit `0a69001`.
+- Backend API implemented and verified in commit `0d7628a`.
 
 ## 18. Known Limitations
 - Data exports (CSV/PDF) are handled via standard browser print or future enhancements (Phase 14).
