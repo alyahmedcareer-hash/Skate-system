@@ -3,7 +3,7 @@ import { db } from '../../db/connection.js'
 import { expenses, cashierShifts } from '../../db/schema/treasury.js'
 import { treasuryMovements } from '../../db/schema/payments.js'
 import { users } from '../../db/schema/users.js'
-import { AppError } from '../../utils/errors.js'
+import { AppError, BusinessRuleError } from '../../utils/errors.js'
 import type { CreateExpenseInput, ExpenseDTO } from './expenses.types.js'
 
 export async function recordExpense(cashierId: number, input: CreateExpenseInput): Promise<ExpenseDTO> {
@@ -12,9 +12,9 @@ export async function recordExpense(cashierId: number, input: CreateExpenseInput
     const [activeShiftRows] = await tx.execute(
       sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${cashierId} AND status = 'active' LIMIT 1`
     )
-    const activeShift = (activeShiftRows as any[])[0]
+    const activeShift = (activeShiftRows as unknown as any[])[0]
     if (!activeShift) {
-      throw new AppError('عملية تسجيل المصروف تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 400)
+      throw new BusinessRuleError('عملية تسجيل المصروف تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
     }
     const shiftId = activeShift.id
 

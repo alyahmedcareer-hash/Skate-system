@@ -199,4 +199,31 @@ describe('Sales API', () => {
     expect(res.status).toBe(409)
     expect(res.body.error.code).toBe('ALREADY_CANCELLED')
   })
+
+  it('Explicit: Fails to create sale if cashier shift is missing (HTTP 422)', async () => {
+    // 1. Temporarily close/remove the cashier shift
+    const cashierUserRes = await db.select().from(users).where(eq(users.email, 'salescashier@test.com'))
+    const cashierId = cashierUserRes[0].id
+    await db.update(cashierShifts).set({ status: 'closed' }).where(eq(cashierShifts.cashierId, cashierId))
+
+    // 2. Attempt a sale
+    const res = await request(app)
+      .post('/api/v1/sales')
+      .set('Authorization', `Bearer ${cashierToken}`)
+      .send({
+        items: [
+          { productId, quantity: 1 }
+        ],
+        payments: [
+          { paymentMethodId, treasuryAccountId, amount: 200 }
+        ]
+      })
+    
+    // 3. Assert HTTP 422
+    expect(res.status).toBe(422)
+    expect(res.body.error.code).toBe('NO_ACTIVE_SHIFT')
+
+    // 4. Restore shift so tearDown doesn't break if it expects one
+    await db.update(cashierShifts).set({ status: 'active' }).where(eq(cashierShifts.cashierId, cashierId))
+  })
 })

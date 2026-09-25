@@ -3,7 +3,7 @@ import { db } from '../../db/connection.js'
 import { cashierShifts } from '../../db/schema/treasury.js'
 import { users } from '../../db/schema/users.js'
 import { treasuryMovements, paymentMethods } from '../../db/schema/payments.js'
-import { AppError } from '../../utils/errors.js'
+import { AppError, ConflictError, NotFoundError, ForbiddenError } from '../../utils/errors.js'
 import type { OpenShiftInput, CloseShiftInput, ShiftDTO } from './shifts.types.js'
 
 // Map database row to DTO
@@ -72,7 +72,7 @@ export async function openShift(cashierId: number, input: OpenShiftInput): Promi
       // .for('update') // MySQL doesn't easily lock non-existent rows, but since it's same cashier it's fine.
 
     if (existing.length > 0) {
-      throw new AppError('لديك وردية مفتوحة بالفعل. يرجى إغلاقها أولاً.', 400)
+      throw new ConflictError('لديك وردية مفتوحة بالفعل. يرجى إغلاقها أولاً.')
     }
 
     // 2. Insert new shift
@@ -101,7 +101,7 @@ export async function openShift(cashierId: number, input: OpenShiftInput): Promi
  */
 export async function calculateExpectedCashBalance(shiftId: number, tx = db): Promise<number> {
   const shift = await tx.select().from(cashierShifts).where(eq(cashierShifts.id, shiftId)).limit(1)
-  if (!shift.length) throw new AppError('الوردية غير موجودة', 404)
+  if (!shift.length) throw new NotFoundError('الوردية غير موجودة')
   
   const openingBalance = parseFloat(String(shift[0].openingBalance))
 
@@ -157,7 +157,7 @@ export async function closeShift(shiftId: number, input: CloseShiftInput, cashie
       .for('update')
 
     if (!shiftResult.length) {
-      throw new AppError('الوردية غير موجودة', 404)
+      throw new NotFoundError('الوردية غير موجودة')
     }
 
     const shift = shiftResult[0]
@@ -165,14 +165,14 @@ export async function closeShift(shiftId: number, input: CloseShiftInput, cashie
     // 2. Validate ownership and status
     // A cashier can only close their own shift (or admin, but here we expect the caller's cashierId)
     if (shift.cashierId !== cashierId) {
-      throw new AppError('لا يمكنك إغلاق وردية لا تخصك', 403)
+      throw new ForbiddenError('لا يمكنك إغلاق وردية لا تخصك')
     }
     if (shift.status === 'closed') {
-      throw new AppError('الوردية مغلقة بالفعل', 400)
+      throw new ConflictError('الوردية مغلقة بالفعل')
     }
 
     // 3. Calculate expected balance
-    const expectedBalance = await calculateExpectedCashBalance(shiftId, tx)
+    const expectedBalance = await calculateExpectedCashBalance(shiftId, tx as any)
     const actualBalance = input.actualBalance
     const difference = actualBalance - expectedBalance
 

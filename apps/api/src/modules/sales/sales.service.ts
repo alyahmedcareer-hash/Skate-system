@@ -76,7 +76,7 @@ export class SalesService {
     const [activeShiftRows] = await db.execute(
       sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${data.cashierId} AND status = 'active' LIMIT 1`
     )
-    const activeShift = (activeShiftRows as any[])[0]
+    const activeShift = (activeShiftRows as unknown as any[])[0]
     if (!activeShift) {
       throw new BusinessRuleError('عملية إنشاء البيع تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
     }
@@ -201,7 +201,7 @@ export class SalesService {
     const [activeShiftRows] = await db.execute(
       sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${adminUserId} AND status = 'active' LIMIT 1`
     )
-    const activeShift = (activeShiftRows as any[])[0]
+    const activeShift = (activeShiftRows as unknown as any[])[0]
     if (!activeShift) {
       throw new BusinessRuleError('عملية إلغاء البيع تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
     }

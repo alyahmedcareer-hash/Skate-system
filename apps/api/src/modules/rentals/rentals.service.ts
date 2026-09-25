@@ -452,7 +452,7 @@ export async function startRental(
   const [activeShiftRows] = await db.execute(
     sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${cashierId} AND status = 'active' LIMIT 1`
   )
-  const activeShift = (activeShiftRows as any[])[0]
+  const activeShift = (activeShiftRows as unknown as any[])[0]
   if (!activeShift) {
     throw new BusinessRuleError('عملية إنشاء الإيجار تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
   }
@@ -808,7 +808,7 @@ export async function cancelRental(rentalId: number, cashierId: number): Promise
   const [activeShiftRows] = await db.execute(
     sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${cashierId} AND status = 'active' LIMIT 1`
   )
-  const activeShift = (activeShiftRows as any[])[0]
+  const activeShift = (activeShiftRows as unknown as any[])[0]
   if (!activeShift) {
     throw new BusinessRuleError('عملية إلغاء الإيجار تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
   }
@@ -891,7 +891,7 @@ export async function returnRental(
   const [activeShiftRows] = await db.execute(
     sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${cashierId} AND status = 'active' LIMIT 1`
   )
-  const activeShift = (activeShiftRows as any[])[0]
+  const activeShift = (activeShiftRows as unknown as any[])[0]
   if (!activeShift) {
     throw new BusinessRuleError('عملية إرجاع الإيجار تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
   }
