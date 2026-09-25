@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  Calendar,
   FileDown,
   PieChart,
   TrendingUp,
@@ -13,7 +12,6 @@ import {
 } from 'lucide-react'
 import { format, subDays } from 'date-fns'
 
-import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/FormFields'
 import OverviewReport from './components/OverviewReport'
@@ -21,7 +19,6 @@ import FinancialReport from './components/FinancialReport'
 import GenericListReport from './components/GenericListReport'
 import { exportToCSV, exportToExcel, exportToPDF, fetchAllReportData } from './exportUtils'
 
-// Tabs definition
 const REPORT_TABS = [
   { id: 'overview', label: 'نظرة عامة', icon: PieChart },
   { id: 'financial', label: 'النتيجة التشغيلية', icon: TrendingUp },
@@ -40,9 +37,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'))
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'))
-
   const [isExporting, setIsExporting] = useState(false)
-  const [showExportMenu, setShowExportMenu] = useState(false)
 
   const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
     if (activeTab === 'overview' || activeTab === 'financial') {
@@ -51,7 +46,6 @@ export default function ReportsPage() {
     }
     
     setIsExporting(true)
-    setShowExportMenu(false)
     try {
       const data = await fetchAllReportData(activeTab, startDate, endDate)
       if (data.length === 0) {
@@ -72,81 +66,73 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="page-container">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">التقارير التحليلية</h1>
-          <p className="text-slate-500 mt-2">عرض وتحليل الأداء والنتائج التشغيلية</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200/60 shadow-sm">
-            <Calendar className="w-5 h-5 text-slate-400" />
-            <Input 
-              id="start-date"
-              label=""
-              type="date" 
-              value={startDate} 
-              onChange={(e: any) => setStartDate(e.target.value)}
-              className="border-none h-8 w-36 shadow-none focus:ring-0 text-sm"
-            />
-            <span className="text-slate-300">-</span>
-            <Input 
-              id="end-date"
-              label=""
-              type="date" 
-              value={endDate} 
-              onChange={(e: any) => setEndDate(e.target.value)}
-              className="border-none h-8 w-36 shadow-none focus:ring-0 text-sm"
-            />
-          </div>
-          <div className="relative">
-            <Button onClick={() => setShowExportMenu(!showExportMenu)} variant="secondary" className="gap-2" disabled={isExporting}>
-              <FileDown className="w-4 h-4" />
-              {isExporting ? 'جاري التصدير...' : 'تصدير'}
-            </Button>
-            
-            {showExportMenu && (
-              <div className="absolute top-full mt-2 left-0 w-40 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-                <button onClick={() => handleExport('excel')} className="w-full text-right px-4 py-2 hover:bg-slate-50 text-sm font-medium text-slate-700">تصدير Excel</button>
-                <button onClick={() => handleExport('csv')} className="w-full text-right px-4 py-2 hover:bg-slate-50 text-sm font-medium text-slate-700">تصدير CSV</button>
-                <button onClick={() => handleExport('pdf')} className="w-full text-right px-4 py-2 hover:bg-slate-50 text-sm font-medium text-slate-700">تصدير PDF</button>
-              </div>
-            )}
-          </div>
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title">التقارير التحليلية</h1>
+          <p className="text-sm text-neutral-500 mt-1">عرض وتحليل الأداء والنتائج التشغيلية</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
-        {/* Sidebar Tabs */}
-        <div className="col-span-12 md:col-span-3 lg:col-span-2">
-          <Card className="p-2 space-y-1 bg-white/50 backdrop-blur-md border-slate-200/50">
-            {REPORT_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-blue-50 text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-blue-600' : 'text-slate-400'}`} />
-                {tab.label}
-              </button>
-            ))}
-          </Card>
-        </div>
+      <div className="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-lg border border-border shadow-sm">
+        {REPORT_TABS.map((tab) => (
+          <Button
+            key={tab.id}
+            variant={activeTab === tab.id ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setActiveTab(tab.id)}
+            className="shrink-0"
+          >
+            <tab.icon size={16} className="ml-2" />
+            {tab.label}
+          </Button>
+        ))}
+      </div>
 
-        {/* Report Content */}
-        <div className="col-span-12 md:col-span-9 lg:col-span-10">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 min-h-[500px] animate-in fade-in zoom-in-95 duration-200">
-            {activeTab === 'overview' && <OverviewReport startDate={startDate} endDate={endDate} />}
-            {activeTab === 'financial' && <FinancialReport startDate={startDate} endDate={endDate} />}
-            {activeTab !== 'overview' && activeTab !== 'financial' && (
-              <GenericListReport type={activeTab} startDate={startDate} endDate={endDate} />
-            )}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 bg-white p-4 rounded-lg border border-border shadow-sm shrink-0">
+        <div className="flex flex-wrap items-end gap-4 flex-1">
+          <div className="w-40">
+            <Input 
+              id="start-date"
+              label="من تاريخ"
+              type="date" 
+              value={startDate} 
+              onChange={(e: any) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="w-40">
+            <Input 
+              id="end-date"
+              label="إلى تاريخ"
+              type="date" 
+              value={endDate} 
+              onChange={(e: any) => setEndDate(e.target.value)}
+            />
           </div>
         </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => handleExport('excel')} disabled={isExporting}>
+            <FileDown size={16} className="ml-2" />
+            Excel
+          </Button>
+          <Button variant="secondary" onClick={() => handleExport('csv')} disabled={isExporting}>
+            <FileDown size={16} className="ml-2" />
+            CSV
+          </Button>
+          <Button variant="secondary" onClick={() => handleExport('pdf')} disabled={isExporting}>
+            <FileDown size={16} className="ml-2" />
+            PDF
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0 bg-white rounded-lg border border-border p-4 shadow-sm overflow-auto">
+        {activeTab === 'overview' && <OverviewReport startDate={startDate} endDate={endDate} />}
+        {activeTab === 'financial' && <FinancialReport startDate={startDate} endDate={endDate} />}
+        {activeTab !== 'overview' && activeTab !== 'financial' && (
+          <GenericListReport type={activeTab} startDate={startDate} endDate={endDate} />
+        )}
       </div>
     </div>
   )

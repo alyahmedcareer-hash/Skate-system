@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Edit, Loader2, Search, AlertCircle, Package } from 'lucide-react'
 import { productsApi, type Product, type ProductCategory } from './products.api'
-import { Button, Input, useToast } from '../../components/ui'
+import { Button, Input, Modal, useToast } from '../../components/ui'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function ProductsPage() {
@@ -12,11 +12,14 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<ProductCategory[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const [newCatName, setNewCatName] = useState('')
   const [newCatNameAr, setNewCatNameAr] = useState('')
 
-  const [showProductForm, setShowProductForm] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const [showProductModal, setShowProductModal] = useState(false)
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
   
   const [formData, setFormData] = useState({
@@ -28,13 +31,19 @@ export default function ProductsPage() {
     barcode: ''
   })
 
+  const fetchedRef = useRef(false)
+
   useEffect(() => {
-    fetchData()
+    if (!fetchedRef.current) {
+      fetchedRef.current = true
+      fetchData()
+    }
   }, [])
 
   async function fetchData() {
     try {
       setLoading(true)
+      setError(null)
       const [pRes, cRes] = await Promise.all([
         productsApi.getProducts(),
         productsApi.getCategories()
@@ -42,7 +51,7 @@ export default function ProductsPage() {
       setProducts(pRes.data)
       setCategories(cRes.data)
     } catch {
-      showToast({ type: 'error', title: 'حدث خطأ أثناء تحميل المنتجات' })
+      setError('حدث خطأ أثناء تحميل المنتجات. يرجى المحاولة مرة أخرى.')
     } finally {
       setLoading(false)
     }
@@ -81,7 +90,7 @@ export default function ProductsPage() {
         await productsApi.createProduct(payload)
         showToast({ type: 'success', title: 'تمت إضافة المنتج بنجاح' })
       }
-      setShowProductForm(false)
+      setShowProductModal(false)
       setEditingProductId(null)
       fetchData()
       setFormData({ name: '', nameAr: '', categoryId: '', price: '', stockQuantity: '', barcode: '' })
@@ -104,31 +113,51 @@ export default function ProductsPage() {
       stockQuantity: p.stockQuantity.toString(),
       barcode: p.barcode || ''
     })
-    setShowProductForm(true)
+    setShowProductModal(true)
   }
 
-  if (loading) {
+  const filteredProducts = products.filter(p => 
+    p.nameAr.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.barcode && p.barcode.includes(searchTerm))
+  )
+
+  if (loading && !products.length) {
     return (
-      <div className="page-container">
-        <div className="page-header"><div className="page-header-text"><h1 className="page-header-title">المنتجات</h1></div></div>
-        <div className="flex items-center justify-center p-8 text-neutral-400">
-          <Loader2 className="animate-spin" size={24} />
+      <div className="page-container flex flex-col h-full">
+        <div className="page-header shrink-0"><div className="page-header-text"><h1 className="page-header-title">المنتجات</h1></div></div>
+        <div className="flex-1 flex items-center justify-center p-8 text-neutral-400 bg-white rounded-lg border border-border">
+          <Loader2 className="animate-spin" size={32} />
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !products.length) {
+    return (
+      <div className="page-container flex flex-col h-full">
+        <div className="page-header shrink-0"><div className="page-header-text"><h1 className="page-header-title">المنتجات</h1></div></div>
+        <div className="flex-1 flex flex-col items-center justify-center p-12 text-danger-600 bg-white rounded-lg border border-border">
+           <AlertCircle size={48} className="mb-4 opacity-50" />
+           <p className="text-lg font-semibold">{error}</p>
+           <Button onClick={() => { fetchedRef.current = false; fetchData() }} className="mt-4" variant="secondary">إعادة المحاولة</Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
         <div className="page-header-text">
           <h1 className="page-header-title">المنتجات</h1>
+          <p className="text-sm text-neutral-500 mt-1">إدارة المنتجات وأرصدة المخزون والتصنيفات</p>
         </div>
         {canManage && (
           <Button onClick={() => {
             setEditingProductId(null)
             setFormData({ name: '', nameAr: '', categoryId: '', price: '', stockQuantity: '', barcode: '' })
-            setShowProductForm(!showProductForm)
+            setShowProductModal(true)
           }}>
             <Plus size={16} className="mr-2" />
             إضافة منتج
@@ -136,77 +165,75 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {showProductForm && (
-        <div className="card p-4 mb-4">
-          <h3 className="text-lg font-semibold mb-4 text-navy-800">{editingProductId ? 'تعديل منتج' : 'منتج جديد'}</h3>
-          <form onSubmit={handleSaveProduct} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Input id="name" label="الاسم (EN)" required value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} />
-            <Input id="nameAr" label="الاسم (AR)" required value={formData.nameAr} onChange={(e: any) => setFormData({ ...formData, nameAr: e.target.value })} />
-            
-            <div className="form-group">
-              <label className="form-label">الفئة</label>
-              <select className="form-input" required value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
-                <option value="">اختر الفئة...</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.nameAr}</option>)}
-              </select>
-            </div>
-
-            <Input id="price" label="السعر" type="number" step="0.01" min="0" required value={formData.price} onChange={(e: any) => setFormData({ ...formData, price: e.target.value })} />
-            <Input id="stockQuantity" label="الرصيد الافتتاحي / الحالي" type="number" min="0" required value={formData.stockQuantity} onChange={(e: any) => setFormData({ ...formData, stockQuantity: e.target.value })} />
-            <Input id="barcode" label="الباركود (اختياري)" value={formData.barcode} onChange={(e: any) => setFormData({ ...formData, barcode: e.target.value })} />
-
-            <div className="col-span-full flex gap-2 justify-end mt-2">
-              <Button type="button" variant="ghost" onClick={() => setShowProductForm(false)}>إلغاء</Button>
-              <Button type="submit">حفظ المنتج</Button>
-            </div>
-          </form>
-        </div>
-      )}
-
       {canManage && (
-        <div className="card p-4 mb-4 bg-neutral-50/50">
-          <h4 className="text-sm font-semibold mb-2 text-navy-800">إضافة فئة جديدة</h4>
-          <form onSubmit={handleAddCategory} className="flex gap-2 items-end">
-            <div className="flex-1"><Input id="newCatNameAr" label="اسم الفئة (AR)" placeholder="اسم الفئة (AR)" value={newCatNameAr} onChange={(e: any) => setNewCatNameAr(e.target.value)} required /></div>
-            <div className="flex-1"><Input id="newCatName" label="اسم الفئة (EN)" placeholder="اسم الفئة (EN)" value={newCatName} onChange={(e: any) => setNewCatName(e.target.value)} required /></div>
-            <Button type="submit" variant="secondary"><Plus size={16} /></Button>
+        <div className="bg-white rounded-lg border border-border p-4 mb-6 shadow-sm shrink-0">
+          <h3 className="text-sm font-semibold mb-3 text-slate-800">إضافة فئة جديدة</h3>
+          <form onSubmit={handleAddCategory} className="flex flex-col md:flex-row items-end gap-4">
+            <div className="flex-1 w-full">
+              <Input id="newCatNameAr" label="اسم الفئة بالعربي" placeholder="مثال: مشروبات" required value={newCatNameAr} onChange={(e: any) => setNewCatNameAr(e.target.value)} />
+            </div>
+            <div className="flex-1 w-full">
+              <Input id="newCatName" label="اسم الفئة بالإنجليزي" placeholder="مثال: Beverages" required value={newCatName} onChange={(e: any) => setNewCatName(e.target.value)} />
+            </div>
+            <Button type="submit" variant="secondary" className="w-full md:w-auto h-10">
+              <Plus size={16} className="ml-2" /> إضافة الفئة
+            </Button>
           </form>
         </div>
       )}
 
-      <div className="card">
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
+      <div className="flex-1 min-h-0 flex flex-col bg-white rounded-lg border border-border shadow-sm">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-4 shrink-0 bg-neutral-50/50 rounded-t-lg">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+            <input 
+              type="text" 
+              placeholder="بحث في المنتجات..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-input w-full pr-9 text-sm"
+            />
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-auto p-0">
+          <table className="w-full text-sm text-right border-collapse">
+            <thead className="bg-neutral-50 sticky top-0 z-10 border-b border-border shadow-sm">
               <tr>
-                <th>الكود</th>
-                <th>اسم المنتج</th>
-                <th>الفئة</th>
-                <th>السعر</th>
-                <th>المخزون المتوفر</th>
-                {canManage && <th className="text-left">الإجراءات</th>}
+                <th className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap">الكود</th>
+                <th className="px-4 py-3 font-semibold text-slate-700">اسم المنتج</th>
+                <th className="px-4 py-3 font-semibold text-slate-700">الفئة</th>
+                <th className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap">السعر</th>
+                <th className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap text-center">المخزون المتوفر</th>
+                {canManage && <th className="px-4 py-3 font-semibold text-slate-700 w-24 text-center">الإجراءات</th>}
               </tr>
             </thead>
-            <tbody>
-              {products.length === 0 ? (
+            <tbody className="divide-y divide-border">
+              {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center p-8 text-neutral-400">لا توجد منتجات</td>
+                  <td colSpan={6} className="text-center p-12">
+                    <div className="flex flex-col items-center justify-center text-neutral-400">
+                      <Package size={48} className="mb-4 opacity-30" />
+                      <p className="text-base font-medium">لا توجد منتجات مطابقة للبحث</p>
+                      <p className="text-sm mt-1">أضف منتجاً جديداً للبدء</p>
+                    </div>
+                  </td>
                 </tr>
-              ) : products.map(product => {
+              ) : filteredProducts.map(product => {
                 const category = categories.find(c => c.id === product.categoryId)
                 return (
-                  <tr key={product.id}>
-                    <td>{product.id}</td>
-                    <td>{product.nameAr}</td>
-                    <td>{category?.nameAr || '-'}</td>
-                    <td>{product.price} ج.م</td>
-                    <td>
-                      <span className={`inline-flex px-2 py-1 rounded text-xs font-semibold ${product.stockQuantity > 0 ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'}`}>
+                  <tr key={product.id} className="hover:bg-neutral-50/50 transition-colors">
+                    <td className="px-4 py-3 text-slate-500" dir="ltr">{product.id}</td>
+                    <td className="px-4 py-3 font-medium text-slate-800">{product.nameAr}</td>
+                    <td className="px-4 py-3 text-slate-600">{category?.nameAr || '-'}</td>
+                    <td className="px-4 py-3 font-semibold text-navy-700" dir="ltr">{product.price} ج.م</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${product.stockQuantity > 0 ? 'bg-success-50 text-success-700 border border-success-200' : 'bg-danger-50 text-danger-700 border border-danger-200'}`}>
                         {product.stockQuantity}
                       </span>
                     </td>
                     {canManage && (
-                      <td className="text-left">
+                      <td className="px-4 py-3 text-center">
                         <Button variant="ghost" size="sm" onClick={() => editProduct(product)} title="تعديل">
                           <Edit size={16} />
                         </Button>
@@ -219,6 +246,36 @@ export default function ProductsPage() {
           </table>
         </div>
       </div>
+
+      <Modal 
+        isOpen={showProductModal} 
+        onClose={() => setShowProductModal(false)}
+        title={editingProductId ? 'تعديل بيانات المنتج' : 'إضافة منتج جديد'}
+        size="lg"
+        footer={
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="ghost" onClick={() => setShowProductModal(false)}>إلغاء</Button>
+            <Button type="submit" form="product-form">حفظ المنتج</Button>
+          </div>
+        }
+      >
+        <form id="product-form" onSubmit={handleSaveProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+          <Input id="nameAr" label="الاسم بالعربي" required value={formData.nameAr} onChange={(e: any) => setFormData({ ...formData, nameAr: e.target.value })} />
+          <Input id="name" label="الاسم بالإنجليزي" required value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} />
+          
+          <div className="form-group flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-slate-700">الفئة</label>
+            <select className="form-input" required value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
+              <option value="">اختر الفئة...</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.nameAr}</option>)}
+            </select>
+          </div>
+
+          <Input id="price" label="السعر (ج.م)" type="number" step="0.01" min="0" required value={formData.price} onChange={(e: any) => setFormData({ ...formData, price: e.target.value })} />
+          <Input id="stockQuantity" label="المخزون" type="number" min="0" required value={formData.stockQuantity} onChange={(e: any) => setFormData({ ...formData, stockQuantity: e.target.value })} />
+          <Input id="barcode" label="الباركود (اختياري)" value={formData.barcode} onChange={(e: any) => setFormData({ ...formData, barcode: e.target.value })} />
+        </form>
+      </Modal>
     </div>
   )
 }
