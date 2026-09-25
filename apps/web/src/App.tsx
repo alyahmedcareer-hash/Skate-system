@@ -62,6 +62,9 @@ import SalesPage from './modules/sales/SalesPage'
 // Phase 12 — Treasury & Shifts
 import TreasuryPage from './modules/treasury/TreasuryPage'
 
+// Phase 13 — Reports
+import ReportsPage from './modules/reports/ReportsPage'
+
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
 // Uses EmptyState so no new shared component is needed (GAP-RBAC-013)
@@ -1135,7 +1138,14 @@ export default function App() {
                     <MaintenancePage />
                   </PermissionGate>
                 } />
-                <Route path="/reports" element={<PlaceholderPage title="التقارير" phase="المرحلة 13" />} />
+                <Route path="/reports" element={
+                  <PermissionGate
+                    permission="reports.view"
+                    fallback={<NoAccessPage permission="reports.view" />}
+                  >
+                    <ReportsPage />
+                  </PermissionGate>
+                } />
                 <Route path="/settings" element={<PlaceholderPage title="الإعدادات" phase="المرحلة متأخرة" />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

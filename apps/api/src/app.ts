@@ -52,6 +52,9 @@ import { reservationsRouter } from './modules/reservations/reservations.routes.j
 import { shiftsRouter } from './modules/shifts/shifts.routes.js'
 import { expensesRouter } from './modules/expenses/expenses.routes.js'
 
+// Phase 13 routes
+import { reportsRouter } from './modules/reports/reports.routes.js'
+
 // ---------------------------------------------------------------------------
 // Express app
 // ---------------------------------------------------------------------------
@@ -184,6 +187,11 @@ app.use('/api/v1/reservations', reservationsRouter)
 
 app.use('/api/v1/shifts', shiftsRouter)
 app.use('/api/v1/expenses', expensesRouter)
+
+// ---------------------------------------------------------------------------
+// Phase 13 routes
+// ---------------------------------------------------------------------------
+app.use('/api/v1/reports', reportsRouter)
 
 // ---------------------------------------------------------------------------
 // 404 handler — must come before error handler, after all routes
