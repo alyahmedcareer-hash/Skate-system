@@ -71,9 +71,9 @@ export default function SalesPage() {
   const filteredSales = sales.filter(s => s.saleCode.toLowerCase().includes(search.toLowerCase()))
 
   const columns: TableColumn<any>[] = [
-    { key: 'code', header: 'رقم الفاتورة', render: (_, r: any) => <span className="font-semibold text-navy-800">{r.saleCode}</span> },
+    { key: 'code', header: 'رقم الفاتورة', render: (_, r: any) => <span style={{ fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)' }}>{r.saleCode}</span> },
     { key: 'date', header: 'التاريخ والوقت', render: (_, r: any) => formatDate(r.createdAt) },
-    { key: 'total', header: 'الإجمالي', render: (_, r: any) => <span className="font-bold">{r.totalAmount} ج.م</span> },
+    { key: 'total', header: 'الإجمالي', render: (_, r: any) => <span style={{ fontWeight: 'var(--font-weight-bold)' as any }}>{r.totalAmount} ج.م</span> },
     { key: 'status', header: 'الحالة', render: (_, r: any) => (
       <Badge status={r.status === 'completed' ? 'completed' : 'cancelled'}>
         {r.status === 'completed' ? 'مكتمل' : 'ملغى'}
@@ -85,7 +85,7 @@ export default function SalesPage() {
           <Eye size={16} />
         </Button>
         {canCancel && r.status === 'completed' && (
-          <Button variant="ghost" size="sm" className="text-danger-500" onClick={() => handleCancelSale(r.id)} title="إلغاء الفاتورة">
+          <Button variant="danger" size="sm" onClick={() => handleCancelSale(r.id)} title="إلغاء الفاتورة">
             <Ban size={16} />
           </Button>
         )}
@@ -98,10 +98,11 @@ export default function SalesPage() {
   }
 
   return (
-    <div className="page-container flex flex-col h-full">
-      <div className="page-header shrink-0">
+    <div className="page-container">
+      <div className="page-header">
         <div className="page-header-text">
           <h1 className="page-header-title">سجل المبيعات</h1>
+          <p className="page-header-subtitle">{sales.length} فاتورة مسجلة</p>
         </div>
       </div>
 
@@ -117,63 +118,64 @@ export default function SalesPage() {
         columns={columns}
         data={filteredSales as any[]}
         emptyMessage={search ? 'لا توجد نتائج تطابق بحثك.' : 'لا توجد مبيعات مسجلة.'}
+        emptyIcon={ListOrdered}
       />
 
       {/* Details Modal */}
       {selectedSaleId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-border bg-navy-800 text-white rounded-t-lg">
-              <h3 className="font-semibold flex items-center gap-2"><ListOrdered size={18}/> تفاصيل الفاتورة</h3>
-              <button onClick={() => setSelectedSaleId(null)} className="text-white/70 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(14,25,41,0.5)', backdropFilter: 'blur(4px)', padding: 'var(--space-4)' }}>
+          <div style={{ backgroundColor: 'var(--color-white)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-modal)', width: '100%', maxWidth: '700px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-navy-800)', color: 'var(--color-white)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0' }}>
+              <h3 style={{ fontWeight: 'var(--font-weight-semibold)' as any, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', margin: 0 }}><ListOrdered size={18}/> تفاصيل الفاتورة</h3>
+              <button onClick={() => setSelectedSaleId(null)} style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: 'var(--radius-full)' }}>
                 <X size={20} />
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1">
+            <div style={{ padding: 'var(--space-6)', overflowY: 'auto', flex: 1 }}>
               {loadingDetails ? (
-                <div className="flex justify-center p-8"><Loader2 className="animate-spin text-navy-500" size={32} /></div>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}><Loader2 style={{ animation: 'spin 1s linear infinite', color: 'var(--color-navy-500)' }} size={32} /></div>
               ) : selectedSaleData ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                     <div>
-                      <p className="text-sm text-neutral-500">رقم الفاتورة</p>
-                      <p className="font-semibold">{selectedSaleData.saleCode}</p>
+                      <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', margin: '0 0 var(--space-1)' }}>رقم الفاتورة</p>
+                      <p style={{ fontWeight: 'var(--font-weight-semibold)' as any, margin: 0 }}>{selectedSaleData.saleCode}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-neutral-500">التاريخ</p>
-                      <p className="font-semibold">{formatDate(selectedSaleData.createdAt)}</p>
+                      <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', margin: '0 0 var(--space-1)' }}>التاريخ</p>
+                      <p style={{ fontWeight: 'var(--font-weight-semibold)' as any, margin: 0 }}>{formatDate(selectedSaleData.createdAt)}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-neutral-500">الحالة</p>
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold ${selectedSaleData.status === 'completed' ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'}`}>
+                      <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', margin: '0 0 var(--space-1)' }}>الحالة</p>
+                      <Badge status={selectedSaleData.status === 'completed' ? 'completed' : 'cancelled'}>
                         {selectedSaleData.status === 'completed' ? 'مكتمل' : 'ملغى'}
-                      </span>
+                      </Badge>
                     </div>
                     <div>
-                      <p className="text-sm text-neutral-500">الإجمالي</p>
-                      <p className="font-bold text-gold-600 text-lg">{selectedSaleData.totalAmount} ج.م</p>
+                      <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', margin: '0 0 var(--space-1)' }}>الإجمالي</p>
+                      <p style={{ fontWeight: 'var(--font-weight-bold)' as any, color: 'var(--color-gold-600)', fontSize: 'var(--font-size-lg)', margin: 0 }}>{selectedSaleData.totalAmount} ج.م</p>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold mb-2 border-b border-border pb-1">عناصر الفاتورة</h4>
-                    <table className="w-full text-sm">
+                    <h4 style={{ fontWeight: 'var(--font-weight-semibold)' as any, marginBottom: 'var(--space-2)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-1)' }}>عناصر الفاتورة</h4>
+                    <table className="ds-table" style={{ width: '100%' }}>
                       <thead>
-                        <tr className="text-neutral-500 text-right">
-                          <th className="py-2">رقم المنتج</th>
-                          <th className="py-2">السعر</th>
-                          <th className="py-2 text-center">الكمية</th>
-                          <th className="py-2 text-left">الإجمالي</th>
+                        <tr>
+                          <th style={{ padding: 'var(--space-2) 0', textAlign: 'right' }}>رقم المنتج</th>
+                          <th style={{ padding: 'var(--space-2) 0', textAlign: 'right' }}>السعر</th>
+                          <th style={{ padding: 'var(--space-2) 0', textAlign: 'center' }}>الكمية</th>
+                          <th style={{ padding: 'var(--space-2) 0', textAlign: 'left' }}>الإجمالي</th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedSaleData.items?.map(item => (
-                          <tr key={item.id} className="border-t border-neutral-100">
-                            <td className="py-2">ID: {item.productId}</td>
-                            <td className="py-2">{item.unitPrice} ج.م</td>
-                            <td className="py-2 text-center">{item.quantity}</td>
-                            <td className="py-2 text-left font-semibold">{item.totalPrice} ج.م</td>
+                          <tr key={item.id}>
+                            <td style={{ padding: 'var(--space-2) 0' }}>ID: {item.productId}</td>
+                            <td style={{ padding: 'var(--space-2) 0' }}>{item.unitPrice} ج.م</td>
+                            <td style={{ padding: 'var(--space-2) 0', textAlign: 'center' }}>{item.quantity}</td>
+                            <td style={{ padding: 'var(--space-2) 0', textAlign: 'left', fontWeight: 'var(--font-weight-semibold)' as any }}>{item.totalPrice} ج.م</td>
                           </tr>
                         ))}
                       </tbody>
@@ -181,10 +183,10 @@ export default function SalesPage() {
                   </div>
 
                   <div>
-                    <h4 className="font-semibold mb-2 border-b border-border pb-1">المدفوعات</h4>
-                    <div className="flex gap-2 flex-wrap">
+                    <h4 style={{ fontWeight: 'var(--font-weight-semibold)' as any, marginBottom: 'var(--space-2)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-1)' }}>المدفوعات</h4>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                       {selectedSaleData.payments?.map(p => (
-                        <span key={p.id} className="bg-neutral-100 border border-neutral-200 px-3 py-1 rounded text-sm font-semibold text-navy-800">
+                        <span key={p.id} style={{ backgroundColor: 'var(--color-neutral-bg)', border: '1px solid var(--color-border)', padding: '4px 12px', borderRadius: 'var(--radius-base)', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)' }}>
                           {p.amount} ج.م
                         </span>
                       ))}
@@ -192,16 +194,16 @@ export default function SalesPage() {
                   </div>
 
                   {canCancel && selectedSaleData.status === 'completed' && (
-                    <div className="pt-4 border-t border-border flex justify-end">
+                    <div style={{ paddingTop: 'var(--space-4)', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
                       <Button variant="danger" onClick={() => handleCancelSale(selectedSaleData.id)}>
-                        <Ban size={16} className="mr-2" />
+                        <Ban size={16} />
                         إلغاء الفاتورة واسترجاع المخزون
                       </Button>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center text-neutral-500">لا توجد بيانات</div>
+                <div style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>لا توجد بيانات</div>
               )}
             </div>
           </div>

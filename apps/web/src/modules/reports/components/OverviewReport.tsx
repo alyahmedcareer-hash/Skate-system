@@ -15,9 +15,11 @@ import {
 import { formatCurrency } from '../../../utils/currency'
 import { reportsApi } from '../reports.api'
 import type { OverviewData } from '../reports.api'
-import { Loader2, TrendingUp, TrendingDown, Clock, Package, AlertCircle } from 'lucide-react'
+import { TrendingUp, TrendingDown, Clock, Package } from 'lucide-react'
+import { PageLoader, Alert } from '../../../components/ui'
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+// Use brand-aligned colors for charts
+const COLORS = ['#192744', '#58C89A', '#F3B735', '#ED4547', '#4a90d9']
 
 interface Props {
   startDate: string
@@ -46,27 +48,18 @@ export default function OverviewReport({ startDate, endDate }: Props) {
   }, [startDate, endDate])
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    )
+    return <PageLoader label="جارٍ تحميل البيانات" />
   }
 
   if (error || !data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-red-500 gap-2">
-        <AlertCircle className="w-8 h-8" />
-        <p>{error}</p>
-      </div>
-    )
+    return <Alert variant="danger">{error || 'تعذر تحميل البيانات'}</Alert>
   }
 
   const statCards = [
-    { title: 'إجمالي الإيرادات', value: formatCurrency(data.totalRevenue), icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { title: 'إجمالي المصروفات', value: formatCurrency(data.totalExpenses), icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-50' },
-    { title: 'إجمالي الإيجارات', value: data.totalRentals.toString(), icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { title: 'الإيجارات النشطة', value: data.activeRentals.toString(), icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { title: 'إجمالي الإيرادات', value: formatCurrency(data.totalRevenue), icon: TrendingUp, bgColor: 'var(--color-success-bg)', iconColor: 'var(--color-success-text)' },
+    { title: 'إجمالي المصروفات', value: formatCurrency(data.totalExpenses), icon: TrendingDown, bgColor: 'var(--color-danger-bg)', iconColor: 'var(--color-danger-text)' },
+    { title: 'إجمالي الإيجارات', value: data.totalRentals.toString(), icon: Package, bgColor: 'var(--color-info-bg)', iconColor: 'var(--color-info-text)' },
+    { title: 'الإيجارات النشطة', value: data.activeRentals.toString(), icon: Clock, bgColor: 'var(--color-warning-bg)', iconColor: 'var(--color-warning-text)' },
   ]
 
   const pieData = [
@@ -76,28 +69,38 @@ export default function OverviewReport({ startDate, endDate }: Props) {
   ]
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
         {statCards.map((stat, idx) => (
-          <div key={idx} className="p-5 rounded-2xl border border-slate-100 shadow-sm bg-white hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-20 transition-transform group-hover:scale-150 duration-500 ${stat.bg}`}></div>
-            <div className="flex justify-between items-start relative z-10">
+          <div key={idx} style={{
+            padding: 'var(--space-5)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--color-border)',
+            boxShadow: 'var(--shadow-card)',
+            backgroundColor: 'var(--color-white)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <p className="text-sm text-slate-500 font-medium mb-1">{stat.title}</p>
-                <h3 className="text-2xl font-bold text-slate-800">{stat.value}</h3>
+                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 'var(--font-weight-medium)' as any, marginBottom: 'var(--space-1)' }}>{stat.title}</p>
+                <h3 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)' as any, color: 'var(--color-navy-800)', margin: 0 }}>{stat.value}</h3>
               </div>
-              <div className={`p-2 rounded-xl ${stat.bg}`}>
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
+              <div style={{ padding: 'var(--space-2)', borderRadius: 'var(--radius-base)', backgroundColor: stat.bgColor }}>
+                <stat.icon size={24} style={{ color: stat.iconColor }} />
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-6 rounded-2xl border border-slate-100 shadow-sm bg-white">
-          <h3 className="text-lg font-semibold text-slate-800 mb-6">حالة الإيجارات</h3>
-          <div className="h-64">
+      {/* Charts Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-6)' }}>
+        {/* Pie Chart */}
+        <div style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', backgroundColor: 'var(--color-white)' }}>
+          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)', marginBottom: 'var(--space-6)' }}>حالة الإيجارات</h3>
+          <div style={{ height: '256px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -114,8 +117,7 @@ export default function OverviewReport({ startDate, endDate }: Props) {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: '#334155', fontWeight: 500 }}
+                  contentStyle={{ borderRadius: 'var(--radius-base)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}
                 />
                 <Legend iconType="circle" />
               </PieChart>
@@ -123,21 +125,21 @@ export default function OverviewReport({ startDate, endDate }: Props) {
           </div>
         </div>
 
-        <div className="p-6 rounded-2xl border border-slate-100 shadow-sm bg-white">
-          <h3 className="text-lg font-semibold text-slate-800 mb-6">الإيرادات مقابل المصروفات</h3>
-          <div className="h-64">
+        {/* Bar Chart */}
+        <div style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', backgroundColor: 'var(--color-white)' }}>
+          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)', marginBottom: 'var(--space-6)' }}>الإيرادات مقابل المصروفات</h3>
+          <div style={{ height: '256px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[{ name: 'المقارنة المالية', الايرادات: data.totalRevenue, المصروفات: data.totalExpenses }]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(val) => `${val} ج`} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} tickFormatter={(val) => `${val} ج`} />
                 <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ borderRadius: 'var(--radius-base)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}
                 />
                 <Legend iconType="circle" />
-                <Bar dataKey="الايرادات" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
-                <Bar dataKey="المصروفات" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} />
+                <Bar dataKey="الايرادات" fill="var(--color-success-500)" radius={[4, 4, 0, 0]} barSize={40} />
+                <Bar dataKey="المصروفات" fill="var(--color-danger-500)" radius={[4, 4, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>

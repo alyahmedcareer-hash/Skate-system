@@ -1,8 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Edit, Loader2, Search, AlertCircle, Package } from 'lucide-react'
+import { Plus, Edit, Package, RefreshCw } from 'lucide-react'
 import { productsApi, type Product, type ProductCategory } from './products.api'
-import { Button, Input, Modal, useToast } from '../../components/ui'
+import {
+  Button,
+  Input,
+  Select,
+  Modal,
+  Badge,
+  SearchBar,
+  DataTable,
+  PageLoader,
+  Alert,
+  useToast,
+  type TableColumn,
+} from '../../components/ui'
 import { useAuth } from '../../contexts/AuthContext'
+import { formatCurrency } from '../../utils/currency'
 
 export default function ProductsPage() {
   const { hasPermission } = useAuth()
@@ -124,165 +137,205 @@ export default function ProductsPage() {
     (p.barcode && p.barcode.includes(searchTerm))
   )
 
+  // Table columns definition — uses DataTable
+  const columns: TableColumn<any>[] = [
+    {
+      key: 'id',
+      header: 'الكود',
+      width: '80px',
+      render: (_, r: any) => (
+        <span style={{ fontFamily: 'monospace', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
+          #{r.id}
+        </span>
+      )
+    },
+    {
+      key: 'nameAr',
+      header: 'اسم المنتج',
+      render: (_, r: any) => (
+        <span style={{ fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)' }}>
+          {r.nameAr}
+        </span>
+      )
+    },
+    {
+      key: 'category',
+      header: 'الفئة',
+      render: (_, r: any) => {
+        const cat = categories.find(c => c.id === r.categoryId)
+        return cat?.nameAr || '—'
+      }
+    },
+    {
+      key: 'price',
+      header: 'السعر',
+      render: (_, r: any) => (
+        <span style={{ fontWeight: 'var(--font-weight-bold)' as any, color: 'var(--color-navy-800)' }} dir="ltr">
+          {formatCurrency(r.price)}
+        </span>
+      )
+    },
+    {
+      key: 'stock',
+      header: 'المخزون',
+      align: 'center' as const,
+      render: (_, r: any) => (
+        <Badge status={r.stockQuantity > 0 ? 'available' : 'damaged'}>
+          {r.stockQuantity}
+        </Badge>
+      )
+    },
+    ...(canManage ? [{
+      key: 'actions',
+      header: '',
+      width: '80px',
+      align: 'center' as const,
+      render: (_: any, r: any) => (
+        <Button variant="ghost" size="sm" onClick={() => editProduct(r)} title="تعديل">
+          <Edit size={16} aria-hidden="true" />
+        </Button>
+      )
+    }] : [])
+  ]
+
+  // Category select options for the product form
+  const categoryOptions = categories.map(c => ({ value: String(c.id), label: c.nameAr }))
+
+  // Loading state
   if (loading && !products.length) {
-    return (
-      <div className="page-container flex flex-col h-full">
-        <div className="page-header shrink-0"><div className="page-header-text"><h1 className="page-header-title">المنتجات</h1></div></div>
-        <div className="flex-1 flex items-center justify-center p-8 text-neutral-400 bg-white rounded-lg border border-border">
-          <Loader2 className="animate-spin" size={32} />
-        </div>
-      </div>
-    )
+    return <PageLoader label="جارٍ تحميل المنتجات" />
   }
 
+  // Error state
   if (error && !products.length) {
     return (
-      <div className="page-container flex flex-col h-full">
-        <div className="page-header shrink-0"><div className="page-header-text"><h1 className="page-header-title">المنتجات</h1></div></div>
-        <div className="flex-1 flex flex-col items-center justify-center p-12 text-danger-600 bg-white rounded-lg border border-border">
-           <AlertCircle size={48} className="mb-4 opacity-50" />
-           <p className="text-lg font-semibold">{error}</p>
-           <Button onClick={() => { fetchedRef.current = false; fetchData() }} className="mt-4" variant="secondary">إعادة المحاولة</Button>
+      <div className="page-container">
+        <div className="page-header">
+          <div className="page-header-text">
+            <h1 className="page-header-title">المنتجات</h1>
+          </div>
         </div>
+        <Alert variant="danger">
+          {error}
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <Button onClick={() => { fetchedRef.current = false; fetchData() }} variant="secondary">
+              إعادة المحاولة
+            </Button>
+          </div>
+        </Alert>
       </div>
     )
   }
 
   return (
-    <div className="page-container flex flex-col h-full">
-      <div className="page-header shrink-0">
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
         <div className="page-header-text">
           <h1 className="page-header-title">المنتجات</h1>
-          <p className="text-sm text-neutral-500 mt-1">إدارة المنتجات وأرصدة المخزون والتصنيفات</p>
+          <p className="page-header-subtitle">
+            {loading ? '...' : `${products.length} منتج — إدارة المنتجات وأرصدة المخزون والتصنيفات`}
+          </p>
         </div>
         {canManage && (
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
             <Button variant="secondary" onClick={() => setShowCategoryModal(true)}>
-              <Plus size={16} className="ml-2" />
+              <Plus size={16} aria-hidden="true" />
               فئة جديدة
             </Button>
-            <Button onClick={() => {
+            <Button variant="primary" onClick={() => {
               setEditingProductId(null)
               setFormData({ name: '', nameAr: '', categoryId: '', price: '', stockQuantity: '', barcode: '' })
               setShowProductModal(true)
             }}>
-              <Plus size={16} className="ml-2" />
+              <Plus size={16} aria-hidden="true" />
               إضافة منتج
             </Button>
           </div>
         )}
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col bg-white rounded-lg border border-border shadow-sm">
-        <div className="p-4 border-b border-border flex items-center justify-between gap-4 shrink-0 bg-neutral-50/50 rounded-t-lg">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="بحث في المنتجات..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input w-full pr-9 text-sm"
-            />
-          </div>
-        </div>
-        
-        <div className="flex-1 overflow-auto p-0">
-          <table className="w-full text-sm text-right border-collapse">
-            <thead className="bg-neutral-50 sticky top-0 z-10 border-b border-border shadow-sm">
-              <tr>
-                <th className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap">الكود</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">اسم المنتج</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">الفئة</th>
-                <th className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap">السعر</th>
-                <th className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap text-center">المخزون المتوفر</th>
-                {canManage && <th className="px-4 py-3 font-semibold text-slate-700 w-24 text-center">الإجراءات</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center p-12">
-                    <div className="flex flex-col items-center justify-center text-neutral-400">
-                      <Package size={48} className="mb-4 opacity-30" />
-                      <p className="text-base font-medium">لا توجد منتجات مطابقة للبحث</p>
-                      <p className="text-sm mt-1">أضف منتجاً جديداً للبدء</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredProducts.map(product => {
-                const category = categories.find(c => c.id === product.categoryId)
-                return (
-                  <tr key={product.id} className="hover:bg-neutral-50/50 transition-colors">
-                    <td className="px-4 py-3 text-slate-500" dir="ltr">{product.id}</td>
-                    <td className="px-4 py-3 font-medium text-slate-800">{product.nameAr}</td>
-                    <td className="px-4 py-3 text-slate-600">{category?.nameAr || '-'}</td>
-                    <td className="px-4 py-3 font-semibold text-navy-700" dir="ltr">{product.price} ج.م</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${product.stockQuantity > 0 ? 'bg-success-50 text-success-700 border border-success-200' : 'bg-danger-50 text-danger-700 border border-danger-200'}`}>
-                        {product.stockQuantity}
-                      </span>
-                    </td>
-                    {canManage && (
-                      <td className="px-4 py-3 text-center">
-                        <Button variant="ghost" size="sm" onClick={() => editProduct(product)} title="تعديل">
-                          <Edit size={16} />
-                        </Button>
-                      </td>
-                    )}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+      {/* Filters Row */}
+      <div className="filters-row">
+        <SearchBar
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="بحث بالاسم أو الباركود..."
+          onClear={() => setSearchTerm('')}
+        />
+        <Button
+          variant="secondary"
+          size="base"
+          onClick={() => { fetchedRef.current = false; fetchData() }}
+          aria-label="تحديث القائمة"
+        >
+          <RefreshCw size={16} aria-hidden="true" />
+        </Button>
       </div>
 
+      {/* Data Table */}
+      <DataTable
+        columns={columns}
+        data={filteredProducts as any[]}
+        emptyMessage={searchTerm ? 'لا توجد منتجات مطابقة للبحث' : 'لم يتم إضافة أي منتجات بعد'}
+        emptyIcon={Package}
+      />
+
+      {/* Product Modal */}
       <Modal 
         isOpen={showProductModal} 
         onClose={() => setShowProductModal(false)}
         title={editingProductId ? 'تعديل بيانات المنتج' : 'إضافة منتج جديد'}
-        size="lg"
+        size="base"
         footer={
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="ghost" onClick={() => setShowProductModal(false)}>إلغاء</Button>
-            <Button type="submit" form="product-form">حفظ المنتج</Button>
-          </div>
+          <>
+            <Button type="submit" form="product-form" variant="primary">
+              حفظ المنتج
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setShowProductModal(false)}>
+              إلغاء
+            </Button>
+          </>
         }
       >
-        <form id="product-form" onSubmit={handleSaveProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-          <Input id="nameAr" label="الاسم بالعربي" required value={formData.nameAr} onChange={(e: any) => setFormData({ ...formData, nameAr: e.target.value })} />
-          <Input id="name" label="الاسم بالإنجليزي" required value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} />
-          
-          <div className="form-group flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-slate-700">الفئة</label>
-            <select className="form-input" required value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
-              <option value="">اختر الفئة...</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.nameAr}</option>)}
-            </select>
+        <form id="product-form" onSubmit={handleSaveProduct} noValidate>
+          <div className="form-grid-2col">
+            <Input id="nameAr" label="الاسم بالعربي *" required value={formData.nameAr} onChange={(e: any) => setFormData({ ...formData, nameAr: e.target.value })} />
+            <Input id="name" label="الاسم بالإنجليزي *" required value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} />
           </div>
+          
+          <Select
+            id="productCategory"
+            label="الفئة *"
+            value={formData.categoryId}
+            onChange={(e: any) => setFormData({ ...formData, categoryId: e.target.value })}
+            options={[{ value: '', label: 'اختر الفئة...' }, ...categoryOptions]}
+          />
 
-          <Input id="price" label="السعر (ج.م)" type="number" step="0.01" min="0" required value={formData.price} onChange={(e: any) => setFormData({ ...formData, price: e.target.value })} />
-          <Input id="stockQuantity" label="المخزون" type="number" min="0" required value={formData.stockQuantity} onChange={(e: any) => setFormData({ ...formData, stockQuantity: e.target.value })} />
+          <div className="form-grid-2col">
+            <Input id="price" label="السعر (ج.م) *" type="number" step="0.01" min="0" required value={formData.price} onChange={(e: any) => setFormData({ ...formData, price: e.target.value })} />
+            <Input id="stockQuantity" label="المخزون *" type="number" min="0" required value={formData.stockQuantity} onChange={(e: any) => setFormData({ ...formData, stockQuantity: e.target.value })} />
+          </div>
           <Input id="barcode" label="الباركود (اختياري)" value={formData.barcode} onChange={(e: any) => setFormData({ ...formData, barcode: e.target.value })} />
         </form>
       </Modal>
 
+      {/* Category Modal */}
       <Modal
         isOpen={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}
         title="إضافة فئة جديدة"
         size="sm"
         footer={
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="ghost" onClick={() => setShowCategoryModal(false)}>إلغاء</Button>
-            <Button type="submit" form="category-form">إضافة الفئة</Button>
-          </div>
+          <>
+            <Button type="submit" form="category-form" variant="primary">إضافة الفئة</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowCategoryModal(false)}>إلغاء</Button>
+          </>
         }
       >
-        <form id="category-form" onSubmit={handleAddCategory} className="flex flex-col gap-4 py-2">
-          <Input id="newCatNameAr" label="اسم الفئة بالعربي" placeholder="مثال: مشروبات" required value={newCatNameAr} onChange={(e: any) => setNewCatNameAr(e.target.value)} />
-          <Input id="newCatName" label="اسم الفئة بالإنجليزي" placeholder="مثال: Beverages" required value={newCatName} onChange={(e: any) => setNewCatName(e.target.value)} />
+        <form id="category-form" onSubmit={handleAddCategory} noValidate>
+          <Input id="newCatNameAr" label="اسم الفئة بالعربي *" placeholder="مثال: مشروبات" required value={newCatNameAr} onChange={(e: any) => setNewCatNameAr(e.target.value)} />
+          <Input id="newCatName" label="اسم الفئة بالإنجليزي *" placeholder="مثال: Beverages" required value={newCatName} onChange={(e: any) => setNewCatName(e.target.value)} />
         </form>
       </Modal>
     </div>

@@ -11,7 +11,8 @@ import {
 import { formatCurrency } from '../../../utils/currency'
 import { reportsApi } from '../reports.api'
 import type { FinancialData } from '../reports.api'
-import { Loader2, DollarSign, ArrowDownRight, ArrowUpRight, AlertCircle } from 'lucide-react'
+import { DollarSign, ArrowDownRight, ArrowUpRight } from 'lucide-react'
+import { PageLoader, Alert } from '../../../components/ui'
 
 interface Props {
   startDate: string
@@ -40,81 +41,86 @@ export default function FinancialReport({ startDate, endDate }: Props) {
   }, [startDate, endDate])
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    )
+    return <PageLoader label="جارٍ تحميل البيانات المالية" />
   }
 
   if (error || !data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-red-500 gap-2">
-        <AlertCircle className="w-8 h-8" />
-        <p>{error}</p>
-      </div>
-    )
+    return <Alert variant="danger">{error || 'تعذر تحميل البيانات'}</Alert>
   }
 
   const isPositiveResult = data.operatingResult >= 0
 
+  const cardStyle: React.CSSProperties = {
+    padding: 'var(--space-6)',
+    borderRadius: 'var(--radius-lg)',
+    border: '1px solid var(--color-border)',
+    boxShadow: 'var(--shadow-card)',
+    backgroundColor: 'var(--color-white)',
+  }
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
       
-      <div className={`p-8 rounded-2xl border bg-gradient-to-br shadow-sm relative overflow-hidden ${
-        isPositiveResult ? 'from-emerald-500 to-teal-600 border-emerald-600' : 'from-red-500 to-rose-600 border-red-600'
-      }`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="relative z-10 flex items-center justify-between">
+      {/* Operating Result Hero Card */}
+      <div style={{
+        padding: 'var(--space-8)',
+        borderRadius: 'var(--radius-lg)',
+        backgroundColor: isPositiveResult ? 'var(--color-success-500)' : 'var(--color-danger-500)',
+        color: 'var(--color-white)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
           <div>
-            <p className="text-white/80 font-medium mb-1">النتيجة التشغيلية (Operating Result)</p>
-            <h2 className="text-4xl font-bold text-white flex items-center gap-2">
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 'var(--font-weight-medium)' as any, marginBottom: 'var(--space-1)' }}>النتيجة التشغيلية (Operating Result)</p>
+            <h2 style={{ fontSize: 'var(--font-size-4xl)', fontWeight: 'var(--font-weight-bold)' as any, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               {formatCurrency(Math.abs(data.operatingResult))}
               {isPositiveResult ? (
-                <ArrowUpRight className="w-8 h-8 text-emerald-100" />
+                <ArrowUpRight size={32} style={{ color: 'rgba(255,255,255,0.7)' }} />
               ) : (
-                <ArrowDownRight className="w-8 h-8 text-red-100" />
+                <ArrowDownRight size={32} style={{ color: 'rgba(255,255,255,0.7)' }} />
               )}
             </h2>
           </div>
-          <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm">
-            <DollarSign className="w-10 h-10 text-white" />
+          <div style={{ padding: 'var(--space-4)', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 'var(--radius-full)' }}>
+            <DollarSign size={40} style={{ color: 'var(--color-white)' }} />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 rounded-2xl border border-slate-100 shadow-sm bg-white">
-          <h3 className="text-lg font-semibold text-slate-800 mb-6 flex items-center gap-2">
-            <ArrowUpRight className="w-5 h-5 text-emerald-500" />
+      {/* Charts */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-6)' }}>
+        <div style={cardStyle}>
+          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <ArrowUpRight size={20} style={{ color: 'var(--color-success-text)' }} />
             تحليل الإيرادات
           </h3>
-          <div className="h-72">
+          <div style={{ height: '288px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.revenueByCategory} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                <XAxis type="number" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="type" type="category" width={100} tick={{ fill: '#475569', fontSize: 13 }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="total" fill="#10b981" radius={[0, 4, 4, 0]} barSize={24} name="الإيرادات" />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
+                <XAxis type="number" tick={{ fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="type" type="category" width={100} tick={{ fill: 'var(--color-text-secondary)', fontSize: 13 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ borderRadius: 'var(--radius-base)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }} />
+                <Bar dataKey="total" fill="var(--color-success-500)" radius={[0, 4, 4, 0]} barSize={24} name="الإيرادات" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="p-6 rounded-2xl border border-slate-100 shadow-sm bg-white">
-          <h3 className="text-lg font-semibold text-slate-800 mb-6 flex items-center gap-2">
-            <ArrowDownRight className="w-5 h-5 text-red-500" />
+        <div style={cardStyle}>
+          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <ArrowDownRight size={20} style={{ color: 'var(--color-danger-text)' }} />
             تحليل المصروفات
           </h3>
-          <div className="h-72">
+          <div style={{ height: '288px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.expensesByCategory} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                <XAxis type="number" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="category" type="category" width={100} tick={{ fill: '#475569', fontSize: 13 }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="total" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={24} name="المصروفات" />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
+                <XAxis type="number" tick={{ fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="category" type="category" width={100} tick={{ fill: 'var(--color-text-secondary)', fontSize: 13 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ borderRadius: 'var(--radius-base)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }} />
+                <Bar dataKey="total" fill="var(--color-danger-500)" radius={[0, 4, 4, 0]} barSize={24} name="المصروفات" />
               </BarChart>
             </ResponsiveContainer>
           </div>

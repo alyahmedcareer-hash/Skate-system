@@ -96,75 +96,79 @@ export default function TreasuryPage() {
       <div className="page-header">
         <div className="page-header-text">
           <h1 className="page-header-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Landmark size={24} aria-hidden="true" className="text-muted" />
+            <Landmark size={24} aria-hidden="true" style={{ color: 'var(--color-text-muted)' }} />
             إدارة الخزينة
           </h1>
           <p className="page-header-subtitle">إدارة الورديات والمصروفات النثرية</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-6)' }}>
         {/* Shift Management */}
         <Card>
-          <div className="flex items-center gap-2 mb-4 text-xl font-bold">
-            {shift?.status === 'active' ? <LockOpen className="text-green-500" /> : <Lock className="text-gray-400" />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)' as any }}>
+            {shift?.status === 'active' ? <LockOpen style={{ color: 'var(--color-success-500)' }} /> : <Lock style={{ color: 'var(--color-text-muted)' }} />}
             <h2>حالة الوردية</h2>
           </div>
           
           {shift?.status === 'active' ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500">وقت الفتح</p>
-                  <p className="font-semibold">{new Date(shift.openedAt).toLocaleString('ar-EG')}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-page-bg)', borderRadius: 'var(--radius-lg)' }}>
+                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-1)' }}>وقت الفتح</p>
+                  <p style={{ fontWeight: 'var(--font-weight-semibold)' as any, margin: 0 }}>{new Date(shift.openedAt).toLocaleString('ar-EG')}</p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500">رصيد الافتتاح</p>
-                  <p className="font-semibold text-lg">{shift.openingBalance} ج.م</p>
+                <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-page-bg)', borderRadius: 'var(--radius-lg)' }}>
+                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-1)' }}>رصيد الافتتاح</p>
+                  <p style={{ fontWeight: 'var(--font-weight-semibold)' as any, fontSize: 'var(--font-size-lg)', margin: 0 }}>{shift.openingBalance} ج.م</p>
                 </div>
               </div>
 
               {canManage && (
-                <form onSubmit={handleCloseShift} className="p-4 bg-red-50 rounded-lg border border-red-100">
-                  <h3 className="font-bold text-red-700 mb-2">إغلاق الوردية</h3>
-                  <div className="flex gap-2">
-                    <Input
-                      id="actualBalance"
-                      label="الرصيد الفعلي"
-                      type="number"
-                      step="0.01"
-                      required
-                      placeholder="الرصيد الفعلي بالخزينة"
-                      value={actualBalance}
-                      onChange={(e) => setActualBalance(e.target.value)}
-                    />
-                    <Button type="submit" variant="danger" className="mt-6">إغلاق وتصفية</Button>
+                <form onSubmit={handleCloseShift} style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-danger-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-danger-200)' }}>
+                  <h3 style={{ fontWeight: 'var(--font-weight-bold)' as any, color: 'var(--color-danger-700)', marginBottom: 'var(--space-2)' }}>إغلاق الوردية</h3>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1 }}>
+                      <Input
+                        id="actualBalance"
+                        label="الرصيد الفعلي"
+                        type="number"
+                        step="0.01"
+                        required
+                        placeholder="الرصيد الفعلي بالخزينة"
+                        value={actualBalance}
+                        onChange={(e) => setActualBalance(e.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" variant="danger">إغلاق وتصفية</Button>
                   </div>
-                  <p className="text-xs text-red-600 mt-2">
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-danger-600)', marginTop: 'var(--space-2)' }}>
                     تنبيه: إغلاق الوردية سيقوم بحساب العجز/الزيادة بناءً على الرصيد الفعلي المدخل.
                   </p>
                 </form>
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="p-6 text-center bg-gray-50 rounded-lg text-gray-500">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div style={{ padding: 'var(--space-6)', textAlign: 'center', backgroundColor: 'var(--color-page-bg)', borderRadius: 'var(--radius-lg)', color: 'var(--color-text-muted)' }}>
                 لا توجد وردية نشطة حالياً. يجب فتح وردية لبدء استقبال الإيجارات والمبيعات.
               </div>
               
               {canManage && (
-                <form onSubmit={handleOpenShift} className="flex gap-2">
-                  <Input
-                    id="openingBalance"
-                    label="رصيد الافتتاح"
-                    type="number"
-                    step="0.01"
-                    required
-                    placeholder="رصيد الافتتاح (الكاش المتوفر)"
-                    value={openingBalance}
-                    onChange={(e) => setOpeningBalance(e.target.value)}
-                  />
-                  <Button type="submit" variant="primary" className="mt-6">فتح الوردية</Button>
+                <form onSubmit={handleOpenShift} style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1 }}>
+                    <Input
+                      id="openingBalance"
+                      label="رصيد الافتتاح"
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="رصيد الافتتاح (الكاش المتوفر)"
+                      value={openingBalance}
+                      onChange={(e) => setOpeningBalance(e.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" variant="primary">فتح الوردية</Button>
                 </form>
               )}
             </div>
@@ -173,21 +177,21 @@ export default function TreasuryPage() {
 
         {/* Expenses */}
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-xl font-bold">
-              <ArrowDownToLine className="text-orange-500" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)' as any }}>
+              <ArrowDownToLine style={{ color: 'var(--color-warning-500)' }} />
               <h2>المصروفات النثرية</h2>
             </div>
             {shift?.status === 'active' && canManage && (
               <Button onClick={() => setShowExpenseForm(!showExpenseForm)} variant="secondary" size="sm">
-                <Plus size={16} className="me-1" /> إضافة مصروف
+                <Plus size={16} style={{ marginInlineEnd: 'var(--space-1)' }} /> إضافة مصروف
               </Button>
             )}
           </div>
 
           {showExpenseForm && (
-            <form onSubmit={handleRecordExpense} className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-100">
-              <div className="space-y-3">
+            <form onSubmit={handleRecordExpense} style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', backgroundColor: 'var(--color-warning-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-warning-200)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 <Input
                   id="expenseAmount"
                   label="المبلغ"
@@ -207,8 +211,8 @@ export default function TreasuryPage() {
                   value={expenseData.description}
                   onChange={(e) => setExpenseData({...expenseData, description: e.target.value})}
                 />
-                <div className="flex gap-2">
-                  <Button type="submit" variant="primary" className="w-full">تسجيل</Button>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <Button type="submit" variant="primary" fullWidth>تسجيل</Button>
                   <Button type="button" variant="ghost" onClick={() => setShowExpenseForm(false)}>إلغاء</Button>
                 </div>
               </div>
@@ -216,18 +220,18 @@ export default function TreasuryPage() {
           )}
 
           {!shift || shift.status !== 'active' ? (
-            <p className="text-gray-500 text-center py-4">يجب فتح وردية لتسجيل وعرض المصروفات.</p>
+            <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 'var(--space-4) 0', margin: 0 }}>يجب فتح وردية لتسجيل وعرض المصروفات.</p>
           ) : expenses.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">لا توجد مصروفات مسجلة في هذه الوردية.</p>
+            <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 'var(--space-4) 0', margin: 0 }}>لا توجد مصروفات مسجلة في هذه الوردية.</p>
           ) : (
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {expenses.map(exp => (
-                <div key={exp.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-3)', backgroundColor: 'var(--color-page-bg)', borderRadius: 'var(--radius-lg)' }}>
                   <div>
-                    <p className="font-semibold">{exp.description}</p>
-                    <p className="text-xs text-gray-500">{new Date(exp.createdAt).toLocaleTimeString('ar-EG')}</p>
+                    <p style={{ fontWeight: 'var(--font-weight-semibold)' as any, margin: 0 }}>{exp.description}</p>
+                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', margin: 0 }}>{new Date(exp.createdAt).toLocaleTimeString('ar-EG')}</p>
                   </div>
-                  <div className="font-bold text-red-600">
+                  <div style={{ fontWeight: 'var(--font-weight-bold)' as any, color: 'var(--color-danger-600)' }}>
                     - {exp.amount} ج.م
                   </div>
                 </div>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { reportsApi } from '../reports.api'
 import type { PaginatedResult } from '../reports.api'
-import { Loader2, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { formatCurrency } from '../../../utils/currency'
 import { formatDateTime } from '../../../utils/date'
+import { PageLoader, Alert, DataTable, type TableColumn, Pagination } from '../../../components/ui'
 
 interface Props {
   type: string
@@ -51,31 +52,23 @@ export default function GenericListReport({ type, startDate, endDate }: Props) {
   }, [type, startDate, endDate, page])
 
   if (loading && !data) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    )
+    return <PageLoader label="جارٍ تحميل التقرير..." />
   }
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-red-500 gap-2">
-        <AlertCircle className="w-8 h-8" />
-        <p>{error}</p>
-      </div>
-    )
+    return <Alert variant="danger">{error}</Alert>
   }
 
   if (!data || data.data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-slate-500 gap-2">
-        <p>لا توجد بيانات لهذا التقرير في الفترة المحددة</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '256px', color: 'var(--color-text-muted)', gap: 'var(--space-2)' }}>
+        <FileText size={48} style={{ opacity: 0.3 }} />
+        <p style={{ fontWeight: 'var(--font-weight-medium)' as any }}>لا توجد بيانات لهذا التقرير في الفترة المحددة</p>
       </div>
     )
   }
 
-  const columns = Object.keys(data.data[0]).filter(k => k !== 'id')
+  const rawColumns = Object.keys(data.data[0]).filter(k => k !== 'id')
 
   const formatHeader = (key: string) => {
     const map: Record<string, string> = {
@@ -105,55 +98,35 @@ export default function GenericListReport({ type, startDate, endDate }: Props) {
     return String(value)
   }
 
-  return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm text-right">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              {columns.map(col => (
-                <th key={col} className="px-4 py-3 font-semibold border-b border-slate-200">
-                  {formatHeader(col)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {data.data.map((row, idx) => (
-              <tr key={row.id || idx} className="hover:bg-slate-50/50 transition-colors">
-                {columns.map(col => (
-                  <td key={col} className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                    {formatCell(col, row[col])}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  // Map to DataTable columns
+  const columns: TableColumn<any>[] = rawColumns.map(col => ({
+    key: col,
+    header: formatHeader(col),
+    render: (_, row: any) => (
+      <span style={{ 
+        fontFamily: (col.toLowerCase().includes('amount') || col.toLowerCase().includes('cost') || col === 'totalDifference') ? 'monospace' : 'var(--font-family-base)',
+        fontWeight: (col.toLowerCase().includes('amount') || col.toLowerCase().includes('cost') || col === 'totalDifference') ? 'var(--font-weight-bold)' as any : 'var(--font-weight-regular)' as any,
+        color: (col.toLowerCase().includes('amount') || col.toLowerCase().includes('cost') || col === 'totalDifference') ? 'var(--color-navy-800)' : 'inherit'
+      }}>
+        {formatCell(col, row[col])}
+      </span>
+    )
+  }))
 
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <DataTable
+        columns={columns}
+        data={data.data}
+        emptyMessage="لا توجد بيانات."
+      />
+      
       {data.meta.totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-          <span className="text-sm text-slate-500">
-            صفحة {data.meta.page} من {data.meta.totalPages} (إجمالي {data.meta.total} سجل)
-          </span>
-          <div className="flex gap-2">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
-              className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-            <button
-              disabled={page === data.meta.totalPages}
-              onClick={() => setPage(p => p + 1)}
-              className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={data.meta.page}
+          totalPages={data.meta.totalPages}
+          onPageChange={setPage}
+        />
       )}
     </div>
   )

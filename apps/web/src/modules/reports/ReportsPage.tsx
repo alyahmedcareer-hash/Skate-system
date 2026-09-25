@@ -12,8 +12,7 @@ import {
 } from 'lucide-react'
 import { format, subDays } from 'date-fns'
 
-import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/FormFields'
+import { Button, Input } from '../../components/ui'
 import OverviewReport from './components/OverviewReport'
 import FinancialReport from './components/FinancialReport'
 import GenericListReport from './components/GenericListReport'
@@ -39,7 +38,7 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [isExporting, setIsExporting] = useState(false)
 
-  const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
+  const handleExport = async (fmt: 'csv' | 'excel' | 'pdf') => {
     if (activeTab === 'overview' || activeTab === 'financial') {
       alert('لا يمكن تصدير نظرة عامة أو النتيجة التشغيلية بصيغة جدول، برجاء اختيار تقرير مفصل.')
       return
@@ -54,9 +53,9 @@ export default function ReportsPage() {
       }
       
       const filename = `report_${activeTab}_${startDate}_${endDate}`
-      if (format === 'csv') exportToCSV(data, filename)
-      else if (format === 'excel') exportToExcel(data, filename)
-      else if (format === 'pdf') exportToPDF(data, filename, REPORT_TABS.find(t => t.id === activeTab)?.label || 'تقرير')
+      if (fmt === 'csv') exportToCSV(data, filename)
+      else if (fmt === 'excel') exportToExcel(data, filename)
+      else if (fmt === 'pdf') exportToPDF(data, filename, REPORT_TABS.find(t => t.id === activeTab)?.label || 'تقرير')
       
     } catch (e: any) {
       alert('حدث خطأ أثناء التصدير: ' + e.message)
@@ -68,105 +67,156 @@ export default function ReportsPage() {
   const activeTabInfo = REPORT_TABS.find(t => t.id === activeTab)
 
   return (
-    <div className="page-container flex flex-col h-full">
-      <div className="page-header shrink-0">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - var(--header-height))' }}>
+      {/* Page Header */}
+      <div className="page-header" style={{ flexShrink: 0 }}>
         <div className="page-header-text">
           <h1 className="page-header-title">التقارير التحليلية</h1>
           <p className="page-header-subtitle">عرض وتحليل الأداء والنتائج التشغيلية</p>
         </div>
       </div>
       
-      <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
-        {/* Sidebar Navigation */}
-        <div className="w-full md:w-56 shrink-0 flex flex-col overflow-y-auto">
-          <div className="flex md:flex-col overflow-x-auto md:overflow-visible gap-1 pb-2 md:pb-0 scrollbar-hide">
-          {REPORT_TABS.map((tab) => {
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium whitespace-nowrap
-                  ${isActive 
-                    ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' 
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
-                `}
-              >
-                <tab.icon size={18} className={isActive ? 'text-white' : 'text-slate-400'} />
-                {tab.label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden h-full">
-        
-        {/* Header Controls */}
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center p-5 border-b border-slate-100 gap-4 bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-              {activeTabInfo && <activeTabInfo.icon size={20} />}
-            </div>
-            <h2 className="text-lg font-semibold text-slate-800">{activeTabInfo?.label}</h2>
+      <div style={{ display: 'flex', gap: 'var(--space-6)', flex: 1, minHeight: 0 }}>
+        {/* Report Navigation Sidebar */}
+        <div style={{ width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {REPORT_TABS.map((tab) => {
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-3) var(--space-4)',
+                    borderRadius: 'var(--radius-base)',
+                    transition: 'all 200ms ease',
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: isActive ? 'var(--font-weight-semibold)' : 'var(--font-weight-regular)',
+                    fontFamily: 'var(--font-family-base)',
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    border: 'none',
+                    textAlign: 'right',
+                    width: '100%',
+                    backgroundColor: isActive ? 'var(--color-navy-800)' : 'transparent',
+                    color: isActive ? 'var(--color-white)' : 'var(--color-text-secondary)',
+                    boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                  } as any}
+                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'var(--color-page-bg)'; e.currentTarget.style.color = 'var(--color-navy-800)' }}}
+                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}}
+                >
+                  <tab.icon size={18} style={{ color: isActive ? 'var(--color-gold-400)' : 'var(--color-text-muted)', flexShrink: 0 }} />
+                  {tab.label}
+                </button>
+              )
+            })}
           </div>
-          
-          <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 w-full xl:w-auto">
-            <div className="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
-              <div className="w-36">
-                <Input 
-                  id="start-date"
-                  type="date" 
-                  label=""
-                  value={startDate} 
-                  onChange={(e: any) => setStartDate(e.target.value)}
-                  className="h-9 text-sm border-none shadow-none focus:ring-0"
-                />
+        </div>
+
+        {/* Main Report Content */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          backgroundColor: 'var(--color-white)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--color-border)',
+          boxShadow: 'var(--shadow-card)',
+          overflow: 'hidden',
+          height: '100%',
+        }}>
+          {/* Header Controls */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: 'var(--space-5)',
+            borderBottom: '1px solid var(--color-border)',
+            gap: 'var(--space-4)',
+            backgroundColor: 'var(--color-page-bg)',
+            flexShrink: 0,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <div style={{
+                padding: 'var(--space-2)',
+                backgroundColor: 'var(--color-navy-50)',
+                borderRadius: 'var(--radius-base)',
+                color: 'var(--color-navy-700)',
+                display: 'flex',
+              }}>
+                {activeTabInfo && <activeTabInfo.icon size={20} />}
               </div>
-              <span className="text-slate-300">|</span>
-              <div className="w-36">
-                <Input 
-                  id="end-date"
-                  type="date" 
-                  label=""
-                  value={endDate} 
-                  onChange={(e: any) => setEndDate(e.target.value)}
-                  className="h-9 text-sm border-none shadow-none focus:ring-0"
-                />
-              </div>
+              <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)' as any, color: 'var(--color-navy-800)', margin: 0 }}>
+                {activeTabInfo?.label}
+              </h2>
             </div>
             
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => handleExport('excel')} disabled={isExporting} className="h-10 px-3 bg-white border-slate-200 text-slate-600 hover:bg-slate-50">
-                <FileDown size={16} className="ml-2 text-green-600" />
-                Excel
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => handleExport('csv')} disabled={isExporting} className="h-10 px-3 bg-white border-slate-200 text-slate-600 hover:bg-slate-50">
-                <FileDown size={16} className="ml-2 text-blue-600" />
-                CSV
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => handleExport('pdf')} disabled={isExporting} className="h-10 px-3 bg-white border-slate-200 text-slate-600 hover:bg-slate-50">
-                <FileDown size={16} className="ml-2 text-red-600" />
-                PDF
-              </Button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-4)' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                backgroundColor: 'var(--color-white)',
+                padding: '6px',
+                borderRadius: 'var(--radius-base)',
+                border: '1px solid var(--color-border)',
+                boxShadow: 'var(--shadow-xs)',
+              }}>
+                <div style={{ width: '144px' }}>
+                  <Input 
+                    id="start-date"
+                    type="date" 
+                    label=""
+                    value={startDate} 
+                    onChange={(e: any) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <span style={{ color: 'var(--color-text-muted)' }}>|</span>
+                <div style={{ width: '144px' }}>
+                  <Input 
+                    id="end-date"
+                    type="date" 
+                    label=""
+                    value={endDate} 
+                    onChange={(e: any) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <Button variant="secondary" size="sm" onClick={() => handleExport('excel')} disabled={isExporting}>
+                  <FileDown size={16} />
+                  Excel
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => handleExport('csv')} disabled={isExporting}>
+                  <FileDown size={16} />
+                  CSV
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => handleExport('pdf')} disabled={isExporting}>
+                  <FileDown size={16} />
+                  PDF
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Report Canvas */}
-        <div className="flex-1 overflow-auto p-6 bg-slate-50/20">
-          <div className="max-w-7xl mx-auto">
-            {activeTab === 'overview' && <OverviewReport startDate={startDate} endDate={endDate} />}
-            {activeTab === 'financial' && <FinancialReport startDate={startDate} endDate={endDate} />}
-            {activeTab !== 'overview' && activeTab !== 'financial' && (
-              <GenericListReport type={activeTab} startDate={startDate} endDate={endDate} />
-            )}
+          {/* Report Canvas */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', backgroundColor: 'var(--color-page-bg)' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+              {activeTab === 'overview' && <OverviewReport startDate={startDate} endDate={endDate} />}
+              {activeTab === 'financial' && <FinancialReport startDate={startDate} endDate={endDate} />}
+              {activeTab !== 'overview' && activeTab !== 'financial' && (
+                <GenericListReport type={activeTab} startDate={startDate} endDate={endDate} />
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   )
 }
