@@ -20,6 +20,7 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('')
 
   const [showProductModal, setShowProductModal] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
   
   const [formData, setFormData] = useState({
@@ -65,6 +66,7 @@ export default function ProductsPage() {
       showToast({ type: 'success', title: 'تمت إضافة الفئة بنجاح' })
       setNewCatName('')
       setNewCatNameAr('')
+      setShowCategoryModal(false)
       fetchData()
     } catch {
       showToast({ type: 'error', title: 'خطأ في إضافة الفئة' })
@@ -154,33 +156,22 @@ export default function ProductsPage() {
           <p className="text-sm text-neutral-500 mt-1">إدارة المنتجات وأرصدة المخزون والتصنيفات</p>
         </div>
         {canManage && (
-          <Button onClick={() => {
-            setEditingProductId(null)
-            setFormData({ name: '', nameAr: '', categoryId: '', price: '', stockQuantity: '', barcode: '' })
-            setShowProductModal(true)
-          }}>
-            <Plus size={16} className="mr-2" />
-            إضافة منتج
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setShowCategoryModal(true)}>
+              <Plus size={16} className="ml-2" />
+              فئة جديدة
+            </Button>
+            <Button onClick={() => {
+              setEditingProductId(null)
+              setFormData({ name: '', nameAr: '', categoryId: '', price: '', stockQuantity: '', barcode: '' })
+              setShowProductModal(true)
+            }}>
+              <Plus size={16} className="ml-2" />
+              إضافة منتج
+            </Button>
+          </div>
         )}
       </div>
-
-      {canManage && (
-        <div className="bg-white rounded-lg border border-border p-4 mb-6 shadow-sm shrink-0">
-          <h3 className="text-sm font-semibold mb-3 text-slate-800">إضافة فئة جديدة</h3>
-          <form onSubmit={handleAddCategory} className="flex flex-col md:flex-row items-end gap-4">
-            <div className="flex-1 w-full">
-              <Input id="newCatNameAr" label="اسم الفئة بالعربي" placeholder="مثال: مشروبات" required value={newCatNameAr} onChange={(e: any) => setNewCatNameAr(e.target.value)} />
-            </div>
-            <div className="flex-1 w-full">
-              <Input id="newCatName" label="اسم الفئة بالإنجليزي" placeholder="مثال: Beverages" required value={newCatName} onChange={(e: any) => setNewCatName(e.target.value)} />
-            </div>
-            <Button type="submit" variant="secondary" className="w-full md:w-auto h-10">
-              <Plus size={16} className="ml-2" /> إضافة الفئة
-            </Button>
-          </form>
-        </div>
-      )}
 
       <div className="flex-1 min-h-0 flex flex-col bg-white rounded-lg border border-border shadow-sm">
         <div className="p-4 border-b border-border flex items-center justify-between gap-4 shrink-0 bg-neutral-50/50 rounded-t-lg">
@@ -274,6 +265,24 @@ export default function ProductsPage() {
           <Input id="price" label="السعر (ج.م)" type="number" step="0.01" min="0" required value={formData.price} onChange={(e: any) => setFormData({ ...formData, price: e.target.value })} />
           <Input id="stockQuantity" label="المخزون" type="number" min="0" required value={formData.stockQuantity} onChange={(e: any) => setFormData({ ...formData, stockQuantity: e.target.value })} />
           <Input id="barcode" label="الباركود (اختياري)" value={formData.barcode} onChange={(e: any) => setFormData({ ...formData, barcode: e.target.value })} />
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        title="إضافة فئة جديدة"
+        size="sm"
+        footer={
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="ghost" onClick={() => setShowCategoryModal(false)}>إلغاء</Button>
+            <Button type="submit" form="category-form">إضافة الفئة</Button>
+          </div>
+        }
+      >
+        <form id="category-form" onSubmit={handleAddCategory} className="flex flex-col gap-4 py-2">
+          <Input id="newCatNameAr" label="اسم الفئة بالعربي" placeholder="مثال: مشروبات" required value={newCatNameAr} onChange={(e: any) => setNewCatNameAr(e.target.value)} />
+          <Input id="newCatName" label="اسم الفئة بالإنجليزي" placeholder="مثال: Beverages" required value={newCatName} onChange={(e: any) => setNewCatName(e.target.value)} />
         </form>
       </Modal>
     </div>

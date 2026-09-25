@@ -179,7 +179,15 @@ export default function SalesPOSPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-var(--header-height))] bg-neutral-100/50 w-full max-w-full overflow-hidden">
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title">نقطة البيع (المبيعات)</h1>
+          <p className="text-sm text-neutral-500 mt-1">إنشاء فواتير بيع للمنتجات والمشروبات</p>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0 flex bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       {/* Main Product Area */}
       <div className="flex-1 flex flex-col min-w-0 p-4 lg:p-6 overflow-hidden">
         
@@ -267,7 +275,7 @@ export default function SalesPOSPage() {
       </div>
 
       {/* Current Order / Cart Panel */}
-      <div className="w-[360px] lg:w-[400px] shrink-0 bg-white border-r border-border shadow-xl flex flex-col z-10 relative">
+      <div className="w-[360px] lg:w-[400px] shrink-0 bg-slate-50 border-r border-slate-100 flex flex-col z-10 relative">
         {/* Cart Header */}
         <div className="p-4 border-b border-border bg-slate-800 text-white flex justify-between items-center shrink-0">
           <h3 className="font-semibold flex items-center gap-2 text-lg">
@@ -364,6 +372,7 @@ export default function SalesPOSPage() {
             </Button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -17,11 +17,9 @@ import { users } from '../../db/schema/users.js'
  * Inclusive of start, exclusive of end (which is start of the next day).
  */
 export function buildDateBounds(localStartDate: string, localEndDate: string) {
-  const [sYear, sMonth, sDay] = localStartDate.split('-').map(Number)
-  const startBound = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0)
+  const startBound = new Date(`${localStartDate}T00:00:00+03:00`)
   
-  const [eYear, eMonth, eDay] = localEndDate.split('-').map(Number)
-  const endBound = new Date(eYear, eMonth - 1, eDay, 0, 0, 0, 0)
+  const endBound = new Date(`${localEndDate}T00:00:00+03:00`)
   endBound.setDate(endBound.getDate() + 1)
   
   return { startBound, endBound }
@@ -40,7 +38,7 @@ export async function getOverviewReport(filters: DateRangeInput): Promise<Overvi
       and(
         gte(treasuryMovements.createdAt, startBound),
         lt(treasuryMovements.createdAt, endBound),
-        inArray(treasuryMovements.type, ['rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment'])
+        inArray(treasuryMovements.referenceType, ['rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment'])
       )
     )
     
@@ -51,7 +49,7 @@ export async function getOverviewReport(filters: DateRangeInput): Promise<Overvi
       and(
         gte(treasuryMovements.createdAt, startBound),
         lt(treasuryMovements.createdAt, endBound),
-        inArray(treasuryMovements.type, ['rental_refund', 'sale_refund'])
+        inArray(treasuryMovements.referenceType, ['rental_refund', 'sale_refund'])
       )
     )
     
@@ -140,7 +138,7 @@ export async function getOperatingFinancialReport(filters: DateRangeInput): Prom
     .where(and(
       gte(treasuryMovements.createdAt, startBound),
       lt(treasuryMovements.createdAt, endBound),
-      eq(treasuryMovements.type, 'rental_payment')
+      eq(treasuryMovements.referenceType, 'rental_payment')
     ))
     
   const rentalPaymentsRes = await db
@@ -149,7 +147,7 @@ export async function getOperatingFinancialReport(filters: DateRangeInput): Prom
     .where(and(
       gte(treasuryMovements.createdAt, startBound),
       lt(treasuryMovements.createdAt, endBound),
-      eq(treasuryMovements.type, 'late_fee_payment')
+      eq(treasuryMovements.referenceType, 'late_fee_payment')
     ))
     
   const damageChargesRes = await db
@@ -158,7 +156,7 @@ export async function getOperatingFinancialReport(filters: DateRangeInput): Prom
     .where(and(
       gte(treasuryMovements.createdAt, startBound),
       lt(treasuryMovements.createdAt, endBound),
-      eq(treasuryMovements.type, 'damage_charge_payment')
+      eq(treasuryMovements.referenceType, 'damage_charge_payment')
     ))
     
   const salesRevenueRes = await db
@@ -167,7 +165,7 @@ export async function getOperatingFinancialReport(filters: DateRangeInput): Prom
     .where(and(
       gte(treasuryMovements.createdAt, startBound),
       lt(treasuryMovements.createdAt, endBound),
-      eq(treasuryMovements.type, 'sale_payment')
+      eq(treasuryMovements.referenceType, 'sale_payment')
     ))
 
   const refundsRes = await db
@@ -176,7 +174,7 @@ export async function getOperatingFinancialReport(filters: DateRangeInput): Prom
     .where(and(
       gte(treasuryMovements.createdAt, startBound),
       lt(treasuryMovements.createdAt, endBound),
-      inArray(treasuryMovements.type, ['rental_refund', 'sale_refund'])
+      inArray(treasuryMovements.referenceType, ['rental_refund', 'sale_refund'])
     ))
 
   const rentalRev = Number(rentalRevenueRes[0]?.total || 0)
@@ -224,7 +222,7 @@ export async function getRevenueReport(filters: DateRangeInput): Promise<any> {
     .where(and(
       gte(treasuryMovements.createdAt, startBound),
       lt(treasuryMovements.createdAt, endBound),
-      inArray(treasuryMovements.type, ['rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment'])
+      inArray(treasuryMovements.referenceType, ['rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment'])
     ))
     .groupBy(sql`DATE(CONVERT_TZ(${treasuryMovements.createdAt}, '+00:00', '+03:00'))`)
     .orderBy(sql`DATE(CONVERT_TZ(${treasuryMovements.createdAt}, '+00:00', '+03:00'))`)
@@ -235,7 +233,7 @@ export async function getRevenueReport(filters: DateRangeInput): Promise<any> {
     .where(and(
       gte(treasuryMovements.createdAt, startBound),
       lt(treasuryMovements.createdAt, endBound),
-      inArray(treasuryMovements.type, ['rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment'])
+      inArray(treasuryMovements.referenceType, ['rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment'])
     ))
     
   return {
@@ -422,7 +420,7 @@ export async function getDamageReport(filters: DateRangeInput): Promise<Paginate
       customerName: customers.name,
       damageType: damageReports.damageType,
       chargeAmount: damageReports.customerCharge,
-      repairCost: damageReports.customerCharge,
+      repairCost: damageReports.totalCost,
       reportedAt: damageReports.createdAt
     })
     .from(damageReports)
@@ -451,7 +449,7 @@ export async function getDamageReport(filters: DateRangeInput): Promise<Paginate
       customerName: r.customerName,
       damageType: r.damageType,
       chargeAmount: Number(r.chargeAmount || 0),
-      repairCost: Number(r.totalCost || 0),
+      repairCost: Number(r.repairCost || 0),
       reportedAt: r.reportedAt.toISOString()
     })),
     meta: {
@@ -501,7 +499,7 @@ export async function getMaintenanceReport(filters: DateRangeInput): Promise<Pag
       skateCode: r.skateCode,
       problemType: r.problemDescription,
       status: r.status,
-      repairCost: Number(r.totalCost || 0),
+      repairCost: Number(r.repairCost || 0),
       startedAt: r.startedAt.toISOString(),
       completedAt: r.completedAt ? r.completedAt.toISOString() : null
     })),
@@ -574,25 +572,19 @@ export async function getCashierReport(filters: DateRangeInput): Promise<Paginat
   const offset = (filters.page - 1) * filters.limit
   
   // Aggregate stats per cashier shift
-  const baseQuery = db
-    .select({
-      id: cashierShifts.id,
-      name: users.name,
-      rentalsCount: count(rentals.id),
-      revenue: sum(treasuryMovements.amount),
-      expenses: sql`(SELECT SUM(amount) FROM expenses WHERE shift_id = ${cashierShifts.id})`,
-      shiftDifference: cashierShifts.difference
-    })
-    .from(cashierShifts)
-    .innerJoin(users, eq(cashierShifts.cashierId, users.id))
-    .leftJoin(rentals, eq(rentals.shiftId, cashierShifts.id))
-    .leftJoin(treasuryMovements, eq(treasuryMovements.shiftId, cashierShifts.id))
-    .where(and(
-      gte(cashierShifts.openedAt, startBound),
-      lt(cashierShifts.openedAt, endBound)
-    ))
-    .groupBy(cashierShifts.id)
-    .orderBy(desc(cashierShifts.openedAt))
+  const query = sql`
+    SELECT 
+      cs.id, u.name,
+      cs.difference as shiftDifference,
+      (SELECT COUNT(id) FROM rentals WHERE shift_id = cs.id) as rentalsCount,
+      (SELECT SUM(amount) FROM treasury_movements WHERE shift_id = cs.id AND reference_type IN ('rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment')) as revenue,
+      (SELECT SUM(amount) FROM expenses WHERE shift_id = cs.id) as expenses
+    FROM cashier_shifts cs
+    INNER JOIN users u ON cs.cashier_id = u.id
+    WHERE cs.opened_at >= ${startBound} AND cs.opened_at < ${endBound}
+    ORDER BY cs.opened_at DESC
+    LIMIT ${filters.limit} OFFSET ${offset}
+  `
 
   const countQuery = await db
     .select({ count: count() })
@@ -602,7 +594,7 @@ export async function getCashierReport(filters: DateRangeInput): Promise<Paginat
       lt(cashierShifts.openedAt, endBound)
     ))
 
-  const data = await baseQuery.limit(filters.limit).offset(offset)
+  const [data] = await db.execute(query) as any
   const total = Number(countQuery[0]?.count || 0)
 
   return {
