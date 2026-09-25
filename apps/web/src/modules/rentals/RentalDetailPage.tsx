@@ -145,21 +145,21 @@ export default function RentalDetailPage() {
     <div className="page-container">
       {/* Header */}
       <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
+        <div className="page-header-text" style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
+          <Button
             id="back-to-rentals"
-            type="button"
+            variant="ghost"
             onClick={() => navigate(-1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ padding: 'var(--space-2)', marginTop: 'var(--space-1)' }}
           >
-            <ArrowRight size={18} /> رجوع
-          </button>
+            <ArrowRight size={20} aria-hidden="true" />
+          </Button>
           <div>
-            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Receipt size={22} />
+            <h1 className="page-header-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <Receipt size={24} aria-hidden="true" className="text-muted" />
               {rental.rentalCode}
             </h1>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
               <Badge status={lifetimeStatusToBadge(rental.status)}>
                 {getRentalStatusLabel(rental.status)}
               </Badge>

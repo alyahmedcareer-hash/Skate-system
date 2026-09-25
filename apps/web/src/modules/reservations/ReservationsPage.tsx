@@ -6,9 +6,10 @@ import {
   Button,
   Alert,
   PageLoader,
-  EmptyState,
   Select,
   useToast,
+  DataTable,
+  type TableColumn,
   type BadgeStatus,
 } from '../../components/ui'
 import {
@@ -88,125 +89,100 @@ export function ReservationsPage() {
     setModalOpen(true)
   }
 
+  const columns: TableColumn<any>[] = [
+    { key: 'id', header: 'رقم', render: (_, r: any) => `#${r.id}` },
+    { key: 'skate', header: 'الزلاجة', render: (_, r: any) => `${r.skate.skateCode} (مقاس ${r.skate.size})` },
+    { key: 'customer', header: 'العميل', render: (_, r: any) => `${r.customer.name} - ${r.customer.phone}` },
+    { key: 'from', header: 'من', render: (_, r: any) => <span dir="ltr">{new Date(r.reservedFrom).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}</span> },
+    { key: 'to', header: 'إلى', render: (_, r: any) => <span dir="ltr">{new Date(r.reservedUntil).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}</span> },
+    { key: 'status', header: 'الحالة', render: (_, r: any) => <ReservationStatusBadge status={r.status} /> },
+    { key: 'actions', header: 'الإجراءات', width: '140px', align: 'left', render: (_, res: any) => {
+      const isActive = res.status === 'pending' || res.status === 'confirmed'
+      return isActive ? (
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <PermissionGate permission="rentals.create">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate(`/rentals/new?reservationId=${res.id}`)}
+              title="تنفيذ الإيجار"
+            >
+              <Ticket size={14} aria-hidden="true" />
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="reservations.edit">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleOpenEdit(res)}
+              title="تعديل"
+            >
+              <Pencil size={14} aria-hidden="true" />
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="reservations.cancel">
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => handleCancel(res.id)}
+              title="إلغاء"
+            >
+              <XCircle size={14} aria-hidden="true" />
+            </Button>
+          </PermissionGate>
+        </div>
+      ) : null
+    }}
+  ]
+
+  if (loading && reservations.length === 0) return <PageLoader label="جارٍ تحميل الحجوزات" />
+
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Calendar size={24} />
-          <div>
-            <h1 className="page-title">الحجوزات</h1>
-            <p className="page-subtitle">إدارة الحجوزات (المرحلة 10)</p>
-          </div>
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Calendar size={24} aria-hidden="true" className="text-muted" />
+            الحجوزات
+          </h1>
+          <p className="page-header-subtitle">إدارة الحجوزات</p>
         </div>
         
         <PermissionGate permission="reservations.create">
           <Button variant="primary" onClick={handleOpenCreate}>
-            <Plus size={16} /> حجز جديد
+            <Plus size={16} aria-hidden="true" /> حجز جديد
           </Button>
         </PermissionGate>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <div style={{ width: 200 }}>
-          <Select
-            id="statusFilter"
-            label=""
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            options={[
-              { value: 'active', label: 'نشط (معلق / مؤكد)' },
-              { value: 'pending', label: 'معلق' },
-              { value: 'confirmed', label: 'مؤكد' },
-              { value: 'fulfilled', label: 'منفذ' },
-              { value: 'cancelled', label: 'ملغي' },
-              { value: 'all', label: 'الكل' },
-            ]}
-          />
-        </div>
+      <div className="filters-row">
+        <Select
+          id="statusFilter"
+          label=""
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="field-control"
+          style={{ width: 200 }}
+          options={[
+            { value: 'active', label: 'نشط (معلق / مؤكد)' },
+            { value: 'pending', label: 'معلق' },
+            { value: 'confirmed', label: 'مؤكد' },
+            { value: 'fulfilled', label: 'منفذ' },
+            { value: 'cancelled', label: 'ملغي' },
+            { value: 'all', label: 'جميع الحالات' },
+          ]}
+        />
       </div>
 
-      {error && <Alert variant="danger" style={{ marginBottom: 16 }}>{error}</Alert>}
+      {error && <Alert variant="danger" style={{ marginBottom: 'var(--space-6)' } as React.CSSProperties}>{error}</Alert>}
 
-      {loading ? (
-        <PageLoader />
-      ) : reservations.length === 0 ? (
-        <EmptyState
-          icon={Calendar}
-          title="لا توجد حجوزات"
-          description="لم يتم العثور على أي حجوزات تطابق البحث."
+      {!loading && !error && (
+        <DataTable
+          columns={columns}
+          data={reservations as any[]}
+          emptyMessage="لم يتم العثور على أي حجوزات تطابق البحث."
+          emptyIcon={Calendar}
         />
-      ) : (
-        <div className="table-responsive">
-          <table className="koshk-table">
-            <thead>
-              <tr>
-                <th>رقم</th>
-                <th>الزلاجة</th>
-                <th>العميل</th>
-                <th>من</th>
-                <th>إلى</th>
-                <th>الحالة</th>
-                <th style={{ width: 140 }}>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reservations.map(res => {
-                const isActive = res.status === 'pending' || res.status === 'confirmed'
-                const fromDate = new Date(res.reservedFrom).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })
-                const untilDate = new Date(res.reservedUntil).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })
-                
-                return (
-                  <tr key={res.id}>
-                    <td>#{res.id}</td>
-                    <td>{res.skate.skateCode} (مقاس {res.skate.size})</td>
-                    <td>{res.customer.name} - {res.customer.phone}</td>
-                    <td dir="ltr" style={{ textAlign: 'right' }}>{fromDate}</td>
-                    <td dir="ltr" style={{ textAlign: 'right' }}>{untilDate}</td>
-                    <td><ReservationStatusBadge status={res.status} /></td>
-                    <td>
-                      {isActive && (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <PermissionGate permission="rentals.create">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => navigate(`/rentals/new?reservationId=${res.id}`)}
-                              title="تنفيذ الإيجار"
-                            >
-                              <Ticket size={14} /> تنفيذ
-                            </Button>
-                          </PermissionGate>
-                          
-                          <PermissionGate permission="reservations.edit">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleOpenEdit(res)}
-                              title="تعديل"
-                            >
-                              <Pencil size={14} />
-                            </Button>
-                          </PermissionGate>
-                          
-                          <PermissionGate permission="reservations.cancel">
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleCancel(res.id)}
-                              title="إلغاء"
-                            >
-                              <XCircle size={14} />
-                            </Button>
-                          </PermissionGate>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
       )}
 
       {modalOpen && (

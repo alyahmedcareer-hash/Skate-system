@@ -235,22 +235,19 @@ export default function CustomerProfilePage() {
     <>
       <div className="page-container">
 
-        {/* ── Back button ── */}
-        <div style={{ marginBottom: 'var(--space-4)' }}>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/customers')}>
-            <ArrowRight size={16} aria-hidden="true" />
-            العودة إلى قائمة العملاء
-          </Button>
-        </div>
-
         {/* ── Page header ── */}
         <div className="page-header">
-          <div className="page-header-text">
-            <h1 className="page-header-title">{customer.name}</h1>
-            <div style={{ marginTop: 'var(--space-2)' }}>
-              <Badge status={customer.isActive ? 'active' : 'inactive'}>
-                {customer.isActive ? 'نشط' : 'غير نشط'}
-              </Badge>
+          <div className="page-header-text" style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/customers')} style={{ padding: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+              <ArrowRight size={20} aria-hidden="true" />
+            </Button>
+            <div>
+              <h1 className="page-header-title">{customer.name}</h1>
+              <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                <Badge status={customer.isActive ? 'active' : 'inactive'}>
+                  {customer.isActive ? 'نشط' : 'غير نشط'}
+                </Badge>
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>

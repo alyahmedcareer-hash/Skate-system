@@ -68,16 +68,18 @@ export default function ReportsPage() {
   const activeTabInfo = REPORT_TABS.find(t => t.id === activeTab)
 
   return (
-    <div className="page-container h-full flex flex-col md:flex-row gap-6 p-6">
-      
-      {/* Sidebar Navigation */}
-      <div className="w-full md:w-64 shrink-0 flex flex-col">
-        <div className="mb-6 px-2">
-          <h1 className="text-2xl font-bold text-slate-800">التقارير التحليلية</h1>
-          <p className="text-sm text-slate-500 mt-1">عرض وتحليل الأداء والنتائج التشغيلية</p>
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title">التقارير التحليلية</h1>
+          <p className="page-header-subtitle">عرض وتحليل الأداء والنتائج التشغيلية</p>
         </div>
-        
-        <div className="flex md:flex-col overflow-x-auto md:overflow-visible gap-1 pb-2 md:pb-0 scrollbar-hide">
+      </div>
+      
+      <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+        {/* Sidebar Navigation */}
+        <div className="w-full md:w-56 shrink-0 flex flex-col overflow-y-auto">
+          <div className="flex md:flex-col overflow-x-auto md:overflow-visible gap-1 pb-2 md:pb-0 scrollbar-hide">
           {REPORT_TABS.map((tab) => {
             const isActive = activeTab === tab.id
             return (
@@ -164,7 +166,7 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
-      
     </div>
+  </div>
   )
 }

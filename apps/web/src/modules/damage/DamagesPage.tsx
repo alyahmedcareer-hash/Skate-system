@@ -3,9 +3,10 @@ import { AlertTriangle, RefreshCw } from 'lucide-react'
 import {
   Badge,
   Alert,
-  EmptyState,
   PageLoader,
-  IconButton
+  Button,
+  DataTable,
+  type TableColumn
 } from '../../components/ui'
 import { formatCurrency } from '../../utils/currency'
 import { damageService, type DamageReportDTO } from './damage.service'
@@ -49,70 +50,53 @@ export default function DamagesPage() {
     }
   }
 
-  if (loading) return <PageLoader />
+  const columns: TableColumn<any>[] = [
+    { key: 'id', header: 'رقم التقرير', render: (_, r: any) => `#${r.id}` },
+    { key: 'skate', header: 'الزلاجة', render: (_, r: any) => <span dir="ltr">{r.skateCode || `ID: ${r.skateId}`}</span> },
+    { key: 'customer', header: 'العميل', render: (_, r: any) => r.customerName || `ID: ${r.customerId}` },
+    { key: 'rental', header: 'رقم الإيجار', render: (_, r: any) => `#${r.rentalId}` },
+    { key: 'charge', header: 'الغرامة المقررة', render: (_, r: any) => formatCurrency(r.customerCharge) },
+    {
+      key: 'remaining',
+      header: 'الرصيد المتبقي',
+      render: (_, r: any) => {
+        const remaining = r.customerCharge - (r.chargeCollected + r.chargeWaived)
+        return (
+          <span style={{ fontWeight: remaining > 0 ? 'var(--font-weight-bold)' : 'normal', color: remaining > 0 ? 'var(--color-danger-text)' : 'inherit' }}>
+            {formatCurrency(Math.max(0, remaining))}
+          </span>
+        )
+      }
+    },
+    { key: 'status', header: 'الحالة', render: (_, r: any) => getStatusBadge(r.status) },
+    { key: 'date', header: 'تاريخ التقرير', render: (_, r: any) => <span dir="ltr">{new Date(r.createdAt).toLocaleString('ar-EG')}</span> }
+  ]
+
+  if (loading) return <PageLoader label="جارٍ تحميل تقارير الضرر" />
 
   return (
-    <div className="page-container">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 className="page-title">تقارير الضرر</h1>
-          <p className="page-subtitle">إدارة أضرار الزلاجات والرسوم المحصلة</p>
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title">تقارير الضرر</h1>
+          <p className="page-header-subtitle">إدارة أضرار الزلاجات والرسوم المحصلة</p>
         </div>
-        <IconButton
-          icon={RefreshCw}
-          label="تحديث"
-          onClick={() => load()}
-        />
+        <Button variant="secondary" onClick={() => load()}>
+          <RefreshCw size={16} aria-hidden="true" />
+          تحديث
+        </Button>
       </div>
 
-      {error && <Alert variant="danger" style={{ marginBottom: 24 }}>{error}</Alert>}
+      {error && <Alert variant="danger" style={{ marginBottom: 'var(--space-6)' } as React.CSSProperties}>{error}</Alert>}
 
-      {reports.length === 0 ? (
-        <EmptyState
-          icon={AlertTriangle}
-          title="لا توجد تقارير ضرر"
-          description="لم يتم تسجيل أي تقارير ضرر للزلاجات حتى الآن."
+      {!loading && !error && (
+        <DataTable
+          columns={columns}
+          data={reports as any[]}
+          emptyMessage="لم يتم تسجيل أي تقارير ضرر للزلاجات حتى الآن."
+          emptyIcon={AlertTriangle}
+          onRowClick={handleRowClick}
         />
-      ) : (
-        <div className="data-table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>رقم التقرير</th>
-                <th>الزلاجة</th>
-                <th>العميل</th>
-                <th>رقم الإيجار</th>
-                <th>الغرامة المقررة</th>
-                <th>الرصيد المتبقي</th>
-                <th>الحالة</th>
-                <th>تاريخ التقرير</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map(r => {
-                const remaining = r.customerCharge - (r.chargeCollected + r.chargeWaived)
-                return (
-                  <tr key={r.id} onClick={() => handleRowClick(r)} style={{ cursor: 'pointer' }}>
-                    <td>#{r.id}</td>
-                    <td dir="ltr" style={{ textAlign: 'right' }}>{r.skateCode || `ID: ${r.skateId}`}</td>
-                    <td>{r.customerName || `ID: ${r.customerId}`}</td>
-                    <td>#{r.rentalId}</td>
-                    <td>{formatCurrency(r.customerCharge)}</td>
-                    <td>
-                      <span style={{ fontWeight: remaining > 0 ? 'var(--font-weight-bold)' : 'normal', color: remaining > 0 ? 'var(--color-danger-text)' : 'inherit' }}>
-                        {formatCurrency(Math.max(0, remaining))}
-                      </span>
-                    </td>
-                    <td>{getStatusBadge(r.status)}</td>
-                    <td dir="ltr" style={{ textAlign: 'right' }}>
-                      {new Date(r.createdAt).toLocaleString('ar-EG')}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
       )}
 
       {selectedReport && (

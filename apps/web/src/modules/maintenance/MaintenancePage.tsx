@@ -3,12 +3,15 @@ import { Wrench, Plus, RefreshCw } from 'lucide-react'
 import { maintenanceService, type MaintenanceRecord } from './maintenance.service'
 import MaintenanceRecordModal from './MaintenanceRecordModal'
 import { useAuth } from '../../contexts/AuthContext'
-import { EmptyState } from '../../components/ui/EmptyState'
-import { Button } from '../../components/ui/Button'
-import { PageLoader } from '../../components/ui/Loading'
-import { Alert } from '../../components/ui/Alert'
-import { Badge } from '../../components/ui/Badge'
-import { Select } from '../../components/ui/FormFields'
+import { 
+  Button, 
+  PageLoader, 
+  Alert, 
+  Badge, 
+  Select, 
+  DataTable, 
+  type TableColumn 
+} from '../../components/ui'
 
 export default function MaintenancePage() {
   const { hasPermission } = useAuth()
@@ -69,31 +72,45 @@ export default function MaintenancePage() {
     }
   }
 
+  const columns: TableColumn<any>[] = [
+    { key: 'id', header: 'رقم السجل', render: (_, r: any) => `#${r.id}` },
+    { key: 'skate', header: 'كود الزلاجة', render: (_, r: any) => <span className="font-medium text-gold-500">{r.skateCode}</span> },
+    { key: 'status', header: 'الحالة', render: (_, r: any) => renderStatus(r.status) },
+    { key: 'date', header: 'تاريخ الفتح', render: (_, r: any) => new Date(r.createdAt).toLocaleDateString('ar-EG') },
+    { key: 'desc', header: 'الوصف', render: (_, r: any) => <span className="max-w-[200px] truncate block">{r.problemDescription || '-'}</span> },
+    { key: 'cost', header: 'إجمالي التكلفة', render: (_, r: any) => `${r.totalCost} ج.م` },
+    { key: 'user', header: 'المسؤول', render: (_, r: any) => r.createdByName },
+  ]
+
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1 className="page-title">سجل الصيانة</h1>
-        <div className="page-actions">
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title">سجل الصيانة</h1>
+          <p className="page-header-subtitle">إدارة ومتابعة عمليات صيانة الزلاجات</p>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
           <Button variant="secondary" onClick={loadData} aria-label="تحديث البيانات">
-            <RefreshCw size={18} />
+            <RefreshCw size={16} aria-hidden="true" />
+            <span className="hidden sm:inline">تحديث</span>
           </Button>
           {hasPermission('maintenance.create') && (
-            <Button onClick={() => openModal()}>
-              <Plus size={18} />
+            <Button variant="primary" onClick={() => openModal()}>
+              <Plus size={16} aria-hidden="true" />
               <span className="hidden sm:inline">سجل جديد</span>
             </Button>
           )}
         </div>
       </div>
 
-      <div className="filters-bar">
+      <div className="filters-row">
         <Select 
           id="statusFilter"
           label=""
           value={statusFilter} 
           onChange={e => setStatusFilter(e.target.value)}
           options={[
-            { value: '', label: 'كل الحالات' },
+            { value: '', label: 'جميع الحالات' },
             { value: 'pending', label: 'معلق' },
             { value: 'in_progress', label: 'قيد الصيانة' },
             { value: 'completed', label: 'مكتمل' }
@@ -102,52 +119,21 @@ export default function MaintenancePage() {
       </div>
 
       {error && (
-        <Alert variant="danger" title="خطأ" className="mb-4">
+        <Alert variant="danger" title="خطأ" style={{ marginBottom: 'var(--space-6)' } as React.CSSProperties}>
           {error}
         </Alert>
       )}
 
       {loading ? (
-        <PageLoader />
-      ) : records.length === 0 ? (
-        <EmptyState
-          icon={Wrench}
-          title="لا توجد سجلات صيانة"
-          description={statusFilter ? "لم يتم العثور على سجلات تطابق الفلتر الحالي." : "لم يتم تسجيل أي عمليات صيانة بعد."}
-        />
+        <PageLoader label="جارٍ تحميل سجلات الصيانة" />
       ) : (
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>رقم السجل</th>
-                <th>كود الزلاجة</th>
-                <th>الحالة</th>
-                <th>تاريخ الفتح</th>
-                <th>الوصف</th>
-                <th>إجمالي التكلفة</th>
-                <th>المسؤول</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map(record => (
-                <tr 
-                  key={record.id}
-                  className="table-row-clickable"
-                  onClick={() => openModal(record.id)}
-                >
-                  <td>#{record.id}</td>
-                  <td className="font-medium text-gold-500">{record.skateCode}</td>
-                  <td>{renderStatus(record.status)}</td>
-                  <td>{new Date(record.createdAt).toLocaleDateString('ar-EG')}</td>
-                  <td className="max-w-[200px] truncate">{record.problemDescription || '-'}</td>
-                  <td>{record.totalCost} ج.م</td>
-                  <td>{record.createdByName}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          data={records as any[]}
+          emptyMessage={statusFilter ? "لم يتم العثور على سجلات تطابق الفلتر الحالي." : "لم يتم تسجيل أي عمليات صيانة بعد."}
+          emptyIcon={Wrench}
+          onRowClick={(r) => openModal(r.id)}
+        />
       )}
 
       {isModalOpen && (

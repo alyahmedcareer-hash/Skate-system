@@ -16,11 +16,12 @@ import { Ticket, Plus, Eye, Clock } from 'lucide-react'
 import {
   Badge,
   Alert,
-  EmptyState,
   PageLoader,
   Button,
   IconButton,
   Pagination,
+  DataTable,
+  type TableColumn,
 } from '../../components/ui'
 import { PermissionGate } from '../../components/PermissionGate'
 import {
@@ -79,122 +80,80 @@ export default function RentalsPage() {
 
   const handleStatusChange = (s: string) => { setStatus(s); setPage(1) }
 
-  if (loading && rentals.length === 0) return <PageLoader />
+  const columns: TableColumn<any>[] = [
+    { key: 'rentalCode', header: 'كود الإيجار', render: (_, r: any) => <span style={{ fontWeight: 'var(--font-weight-bold)' }}>{r.rentalCode}</span> },
+    { key: 'customer', header: 'العميل', render: (_, r: any) => r.customer.name },
+    { key: 'skate', header: 'الزلاجة', render: (_, r: any) => `${r.skate.skateCode} / ${r.skate.size}` },
+    { key: 'duration', header: 'المدة', render: (_, r: any) => `${r.durationMinutes} د` },
+    { key: 'amount', header: 'المبلغ', render: (_, r: any) => formatCurrency(r.rentalAmount) },
+    { key: 'startedAt', header: 'البداية', render: (_, r: any) => <span dir="ltr">{formatDateTime(r.startedAt)}</span> },
+    { key: 'status', header: 'الحالة', render: (_, r: any) => <Badge status={lifetimeStatusToBadge(r.status)}>{getRentalStatusLabel(r.status)}</Badge> },
+    { key: 'actions', header: '', align: 'left', render: (_, r: any) => (
+        <IconButton
+          icon={Eye}
+          label="عرض التفاصيل"
+          onClick={() => navigate(`/rentals/${r.id}`)}
+          size="sm"
+          variant="ghost"
+        />
+      )
+    },
+  ]
+
+  if (loading && rentals.length === 0) return <PageLoader label="جارٍ تحميل الإيجارات" />
 
   return (
     <div className="page-container">
-      {/* Header */}
+      {/* Page header */}
       <div className="page-header">
-        <div>
-          <h1 className="page-title">
-            <Ticket size={24} style={{ display: 'inline', marginInlineEnd: 8 }} />
-            الإيجارات
-          </h1>
-          <p className="page-subtitle">{total} إيجار إجمالاً</p>
+        <div className="page-header-text">
+          <h1 className="page-header-title">الإيجارات</h1>
+          <p className="page-header-subtitle">{total} إيجار إجمالاً</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
           <Button
             id="go-active-rentals"
-            variant="ghost"
+            variant="secondary"
             onClick={() => navigate('/rentals/active')}
           >
-            <Clock size={16} /> النشطة
+            <Clock size={16} aria-hidden="true" />
+            النشطة
           </Button>
           <PermissionGate permission="rentals.create">
             <Button id="new-rental-btn" variant="primary" onClick={() => navigate('/rentals/new')}>
-              <Plus size={16} /> إيجار جديد
+              <Plus size={16} aria-hidden="true" />
+              إيجار جديد
             </Button>
           </PermissionGate>
         </div>
       </div>
 
-      {/* Status filter */}
-      <div style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {[
-          { value: '', label: 'الكل' },
-          { value: 'active', label: 'نشط' },
-          { value: 'returned', label: 'مُعاد' },
-          { value: 'cancelled', label: 'ملغي' },
-        ].map(opt => (
-          <button
-            key={opt.value}
-            id={`filter-status-${opt.value || 'all'}`}
-            type="button"
-            onClick={() => handleStatusChange(opt.value)}
-            style={{
-              padding: '6px 16px',
-              borderRadius: 'var(--radius-full)',
-              border: `1px solid ${statusFilter === opt.value ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              background: statusFilter === opt.value ? 'var(--color-primary)' : 'var(--color-surface)',
-              color: statusFilter === opt.value ? 'white' : 'var(--color-text-primary)',
-              cursor: 'pointer',
-              fontSize: 'var(--font-size-sm)',
-              transition: 'all var(--transition-fast)',
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
+      {/* Filters row */}
+      <div className="filters-row">
+        <select
+          id="rentals-status-filter"
+          value={statusFilter}
+          onChange={e => handleStatusChange(e.target.value)}
+          className="field-control"
+          style={{ width: '200px' }}
+        >
+          <option value="">جميع الحالات</option>
+          <option value="active">نشط</option>
+          <option value="returned">مُعاد</option>
+          <option value="cancelled">ملغي</option>
+        </select>
       </div>
 
-      {error && <Alert variant="danger" style={{ marginBottom: 16 }}>{error}</Alert>}
+      {error && <Alert variant="danger" style={{ marginBottom: 'var(--space-6)' } as React.CSSProperties}>{error}</Alert>}
 
-      {!loading && rentals.length === 0 ? (
-        <EmptyState
-          icon={Ticket}
-          title="لا توجد إيجارات"
-          description={statusFilter ? 'لا توجد إيجارات بهذه الحالة' : 'لم يتم تسجيل أي إيجار بعد'}
-          action={
-            <Button variant="primary" size="sm" onClick={() => navigate('/rentals/new')}>
-              إيجار جديد
-            </Button>
-          }
-        />
-      ) : (
+      {!loading && !error && (
         <>
-          {/* Rentals Table */}
-          <div className="rentals-table-wrap">
-            <table className="rentals-table" role="table" aria-label="قائمة الإيجارات">
-              <thead>
-                <tr>
-                  <th>كود الإيجار</th>
-                  <th>العميل</th>
-                  <th>الزلاجة</th>
-                  <th>المدة</th>
-                  <th>المبلغ</th>
-                  <th>البداية</th>
-                  <th>الحالة</th>
-                  <th aria-label="إجراءات" />
-                </tr>
-              </thead>
-              <tbody>
-                {rentals.map(r => (
-                  <tr key={r.id} id={`rental-row-${r.id}`}>
-                    <td style={{ fontWeight: 'var(--font-weight-bold)' }}>{r.rentalCode}</td>
-                    <td>{r.customer.name}</td>
-                    <td>{r.skate.skateCode} / {r.skate.size}</td>
-                    <td>{r.durationMinutes} د</td>
-                    <td>{formatCurrency(r.rentalAmount)}</td>
-                    <td dir="ltr">{formatDateTime(r.startedAt)}</td>
-                    <td>
-                      <Badge status={lifetimeStatusToBadge(r.status)}>
-                        {getRentalStatusLabel(r.status)}
-                      </Badge>
-                    </td>
-                    <td>
-                      <IconButton
-                        icon={Eye}
-                        label="عرض التفاصيل"
-                        onClick={() => navigate(`/rentals/${r.id}`)}
-                        size="sm"
-                        variant="ghost"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={columns}
+            data={rentals as any}
+            emptyMessage={statusFilter ? 'لا توجد إيجارات بهذه الحالة' : 'لم يتم تسجيل أي إيجار بعد'}
+            emptyIcon={Ticket}
+          />
 
           {totalPages > 1 && (
             <div style={{ marginTop: 'var(--space-4)' }}>
@@ -207,37 +166,6 @@ export default function RentalsPage() {
           )}
         </>
       )}
-
-      <style>{`
-        .rentals-table-wrap {
-          overflow-x: auto;
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--color-border);
-          background: var(--color-surface);
-        }
-        .rentals-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: var(--font-size-sm);
-        }
-        .rentals-table th {
-          padding: 12px 16px;
-          background: var(--color-surface-raised);
-          color: var(--color-text-secondary);
-          font-weight: var(--font-weight-bold);
-          text-align: right;
-          border-bottom: 1px solid var(--color-border);
-          white-space: nowrap;
-        }
-        .rentals-table td {
-          padding: 12px 16px;
-          color: var(--color-text-primary);
-          border-bottom: 1px solid var(--color-border-subtle);
-          vertical-align: middle;
-        }
-        .rentals-table tr:last-child td { border-bottom: none; }
-        .rentals-table tr:hover td { background: var(--color-surface-raised); }
-      `}</style>
     </div>
   )
 }

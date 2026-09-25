@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Landmark, ArrowDownToLine, LockOpen, Lock, Loader2, Plus } from 'lucide-react'
+import { Landmark, ArrowDownToLine, LockOpen, Lock, Plus } from 'lucide-react'
 import { treasuryApi, type Shift, type Expense } from './treasury.api'
-import { Button, Input, useToast, Card } from '../../components/ui'
+import { Button, Input, useToast, Card, PageLoader } from '../../components/ui'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function TreasuryPage() {
@@ -88,19 +88,18 @@ export default function TreasuryPage() {
   }
 
   if (loading) {
-    return (
-      <div className="page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <Loader2 className="animate-spin" size={32} />
-      </div>
-    )
+    return <PageLoader label="جارٍ تحميل بيانات الخزينة" />
   }
 
   return (
     <div className="page-container">
       <div className="page-header">
-        <div>
-          <h1 className="page-title"><Landmark className="inline-block me-2" /> إدارة الخزينة</h1>
-          <p className="page-subtitle">إدارة الورديات والمصروفات النثرية</p>
+        <div className="page-header-text">
+          <h1 className="page-header-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Landmark size={24} aria-hidden="true" className="text-muted" />
+            إدارة الخزينة
+          </h1>
+          <p className="page-header-subtitle">إدارة الورديات والمصروفات النثرية</p>
         </div>
       </div>
 

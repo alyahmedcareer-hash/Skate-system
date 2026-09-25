@@ -16,10 +16,10 @@ import { RefreshCw, Clock, Eye } from 'lucide-react'
 import {
   Badge,
   Alert,
-  EmptyState,
-  PageLoader,
   IconButton,
   Button,
+  EmptyState,
+  PageLoader,
 } from '../../components/ui'
 import {
   rentalsService,
@@ -150,7 +150,7 @@ export default function ActiveRentalsPage() {
   const [rentals, setRentals]         = useState<ActiveRentalDTO[]>([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
-  const [refreshing, setRefreshing]   = useState(false)
+  
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   // Return Modal State
@@ -175,8 +175,7 @@ export default function ActiveRentalsPage() {
   }
 
   const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true)
-    else setLoading(true)
+    if (!isRefresh) setLoading(true)
     setError(null)
     try {
       const res = await rentalsService.getActive()
@@ -185,7 +184,7 @@ export default function ActiveRentalsPage() {
     } catch {
       setError('تعذر تحميل الإيجارات النشطة')
     } finally {
-      setLoading(false); setRefreshing(false)
+      setLoading(false)
     }
   }, [])
 
@@ -206,25 +205,25 @@ export default function ActiveRentalsPage() {
   return (
     <div className="page-container">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">الإيجارات النشطة</h1>
-          <p className="page-subtitle">
+        <div className="page-header-text">
+          <h1 className="page-header-title">الإيجارات النشطة</h1>
+          <p className="page-header-subtitle">
             {rentals.length} إيجار نشط
             {lastUpdated && (
-              <span style={{ marginInlineStart: 8, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
+              <span style={{ marginInlineStart: 'var(--space-2)' }}>
                 — آخر تحديث {lastUpdated.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </p>
         </div>
-        <IconButton
-          icon={RefreshCw}
-          label="تحديث"
+        <Button
+          variant="secondary"
           onClick={() => load(true)}
-          loading={refreshing}
-          variant="ghost"
-          size="sm"
-        />
+          id="active-rentals-refresh"
+        >
+          <RefreshCw size={16} aria-hidden="true" />
+          تحديث
+        </Button>
       </div>
 
       {error && <Alert variant="danger" style={{ marginBottom: 16 }}>{error}</Alert>}

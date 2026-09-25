@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ListOrdered, Loader2, Ban, Eye, X } from 'lucide-react'
 import { salesApi, type Sale } from './sales.api'
-import { Button, SearchBar, useToast } from '../../components/ui'
+import { Button, SearchBar, useToast, DataTable, Badge, type TableColumn, PageLoader } from '../../components/ui'
 import { useAuth } from '../../contexts/AuthContext'
 
 function formatDate(isoString: string) {
@@ -70,74 +70,54 @@ export default function SalesPage() {
 
   const filteredSales = sales.filter(s => s.saleCode.toLowerCase().includes(search.toLowerCase()))
 
-  if (loading) {
-    return (
-      <div className="page-container">
-        <div className="page-header"><div className="page-header-text"><h1 className="page-header-title">سجل المبيعات</h1></div></div>
-        <div className="flex items-center justify-center p-8 text-neutral-400">
-          <Loader2 className="animate-spin" size={24} />
-        </div>
+  const columns: TableColumn<any>[] = [
+    { key: 'code', header: 'رقم الفاتورة', render: (_, r: any) => <span className="font-semibold text-navy-800">{r.saleCode}</span> },
+    { key: 'date', header: 'التاريخ والوقت', render: (_, r: any) => formatDate(r.createdAt) },
+    { key: 'total', header: 'الإجمالي', render: (_, r: any) => <span className="font-bold">{r.totalAmount} ج.م</span> },
+    { key: 'status', header: 'الحالة', render: (_, r: any) => (
+      <Badge status={r.status === 'completed' ? 'completed' : 'cancelled'}>
+        {r.status === 'completed' ? 'مكتمل' : 'ملغى'}
+      </Badge>
+    ) },
+    { key: 'actions', header: '', align: 'left', render: (_, r: any) => (
+      <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+        <Button variant="ghost" size="sm" onClick={() => handleViewDetails(r.id)} title="التفاصيل">
+          <Eye size={16} />
+        </Button>
+        {canCancel && r.status === 'completed' && (
+          <Button variant="ghost" size="sm" className="text-danger-500" onClick={() => handleCancelSale(r.id)} title="إلغاء الفاتورة">
+            <Ban size={16} />
+          </Button>
+        )}
       </div>
-    )
+    ) },
+  ]
+
+  if (loading) {
+    return <PageLoader label="جارٍ تحميل سجل المبيعات" />
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header"><div className="page-header-text"><h1 className="page-header-title">سجل المبيعات</h1></div></div>
-
-      <div className="card p-4 mb-4 bg-neutral-50 flex items-center gap-4">
-        <div className="flex-1 max-w-md relative">
-          <SearchBar
-            value={search}
-            onChange={(val) => setSearch(val)}
-            placeholder="البحث برقم الفاتورة..."
-          />
+    <div className="page-container flex flex-col h-full">
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title">سجل المبيعات</h1>
         </div>
       </div>
 
-      <div className="card">
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>رقم الفاتورة</th>
-                <th>التاريخ والوقت</th>
-                <th>الإجمالي</th>
-                <th>الحالة</th>
-                <th className="text-left">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSales.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center p-8 text-neutral-400">لا توجد مبيعات</td>
-                </tr>
-              ) : filteredSales.map(sale => (
-                <tr key={sale.id} className={sale.status === 'cancelled' ? 'opacity-70 bg-neutral-50' : ''}>
-                  <td className="font-semibold text-navy-800">{sale.saleCode}</td>
-                  <td>{formatDate(sale.createdAt)}</td>
-                  <td className="font-bold">{sale.totalAmount} ج.م</td>
-                  <td>
-                    <span className={`inline-flex px-2 py-1 rounded text-xs font-semibold ${sale.status === 'completed' ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'}`}>
-                      {sale.status === 'completed' ? 'مكتمل' : 'ملغى'}
-                    </span>
-                  </td>
-                  <td className="text-left flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleViewDetails(sale.id)} title="التفاصيل">
-                      <Eye size={16} />
-                    </Button>
-                    {canCancel && sale.status === 'completed' && (
-                      <Button variant="ghost" size="sm" className="text-danger-500 hover:text-danger-700 hover:bg-danger-50" onClick={() => handleCancelSale(sale.id)} title="إلغاء الفاتورة">
-                        <Ban size={16} />
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="filters-row">
+        <SearchBar
+          value={search}
+          onChange={(val) => setSearch(val)}
+          placeholder="البحث برقم الفاتورة..."
+        />
       </div>
+
+      <DataTable
+        columns={columns}
+        data={filteredSales as any[]}
+        emptyMessage={search ? 'لا توجد نتائج تطابق بحثك.' : 'لا توجد مبيعات مسجلة.'}
+      />
 
       {/* Details Modal */}
       {selectedSaleId && (

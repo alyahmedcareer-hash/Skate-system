@@ -813,13 +813,13 @@ export default function RentalPOSPage() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Ticket size={24} />
-          <div>
-            <h1 className="page-title">نقطة إيجار الزلاجات</h1>
-            <p className="page-subtitle">إنشاء إيجار جديد</p>
-          </div>
+      <div className="page-header shrink-0">
+        <div className="page-header-text">
+          <h1 className="page-header-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Ticket size={24} aria-hidden="true" className="text-muted" />
+            نقطة إيجار الزلاجات
+          </h1>
+          <p className="page-header-subtitle">إنشاء إيجار جديد</p>
         </div>
       </div>
 

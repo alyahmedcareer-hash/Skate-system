@@ -33,6 +33,7 @@ import {
   Textarea,
   useToast,
   type TableColumn,
+  Card,
 } from '../../components/ui'
 import { PermissionGate } from '../../components/PermissionGate'
 import {
@@ -420,7 +421,7 @@ export default function CustomersPage() {
           />
           <select
             id="customers-filter-active"
-            className="customers-filter-select"
+            className="field-control customers-filter-select"
             value={activeFilter}
             onChange={(e) => handleFilterChange(e.target.value as '1' | '0' | 'all')}
             aria-label="فلتر حالة العميل"
@@ -440,37 +441,33 @@ export default function CustomersPage() {
 
         {/* ── Desktop DataTable ── */}
         <div className="customers-desktop">
-          {customers.length === 0 && !loading ? (
-            <EmptyState
-              icon={UserPlus}
-              title="لا يوجد عملاء"
-              description={
-                searchQuery
-                  ? 'لا توجد نتائج تطابق بحثك. جرب كلمات مختلفة.'
-                  : 'لم يتم إضافة أي عملاء بعد.'
-              }
-            />
-          ) : (
-            <DataTable<CustomerListItemDTO>
-              columns={columns}
-              data={customers}
-              loading={loading}
-            />
-          )}
+          <DataTable<CustomerListItemDTO>
+            columns={columns}
+            data={customers}
+            loading={loading}
+            emptyIcon={UserPlus}
+            emptyMessage={
+              searchQuery
+                ? 'لا توجد نتائج تطابق بحثك. جرب كلمات مختلفة.'
+                : 'لم يتم إضافة أي عملاء بعد.'
+            }
+          />
         </div>
 
         {/* ── Mobile Cards ── */}
         <div className="customers-mobile">
           {customers.length === 0 && !loading ? (
-            <EmptyState
-              icon={UserPlus}
-              title="لا يوجد عملاء"
-              description={
-                searchQuery
-                  ? 'لا توجد نتائج تطابق بحثك.'
-                  : 'لم يتم إضافة أي عملاء بعد.'
-              }
-            />
+            <Card padding="standard">
+              <EmptyState
+                icon={UserPlus}
+                title="لا يوجد عملاء"
+                description={
+                  searchQuery
+                    ? 'لا توجد نتائج تطابق بحثك.'
+                    : 'لم يتم إضافة أي عملاء بعد.'
+                }
+              />
+            </Card>
           ) : (
             <div className="customer-cards-list">
               {customers.map(renderMobileCard)}
