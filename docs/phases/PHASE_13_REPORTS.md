@@ -52,6 +52,7 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - Layout wrapper `ReportsLayout.tsx` and specific components per report.
 - Shared `DatePicker` and filter logic.
 - Use of unified Design System tables and cards.
+- **Status**: PENDING. Frontend wiring is partially implemented but full component integration is deferred.
 
 ## 10. RBAC
 - Required Permission: `reports.view`
@@ -62,6 +63,7 @@ Provide comprehensive operational and financial analytics through dedicated repo
 ## 12. Verification
 - Verify all endpoints aggregate data correctly without TS errors.
 - Verify date boundaries are properly inclusive of the start date and exclusive of the start of the next day after the end date.
+- **Status**: Backend API fully verified via `reports.test.ts`. Frontend UI pending.
 
 ## 13. Findings
 - TypeScript errors found in backend aggregation queries (e.g., missing `PaginatedResult` import, incorrect mapping of `categoryId` and `repairCost`).
@@ -76,10 +78,11 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - Created this canonical Phase 13 document.
 
 ## 17. Git Commits
-- Pending.
+- Backend API implemented and verified in commit `0a69001`.
 
 ## 18. Known Limitations
 - Data exports (CSV/PDF) are handled via standard browser print or future enhancements (Phase 14).
+- The Reports UI frontend is currently PENDING. Backend routes are fully functional.
 
 ## 19. Final Status
 IN PROGRESS ⏳

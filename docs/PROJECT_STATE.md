@@ -1,8 +1,8 @@
 # Project State — KOSHK SKATE ERP
 
-**Version:** 4.4  
-**Last updated:** 2026-09-21 (Phase 05 — Closure Gate complete — FINAL GATE PASSED ✅)  
-**Updated by:** AI Agent (Phase 05 Closure Gate)
+**Version:** 5.0  
+**Last updated:** 2026-09-26 (Governance documentation and migration hardening complete)  
+**Updated by:** AI Agent (Governance Reconciliation)
 
 ---
 
@@ -13,14 +13,14 @@
 | **Overall Status** | Phase 13 (Reports) **IN PROGRESS ⏳** |
 | **Current Phase** | Phase 13 IN PROGRESS. |
 | **Current Milestone** | Phase 13: Reports — IN PROGRESS ⏳ |
-| **Last Completed Phase** | Phase 09 — Maintenance — 2026-09-23 |
+| **Last Completed Phase** | Phase 12 — Expenses & Cashier Shifts — 2026-09-25 |
 | **Environment** | Node.js (ESM), Vite, React 19, Drizzle ORM, MySQL 8 |
 | **Databases** | `koshk_skate` (Development/Demo), `koshk_skate_test` (Automated Tests Only — **WARNING: Tests must never run against development DB.**) |
 | **Project Goal** | End-to-end POS and ERP for a roller skating rink |
 | **Active Work** | Phase 13 Backend (Testing and hardening) |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-25 — Phase 13 API implementation verified ✅ |
-| **Last Git Commit** | `pending` — feat(reports): integrate Phase 13 reports module |
+| **Last Verification** | 2026-09-26 — Governance Reconciliation, Tests 213/213 PASS ✅ |
+| **Last Git Commit** | `0a69001` — docs: finalize governance report with actual DB inspection |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
 | **Recommended Next Action** | Complete frontend for Phase 13 Reports |
 
@@ -34,13 +34,13 @@
 | Visual Design Reference | VERIFIED — complete |
 | Governance documentation | COMPLETED |
 | Architecture documentation | COMPLETED — updated with Phase 04 decisions |
-| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, RENTALS.md ✅, PHASE_06 spec ✅ |
-| Source code — Frontend | VERIFIED ✅ — Phase 08: Damage Reports, Customer Charges, Waivers, Returns Integration. Built ✅ zero TS errors. |
-| Source code — Backend | VERIFIED ✅ — Phase 08: damage schema, routes, services, waivers, tests. Built ✅ zero TS errors. |
-| Database | VERIFIED ✅ — Phase 08 schema active. |
-| Tests | VERIFIED ✅ — `npm test` 184/184 PASS (8 test files). |
+| Module documentation | AUTH.md ✅, USERS_PERMISSIONS.md ✅, SKATES.md ✅, CUSTOMERS.md ✅, RENTALS.md ✅, PHASE_06-12 docs ✅, PHASE_13 IN PROGRESS ⏳ |
+| Source code — Frontend | VERIFIED ✅ — Phase 12 completely implemented. Phase 13 frontend pending. Built ✅ zero TS errors. |
+| Source code — Backend | VERIFIED ✅ — Phase 13 backend implemented. Built ✅ zero TS errors. |
+| Database | VERIFIED ✅ — Phase 13 schema active, verified via `db:verify`. |
+| Tests | VERIFIED ✅ — `npm test` 213/213 PASS (13 test files). |
 | Deployment | NONE |
-| Git repository | VERIFIED ✅ — local + GitHub remote (commit `cab5a19`) |
+| Git repository | VERIFIED ✅ — local + GitHub remote |
 
 ---
 
@@ -48,15 +48,15 @@
 
 | Phase | Name | Status | Notes |
 |---|---|---|---|
-| Phase 00 | Governance & Documentation | COMPLETED | This initialization |
-| Phase 01 | Foundation & Project Setup | COMPLETED | FINAL GATE: APPROVED. |
-| Phase 02 | Authentication & Permissions | **FINAL GATE PASSED** | |
-| Phase 03 | Skates Module | **FINAL GATE PASSED ✅** | |
-| **Phase 03.5** | **ERP Design System & Interface Standardization** | **COMPLETE ✅** | |
-| Phase 04 | Customers Module | **FINAL GATE PASSED ✅** | |
-| Phase 05 | Rental POS (Core) | **FINAL GATE PASSED ✅** | |
-| Phase 06 | Payments & Treasury | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-21. |
-| Phase 07 | Returns & Inspection | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. Skate return workflow, late fee calculation, condition reporting, waivers RBAC. |
+| Phase 00 | Governance & Documentation | **CLOSED ✅** | This initialization |
+| Phase 01 | Foundation & Project Setup | **CLOSED ✅** | FINAL GATE: APPROVED. |
+| Phase 02 | Authentication & Permissions | **CLOSED ✅** | |
+| Phase 03 | Skates Module | **CLOSED ✅** | |
+| **Phase 03.5** | **ERP Design System & Interface Standardization** | **CLOSED ✅** | |
+| Phase 04 | Customers Module | **CLOSED ✅** | |
+| Phase 05 | Rental POS (Core) | **CLOSED ✅** | |
+| Phase 06 | Payments & Treasury | **CLOSED ✅** | Closure Gate complete 2026-09-21. |
+| Phase 07 | Returns & Inspection | **CLOSED ✅** | Closure Gate complete 2026-09-22. Skate return workflow, late fee calculation, condition reporting, waivers RBAC. |
 | Phase 08 | Damage Management | **CLOSED ✅** | Closure Gate complete 2026-09-22. Damage reports, customer charges, payment collection, waivers. |
 | Phase 09 | Maintenance | **CLOSED ✅** | Depends on Phase 08 |
 | Phase 10 | Reservations | **CLOSED ✅** | Depends on Phases 03, 04 |
@@ -91,7 +91,7 @@
 | Products | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (6/6) ✅ | VERIFIED ✅ |
 | Expenses | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Cashier Shifts | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
-| Reports | PLANNED | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
+| Reports | PENDING | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Invoices/Printing | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Notifications | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Audit Log | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |

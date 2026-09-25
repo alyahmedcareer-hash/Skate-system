@@ -1,14 +1,13 @@
 # Project Map — KOSHK SKATE ERP
 
-**Version:** 1.9
+**Version:** 2.0
 **Purpose:** Navigation map for future AI agents. Read this BEFORE scanning the repository.
-**Last updated:** 2026-09-21 (Phase 05 — Rental POS Core — FINAL GATE PASSED ✅)
+**Last updated:** 2026-09-26 (Governance and Migration Hardening)
 
 > [!IMPORTANT]
-> **PROJECT STATE: Phase 05 (Rental POS Core) FINAL GATE PASSED ✅. Phase 06 (Payments & Treasury) is NEXT.**
-> All Phase 01–05 files are committed and verified. 17 shared UI components.
-> Phase 06 requires a written + approved specification before any implementation begins (Rule 16).
-> Update status from PLANNED → VERIFIED as new files are created in Phase 06+.
+> **PROJECT STATE: Phase 12 (Expenses) CLOSED ✅. Phase 13 (Reports) is IN PROGRESS ⏳.**
+> All Phase 01–12 files are committed and verified.
+> Phase 13 Backend is verified. Phase 13 Frontend is pending.
 
 ---
 
@@ -46,8 +45,8 @@ d:/Skate system/
     ├── quality/                 — QA strategy and test matrix (VERIFIED)
     ├── decisions/               — Decision log (70 decisions through DEC-070)
     ├── product/                 — Master Business Spec copy (VERIFIED)
-    ├── PROJECT_MAP.md           — THIS FILE (v1.8)
-    ├── PROJECT_STATE.md         — Current project status (v4.0 — Phase 04 COMPLETE)
+    ├── PROJECT_MAP.md           — THIS FILE (v2.0)
+    ├── PROJECT_STATE.md         — Current project status (v5.0 — Phase 13 IN PROGRESS)
     ├── CHANGELOG.md             — Change history (updated through Phase 04)
     ├── RELEASE_HISTORY.md       — Release history
     └── INITIAL_PROJECT_AUDIT.md — Initial audit report
