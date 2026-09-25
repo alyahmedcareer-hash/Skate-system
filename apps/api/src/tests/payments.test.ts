@@ -16,7 +16,7 @@ import { customers } from '../db/schema/customers.js'
 import { settings } from '../db/schema/settings.js'
 import { rentals } from '../db/schema/rentals.js'
 import { cashierShifts } from '../db/schema/treasury.js'
-import { rentalPayments, treasuryMovements } from '../db/schema/payments.js'
+import { rentalPayments, treasuryMovements, paymentMethods } from '../db/schema/payments.js'
 
 const request = supertest(app)
 
@@ -26,6 +26,7 @@ const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Koshk@12345'
 let adminToken: string
 let testSkateId: number
 let testCustomerId: number
+let testPaymentMethodId: number
 
 async function adminLogin() {
   const res = await request.post('/api/v1/auth/login').send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
@@ -42,6 +43,10 @@ beforeAll(async () => {
   // Create a test customer
   const [custRes] = await db.insert(customers).values({ name: 'Test Pay Customer', phone: '01011112222', nationalId: '30000000000000', isActive: true, registrationDate: new Date() })
   testCustomerId = (custRes as any).insertId
+
+  // Get a valid payment method
+  const pmRes = await db.select({ id: paymentMethods.id }).from(paymentMethods).limit(1)
+  testPaymentMethodId = pmRes[0]?.id || 1
 
   // --- Ensure Active Shifts ---
   const adminUserRes = await db.select().from(users).where(eq(users.email, ADMIN_EMAIL))
@@ -103,7 +108,7 @@ describe('Rental Payments & Cancellations', () => {
     const res = await request
       .post('/api/v1/rentals')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ skateId: testSkateId, customerId: testCustomerId, durationMinutes: 30, payments: [{ paymentMethodId: 1, amount: 10 }] }) // Should be 60
+      .send({ skateId: testSkateId, customerId: testCustomerId, durationMinutes: 30, payments: [{ paymentMethodId: testPaymentMethodId, amount: 10 }] }) // Should be 60
     expect(res.status).toBe(422) // Business rule error
     expect(res.body.error.code).toBe('INVALID_PAYMENT_TOTAL')
   })
@@ -117,7 +122,7 @@ describe('Rental Payments & Cancellations', () => {
     const res = await request
       .post('/api/v1/rentals')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ skateId: testSkateId, customerId: testCustomerId, durationMinutes: 60, payments: [{ paymentMethodId: 1, amount }] })
+      .send({ skateId: testSkateId, customerId: testCustomerId, durationMinutes: 60, payments: [{ paymentMethodId: testPaymentMethodId, amount }] })
     expect(res.status).toBe(201)
     
     const rentalId = res.body.data.id

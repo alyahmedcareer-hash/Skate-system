@@ -1,7 +1,6 @@
 import { db } from '../../db/connection.js'
 import { sql, and, gte, lt, eq, inArray, isNull, sum, count, desc, or } from 'drizzle-orm'
-import { DateRangeInput, OverviewReportDTO } from './reports.types.js'
-
+import { DateRangeInput, OverviewReportDTO, PaginatedResult } from './reports.types.js'
 import { rentals } from '../../db/schema/rentals.js'
 import { skates } from '../../db/schema/skates.js'
 import { customers } from '../../db/schema/customers.js'
@@ -263,7 +262,7 @@ export async function getExpenseReport(filters: DateRangeInput): Promise<any> {
 
   const catRes = await db
     .select({
-      category: expenses.category,
+      category: expenses.categoryId,
       total: sum(expenses.amount)
     })
     .from(expenses)
@@ -271,7 +270,7 @@ export async function getExpenseReport(filters: DateRangeInput): Promise<any> {
       gte(expenses.createdAt, startBound),
       lt(expenses.createdAt, endBound)
     ))
-    .groupBy(expenses.category)
+    .groupBy(expenses.categoryId)
 
   const totalExp = await db
     .select({ total: sum(expenses.amount) })
@@ -420,7 +419,7 @@ export async function getDamageReport(filters: DateRangeInput): Promise<Paginate
       customerName: customers.name,
       damageType: damageReports.damageType,
       chargeAmount: damageReports.customerCharge,
-      repairCost: damageReports.totalCost,
+      repairCost: damageReports.customerCharge,
       reportedAt: damageReports.createdAt
     })
     .from(damageReports)
@@ -497,10 +496,10 @@ export async function getMaintenanceReport(filters: DateRangeInput): Promise<Pag
     data: data.map(r => ({
       id: r.id,
       skateCode: r.skateCode,
-      problemType: r.problemDescription,
+      problemType: r.problemType,
       status: r.status,
       repairCost: Number(r.repairCost || 0),
-      startedAt: r.startedAt.toISOString(),
+      startedAt: r.startedAt ? r.startedAt.toISOString() : null,
       completedAt: r.completedAt ? r.completedAt.toISOString() : null
     })),
     meta: {

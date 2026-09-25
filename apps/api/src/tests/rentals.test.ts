@@ -138,6 +138,7 @@ let skateMaintId   = 0
 let skateDmgdId    = 0
 let skateLostId    = 0
 let skateResvId    = 0
+let defaultPaymentMethodId = 1
 
 // Rental IDs created during tests — for cleanup
 const createdRentalIds: number[] = []
@@ -317,6 +318,9 @@ beforeAll(async () => {
     if (!existing.length) {
       await db.insert(cashierShifts).values({ cashierId: adminUser.id, openingBalance: '0', status: 'active' })
     }
+
+  const [pm] = await db.select().from(paymentMethods).where(eq(paymentMethods.isActive, true)).limit(1)
+  if (pm) defaultPaymentMethodId = pm.id
   }
   if (cashierUserId) {
     const existing = await db.select().from(cashierShifts).where(and(eq(cashierShifts.cashierId, cashierUserId), eq(cashierShifts.status, 'active'))).limit(1)
@@ -433,7 +437,7 @@ describe('Rentals — Pricing Formula (DEC-065, DEC-067)', () => {
     const res = await request
       .post('/api/v1/rentals')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ skateId: skateAvail2Id, customerId: custId1, durationMinutes: 30, rentalAmount: 999, payments: [{ paymentMethodId: 1, amount: 60 }] })
+      .send({ skateId: skateAvail2Id, customerId: custId1, durationMinutes: 30, rentalAmount: 999, payments: [{ paymentMethodId: defaultPaymentMethodId, amount: 60 }] })
 
     expect(res.status).toBe(201)
     // Server ignores any client-sent rentalAmount — always 60 for 30 min at 120 EGP/hr
@@ -1064,7 +1068,7 @@ describe('Rentals — RBAC', () => {
     const res = await request
       .post('/api/v1/rentals')
       .set('Authorization', `Bearer ${cashierToken}`)
-      .send({ skateId: skateAvail3Id, customerId: custId2, durationMinutes: 30, payments: [{ paymentMethodId: 1, amount: 60 }] })
+      .send({ skateId: skateAvail3Id, customerId: custId2, durationMinutes: 30, payments: [{ paymentMethodId: defaultPaymentMethodId, amount: 60 }] })
 
     expect(res.status).toBe(201)
     expect(res.body.data.cashier).toBeTruthy()

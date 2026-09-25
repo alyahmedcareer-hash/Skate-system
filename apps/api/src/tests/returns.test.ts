@@ -128,10 +128,13 @@ describe('Returns API (Phase 07)', () => {
       
       const expectedEnd = new Date(Date.now() + expectedEndOffsetMs)
       
+      const [adminRows] = await connection.execute<any>("SELECT id FROM users WHERE email = 'admin.return@koshkskate.com' LIMIT 1")
+      const testCashierId = adminRows.length ? adminRows[0].id : 1
+
       const [rRes] = await connection.execute<any>(
         `INSERT INTO rentals (rental_code, skate_id, customer_id, cashier_id, duration_minutes, price_per_hour, rental_amount, started_at, expected_end_at, status, created_at, updated_at)
-         VALUES (?, ?, ?, 1, ?, 120, 30, NOW(), ?, 'active', NOW(), NOW())`,
-        [`RN-${Date.now()}`, skateId, customerId, minutes, expectedEnd]
+         VALUES (?, ?, ?, ?, ?, 120, 30, NOW(), ?, 'active', NOW(), NOW())`,
+        [`RN-${Date.now()}`, skateId, customerId, testCashierId, minutes, expectedEnd]
       )
       
       await connection.execute("UPDATE skates SET status = 'rented' WHERE id = ?", [skateId])

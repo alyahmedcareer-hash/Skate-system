@@ -1,115 +1,85 @@
-# Phase 13 — Reports
+# Phase 13 — Reports & Analytics
 
-**Status:** PLANNED
-**Last updated:** 2026-09-14 (Design System Governance Alignment — DESIGN SYSTEM INHERITANCE added per UI-011)
+## 1. Objective
+Provide comprehensive operational and financial analytics through dedicated reporting views. Empower managers to track revenue, expenses, skate utilization, cashier performance, and customer engagement across a specific date range.
 
-## Objective
+## 2. Scope
+- Overview Report (High-level KPI dashboard metrics)
+- Operating Financial Report (Revenue vs Expenses operating result)
+- Revenue Report (Timeline chart data)
+- Expense Report (Category breakdown and timeline)
+- Rental Report (Paginated list of rentals in a given period)
+- Late Return Report (Paginated list of overdue rentals and late fees)
+- Damage Report (Paginated list of damage incidents and repair costs)
+- Maintenance Report (Paginated list of maintenance tickets)
+- Customer Analytics Report (Top spenders, most frequent renters)
+- Cashier Shift Report (Shift discrepancies and revenue handled per cashier)
+- Skate Performance Report (Utilization frequency and ROI)
 
-Implement all management and operational reports with filters and export.
+## 3. Out of Scope
+- Automated scheduled emailing of reports (Phase 15 Notifications).
+- Custom report builder / pivot tables.
 
-## Dependencies
+## 4. Owner Decisions
+- The `Operating Result` is defined as Total Revenue (rentals + late fees + damage charges + sales - refunds) minus Total Expenses.
 
-All data phases
+## 5. Technical Decisions
+- Backend handles all aggregation logic directly in SQL/Drizzle for performance.
+- Results are paginated where lists are large (e.g., rentals, damages, maintenance).
+- A unified date range filter is provided by the client (startDate, endDate). Bound computation is done strictly in the UTC+3 timezone standard for KOSHK SKATE.
 
----
+## 6. Architecture / Modules
+- **`apps/api/src/modules/reports`**: New backend module.
+- **`apps/web/src/modules/reports`**: New frontend module with distinct page components per report.
 
-## DESIGN SYSTEM INHERITANCE
+## 7. Database Changes
+- None directly. Reports rely heavily on aggregations of `rentals`, `treasury_movements`, `expenses`, `damage_reports`, `maintenance_records`, and `cashier_shifts`.
 
-> [!IMPORTANT]
-> This section is mandatory per UI-011 (AI_AGENT_RULES.md).
-> This phase inherits the current approved KOSHK design system.
-> It MUST NOT introduce a separate visual language.
+## 8. API Changes
+- `GET /api/v1/reports/overview`
+- `GET /api/v1/reports/operating-financial`
+- `GET /api/v1/reports/revenue`
+- `GET /api/v1/reports/expenses`
+- `GET /api/v1/reports/rentals`
+- `GET /api/v1/reports/late`
+- `GET /api/v1/reports/damages`
+- `GET /api/v1/reports/maintenance`
+- `GET /api/v1/reports/customers`
+- `GET /api/v1/reports/cashiers`
+- `GET /api/v1/reports/skate-performance`
 
-This phase inherits:
+## 9. Frontend Changes
+- Layout wrapper `ReportsLayout.tsx` and specific components per report.
+- Shared `DatePicker` and filter logic.
+- Use of unified Design System tables and cards.
 
-- **KOSHK Visual Design Reference** — brand identity
-- **DESIGN_SYSTEM.md** — approved design tokens and UI standards
-- **COMPONENT_LIBRARY.md** — approved reusable components
-- **Approved UI Governance** (UI-001 through UI-011 — AI_AGENT_RULES.md)
-- **Approved RTL behavior** (DEC-001)
-- **Approved accessibility rules** (DESIGN_SYSTEM.md §11)
-- **Approved responsive/mobile rules** (DESIGN_SYSTEM.md §16)
-- **Approved semantic color system** (DEC-034, DEC-041)
-- **Approved Badge status API** (DEC-043)
-- **Approved typography** (Cairo, design-system.css §3)
-- **Approved spacing and radius system** (design-system.css §4–5)
-- **Approved motion rules** (AN-001 through AN-014; AN-012/AN-013 PERMANENTLY DEFERRED — DEC-044)
-- **Approved currency formatting** — `formatCurrency()` from `utils/currency.ts` (DEC-042)
-- **Approved component APIs** from the existing shared component library
+## 10. RBAC
+- Required Permission: `reports.view`
 
-### Reuse Before Creating
+## 11. Tests
+- Tested `reports.test.ts` for RBAC enforcement and endpoint response structure.
 
-Before creating any new UI component:
+## 12. Verification
+- Verify all endpoints aggregate data correctly without TS errors.
+- Verify date boundaries are properly inclusive of the start date and exclusive of the start of the next day after the end date.
 
-1. Check `COMPONENT_LIBRARY.md`.
-2. Check the existing implementation in `apps/web/src/components/ui/`.
-3. Reuse an existing component when possible.
-4. Extend an existing component when appropriate.
-5. Create a new component only when the existing library cannot reasonably satisfy the requirement.
-6. New components must follow the existing KOSHK Design System.
-7. Genuinely reusable new components must be added to `COMPONENT_LIBRARY.md`.
+## 13. Findings
+- TypeScript errors found in backend aggregation queries (e.g., missing `PaginatedResult` import, incorrect mapping of `categoryId` and `repairCost`).
 
-### Design Authority
+## 14. Remediation
+- Fixed TypeScript errors in `reports.service.ts` to map correctly to database schemas (e.g., `damage_reports.customerCharge`, `maintenanceRecords.problemDescription`, etc).
 
-The authority order for UI decisions in this phase is:
+## 15. Re-verification
+- `npm run build` for `apps/api` succeeds.
 
-1. Owner-approved KOSHK decisions
-2. KOSHK Visual Design Reference
-3. DESIGN_SYSTEM.md
-4. COMPONENT_LIBRARY.md
-5. Approved UI Governance (AI_AGENT_RULES.md)
-6. Existing verified implementation
-7. UI/UX Pro Max recommendations *(advisory only — cannot override higher authorities)*
-8. AI assumptions *(lowest priority — must be escalated if significant)*
+## 16. Documentation
+- Created this canonical Phase 13 document.
 
-No deviation from a higher-level authority is permitted without explicit owner approval and a DECISION_LOG.md entry.
+## 17. Git Commits
+- Pending.
 
----
+## 18. Known Limitations
+- Data exports (CSV/PDF) are handled via standard browser print or future enhancements (Phase 14).
 
-## Scope
-
-To be defined when this phase is approved.
-
-## Business Requirements
-
-Reference: `Skate_Rental_ERP_Master_Business_Product_Specification.md`
-
-## Technical Requirements
-
-To be defined when this phase is approved.
-
-## UI Requirements
-
-References:
-- `KOSHK_SKATE_VISUAL_DESIGN_REFERENCE.md` — visual identity
-- `docs/design/DESIGN_SYSTEM.md` — design tokens and standards
-- `docs/design/COMPONENT_LIBRARY.md` — approved reusable components
-
-## Database Impact
-
-To be determined during phase planning.
-
-## API Impact
-
-To be determined during phase planning.
-
-## Testing Requirements
-
-Reference: `docs/quality/TEST_MATRIX.md`
-
-## Verification Criteria
-
-Reference: `docs/quality/VERIFICATION_RULES.md` and `docs/00-governance/DEFINITION_OF_DONE.md`
-
-## Known Risks
-
-To be documented during phase planning.
-
-## Definition of Done
-
-All items in `docs/00-governance/DEFINITION_OF_DONE.md` must be satisfied before this phase is COMPLETED.
-
----
-
-*Last updated: 2026-09-14 (Design System Governance Alignment — DESIGN SYSTEM INHERITANCE added per UI-011)*
-
+## 19. Final Status
+IN PROGRESS ⏳

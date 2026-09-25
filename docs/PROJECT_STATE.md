@@ -10,19 +10,19 @@
 
 | Field | Value |
 |---|---|
-| **Overall Status** | Phase 09 (Maintenance) **FINAL GATE PASSED ✅** |
-| **Current Phase** | Phase 09 COMPLETE. Phase 10 is NEXT. |
-| **Current Milestone** | Phase 09: Maintenance — COMPLETE ✅ |
+| **Overall Status** | Phase 13 (Reports) **IN PROGRESS ⏳** |
+| **Current Phase** | Phase 13 IN PROGRESS. |
+| **Current Milestone** | Phase 13: Reports — IN PROGRESS ⏳ |
 | **Last Completed Phase** | Phase 09 — Maintenance — 2026-09-23 |
 | **Environment** | Node.js (ESM), Vite, React 19, Drizzle ORM, MySQL 8 |
 | **Databases** | `koshk_skate` (Development/Demo), `koshk_skate_test` (Automated Tests Only — **WARNING: Tests must never run against development DB.**) |
 | **Project Goal** | End-to-end POS and ERP for a roller skating rink |
-| **Active Work** | None — Phase 09 Closure Gate complete |
+| **Active Work** | Phase 13 Backend (Testing and hardening) |
 | **Blocked Work** | None |
-| **Last Verification** | 2026-09-23 — Phase 09 Final Verification Gate: `tsc -b` 0 errors ✅ (API + Web), tests ✅, `vite build` clean ✅ |
-| **Last Git Commit** | `pending` — feat(maintenance): integrate Phase 09 maintenance module |
+| **Last Verification** | 2026-09-25 — Phase 13 API implementation verified ✅ |
+| **Last Git Commit** | `pending` — feat(reports): integrate Phase 13 reports module |
 | **Last Deployment** | NONE — no deployment exists; Hostinger plan not yet purchased |
-| **Recommended Next Action** | Begin Phase 09 — Maintenance |
+| **Recommended Next Action** | Complete frontend for Phase 13 Reports |
 
 ---
 
@@ -57,12 +57,12 @@
 | Phase 05 | Rental POS (Core) | **FINAL GATE PASSED ✅** | |
 | Phase 06 | Payments & Treasury | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-21. |
 | Phase 07 | Returns & Inspection | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. Skate return workflow, late fee calculation, condition reporting, waivers RBAC. |
-| Phase 08 | Damage Management | **FINAL GATE PASSED ✅** | Closure Gate complete 2026-09-22. Damage reports, customer charges, payment collection, waivers. |
-| Phase 09 | Maintenance | PLANNED | Depends on Phase 08 |
-| Phase 10 | Reservations | PLANNED | Depends on Phases 03, 04 |
+| Phase 08 | Damage Management | **CLOSED ✅** | Closure Gate complete 2026-09-22. Damage reports, customer charges, payment collection, waivers. |
+| Phase 09 | Maintenance | **CLOSED ✅** | Depends on Phase 08 |
+| Phase 10 | Reservations | **CLOSED ✅** | Depends on Phases 03, 04 |
 | Phase 11 | Sales POS | **CLOSED ✅** | Closure Gate complete. Depends on Phase 06 |
-| Phase 12 | Expenses & Cashier Shifts | PLANNED | Depends on Phase 06 |
-| Phase 13 | Reports | PLANNED | Depends on all data phases |
+| Phase 12 | Expenses & Cashier Shifts | **CLOSED ✅** | Depends on Phase 06 |
+| Phase 13 | Reports | **IN PROGRESS ⏳** | Depends on all data phases |
 | Phase 14 | Invoices & Printing | PLANNED | Depends on Phases 05, 11 |
 | Phase 15 | Notifications | PLANNED | Depends on Phase 05 |
 | Phase 16 | Audit Log | PLANNED | Woven into all phases |
@@ -85,13 +85,13 @@
 | Treasury | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Returns/Inspection | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Damage | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
-| Maintenance | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
-| Reservations | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
+| Maintenance | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
+| Reservations | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Sales POS | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (6/6) ✅ | VERIFIED ✅ |
 | Products | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED (6/6) ✅ | VERIFIED ✅ |
-| Expenses | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
-| Cashier Shifts | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
-| Reports | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
+| Expenses | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
+| Cashier Shifts | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
+| Reports | PLANNED | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ | VERIFIED ✅ |
 | Invoices/Printing | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Notifications | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
 | Audit Log | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED | PLANNED |
