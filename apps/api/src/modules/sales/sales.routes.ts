@@ -5,16 +5,16 @@ import { requirePermission } from '../../middleware/permission.js'
 
 export const salesRouter = Router()
 
-salesRouter.get('/', authenticate, requirePermission('sales.view'), async (req, res) => {
+salesRouter.get('/', authenticate, requirePermission('sales.view'), async (req, res, next) => {
   try {
     const sales = await SalesService.listSales()
     res.json({ success: true, data: sales })
   } catch (err: any) {
-    res.status(500).json({ success: false, error: { message: err.message } })
+    next(err)
   }
 })
 
-salesRouter.post('/', authenticate, requirePermission('sales.create'), async (req, res) => {
+salesRouter.post('/', authenticate, requirePermission('sales.create'), async (req, res, next) => {
   try {
     // Add cashierId from authenticated user
     const saleData = { ...req.body, cashierId: req.user!.sub }
@@ -22,17 +22,11 @@ salesRouter.post('/', authenticate, requirePermission('sales.create'), async (re
     const sale = await SalesService.createSale(saleData)
     res.status(201).json({ success: true, data: sale })
   } catch (err: any) {
-    if (err.message === 'INSUFFICIENT_STOCK' || err.message === 'PRODUCT_INACTIVE' || err.message === 'PAYMENT_MISMATCH') {
-      return res.status(422).json({ success: false, error: { code: err.message, message: err.message } })
-    }
-    if (err.message === 'PRODUCT_NOT_FOUND') {
-      return res.status(404).json({ success: false, error: { message: err.message } })
-    }
-    res.status(500).json({ success: false, error: { message: err.message } })
+    next(err)
   }
 })
 
-salesRouter.get('/:id', authenticate, requirePermission('sales.view'), async (req, res) => {
+salesRouter.get('/:id', authenticate, requirePermission('sales.view'), async (req, res, next) => {
   try {
     const id = parseInt(String(req.params.id), 10)
     const sale = await SalesService.getSale(id)
@@ -41,22 +35,16 @@ salesRouter.get('/:id', authenticate, requirePermission('sales.view'), async (re
     }
     res.json({ success: true, data: sale })
   } catch (err: any) {
-    res.status(500).json({ success: false, error: { message: err.message } })
+    next(err)
   }
 })
 
-salesRouter.post('/:id/cancel', authenticate, requirePermission('sales.cancel'), async (req, res) => {
+salesRouter.post('/:id/cancel', authenticate, requirePermission('sales.cancel'), async (req, res, next) => {
   try {
     const id = parseInt(String(req.params.id), 10)
     const sale = await SalesService.cancelSale(id, req.user!.sub)
     res.json({ success: true, data: sale })
   } catch (err: any) {
-    if (err.message === 'SALE_NOT_FOUND') {
-      return res.status(404).json({ success: false, error: { message: err.message } })
-    }
-    if (err.message === 'ALREADY_CANCELLED') {
-      return res.status(409).json({ success: false, error: { code: 'ALREADY_CANCELLED', message: err.message } })
-    }
-    res.status(500).json({ success: false, error: { message: err.message } })
+    next(err)
   }
 })

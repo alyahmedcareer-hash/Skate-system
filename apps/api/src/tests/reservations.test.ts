@@ -7,7 +7,8 @@ import { users } from '../../src/db/schema/users'
 import { createReservation, listReservations, cancelReservation, getReservation, updateReservation, lazyExpireReservations } from '../../src/modules/reservations/reservations.service'
 import { startRental } from '../../src/modules/rentals/rentals.service'
 import { paymentMethods, treasuryAccounts } from '../../src/db/schema/payments'
-import { eq } from 'drizzle-orm'
+import { cashierShifts } from '../../src/db/schema/treasury'
+import { eq, and } from 'drizzle-orm'
 import { BusinessRuleError } from '../../src/utils/errors'
 
 describe('Reservations Service', () => {
@@ -56,6 +57,12 @@ describe('Reservations Service', () => {
       treasuryAccountId: t.insertId
     })
     paymentMethodId = pm.insertId
+
+    // Ensure active shift
+    const existing = await db.select().from(cashierShifts).where(and(eq(cashierShifts.cashierId, userId), eq(cashierShifts.status, 'active'))).limit(1)
+    if (!existing.length) {
+      await db.insert(cashierShifts).values({ cashierId: userId, openingBalance: '0', status: 'active' })
+    }
   })
 
   afterEach(async () => {

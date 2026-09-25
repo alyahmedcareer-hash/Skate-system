@@ -91,7 +91,6 @@ export default function RentalDetailPage() {
 
   const [rental, setRental] = useState<RentalDTO | null>(null)
   const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
   const [error, setError]   = useState<string | null>(null)
 
   // Modals state
@@ -103,13 +102,12 @@ export default function RentalDetailPage() {
     const numId = parseInt(id ?? '', 10)
     if (!numId) { setError('معرّف الإيجار غير صالح'); setLoading(false); return }
 
-    if (isRefresh) setRefreshing(true)
-    else setLoading(true)
+    if (!isRefresh) setLoading(true)
 
     rentalsService.get(numId)
       .then(res => setRental(res.data))
       .catch(() => setError('الإيجار غير موجود'))
-      .finally(() => { setLoading(false); setRefreshing(false) })
+      .finally(() => { setLoading(false) })
   }
 
   useEffect(() => {

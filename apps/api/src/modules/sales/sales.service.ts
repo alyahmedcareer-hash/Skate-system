@@ -4,6 +4,7 @@ import { sales, saleItems, salePayments } from '../../db/schema/sales.js'
 import { products } from '../../db/schema/products.js'
 import { paymentMethods, treasuryMovements } from '../../db/schema/payments.js'
 import { CreateSaleDTO, SaleDTO } from './sales.types.js'
+import { BusinessRuleError, NotFoundError, AppError } from '../../utils/errors.js'
 
 function generateSaleCode(): string {
   const timestamp = Date.now().toString().slice(-6)
@@ -65,11 +66,19 @@ export class SalesService {
 
   static async createSale(data: CreateSaleDTO): Promise<SaleDTO> {
     if (!data.items || data.items.length === 0) {
-      throw new Error('CART_EMPTY')
+      throw new BusinessRuleError('سلة المشتريات فارغة', 'CART_EMPTY')
     }
 
     if (!data.payments || data.payments.length === 0) {
-      throw new Error('NO_PAYMENTS')
+      throw new BusinessRuleError('المدفوعات مطلوبة', 'NO_PAYMENTS')
+    }
+
+    const [activeShiftRows] = await db.execute(
+      sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${data.cashierId} AND status = 'active' LIMIT 1`
+    )
+    const activeShift = (activeShiftRows as any[])[0]
+    if (!activeShift) {
+      throw new BusinessRuleError('عملية إنشاء البيع تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
     }
 
     const saleId = await db.transaction(async (tx) => {
@@ -79,7 +88,7 @@ export class SalesService {
       // 1. Process items and lock products
       for (const item of data.items) {
         if (item.quantity <= 0) {
-          throw new Error('INVALID_QUANTITY')
+          throw new BusinessRuleError('الكمية غير صالحة', 'INVALID_QUANTITY')
         }
 
         // Lock row FOR UPDATE
@@ -89,15 +98,15 @@ export class SalesService {
 
         const product = (productRow as unknown as any[])[0]
         if (!product) {
-          throw new Error('PRODUCT_NOT_FOUND')
+          throw new NotFoundError('المنتج غير موجود')
         }
 
         if (!product.is_active) {
-          throw new Error('PRODUCT_INACTIVE')
+          throw new BusinessRuleError('المنتج غير مفعل', 'PRODUCT_INACTIVE')
         }
 
         if (product.stock_quantity < item.quantity) {
-          throw new Error('INSUFFICIENT_STOCK')
+          throw new BusinessRuleError('المخزون غير كاف', 'INSUFFICIENT_STOCK')
         }
 
         const unitPrice = parseFloat(product.price)
@@ -120,11 +129,11 @@ export class SalesService {
       // 2. Validate payments
       let totalPaymentProvided = 0
       for (const p of data.payments) {
-        if (p.amount <= 0) throw new Error('INVALID_PAYMENT_AMOUNT')
+        if (p.amount <= 0) throw new BusinessRuleError('مبلغ الدفعة غير صالح', 'INVALID_PAYMENT_AMOUNT')
         
         // Verify payment method to treasury account mapping
         const [pmRow] = await tx.select().from(paymentMethods).where(eq(paymentMethods.id, p.paymentMethodId)).limit(1)
-        if (!pmRow) throw new Error('INVALID_PAYMENT_METHOD')
+        if (!pmRow) throw new BusinessRuleError('طريقة الدفع غير صالحة', 'INVALID_PAYMENT_METHOD')
         
         // Auto-assign treasury account
         p.treasuryAccountId = pmRow.treasuryAccountId
@@ -134,7 +143,7 @@ export class SalesService {
 
       // Floating point safe comparison
       if (Math.abs(computedTotalAmount - totalPaymentProvided) > 0.01) {
-        throw new Error('PAYMENT_MISMATCH')
+        throw new BusinessRuleError('المدفوعات لا تتطابق مع الإجمالي', 'PAYMENT_MISMATCH')
       }
 
       // 3. Create Sale
@@ -142,7 +151,7 @@ export class SalesService {
         saleCode: generateSaleCode(),
         customerId: data.customerId || null,
         cashierId: data.cashierId,
-        shiftId: data.shiftId || null,
+        shiftId: activeShift.id,
         totalAmount: computedTotalAmount.toString(),
         notes: data.notes || null,
         status: 'completed'
@@ -177,6 +186,7 @@ export class SalesService {
           referenceType: 'sale_payment',
           referenceId: newSaleId, // link to sale ID
           cashierId: data.cashierId,
+          shiftId: activeShift.id,
           notes: `Payment for Sale ${newSaleId}`
         })
       }
@@ -188,6 +198,14 @@ export class SalesService {
   }
 
   static async cancelSale(saleId: number, adminUserId: number): Promise<SaleDTO> {
+    const [activeShiftRows] = await db.execute(
+      sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${adminUserId} AND status = 'active' LIMIT 1`
+    )
+    const activeShift = (activeShiftRows as any[])[0]
+    if (!activeShift) {
+      throw new BusinessRuleError('عملية إلغاء البيع تتطلب وجود وردية نشطة. يرجى فتح وردية أولاً.', 'NO_ACTIVE_SHIFT')
+    }
+    
     await db.transaction(async (tx) => {
       // Lock sale FOR UPDATE
       const [saleRow] = await tx.execute(
@@ -195,8 +213,8 @@ export class SalesService {
       )
       const sale = (saleRow as unknown as any[])[0]
 
-      if (!sale) throw new Error('SALE_NOT_FOUND')
-      if (sale.status === 'cancelled') throw new Error('ALREADY_CANCELLED')
+      if (!sale) throw new NotFoundError('البيع غير موجود')
+      if (sale.status === 'cancelled') throw new AppError('تم الإلغاء بالفعل', 409, 'ALREADY_CANCELLED')
 
       // Mark cancelled
       await tx.update(sales).set({ status: 'cancelled' }).where(eq(sales.id, saleId))
@@ -226,6 +244,7 @@ export class SalesService {
           referenceType: 'sale_refund',
           referenceId: saleId,
           cashierId: adminUserId,
+          shiftId: activeShift ? activeShift.id : null,
           notes: `Refund for Cancelled Sale ${saleId}`
         })
       }

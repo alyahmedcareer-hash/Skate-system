@@ -10,13 +10,13 @@ import { users } from './users'
 import { customers } from './customers'
 import { products } from './products'
 import { paymentMethods, treasuryAccounts } from './payments'
-
+import { cashierShifts } from './treasury'
 export const sales = mysqlTable('sales', {
   id: int('id').primaryKey().autoincrement(),
   saleCode: varchar('sale_code', { length: 50 }).notNull().unique(),
   customerId: int('customer_id').references(() => customers.id),
   cashierId: int('cashier_id').notNull().references(() => users.id),
-  shiftId: int('shift_id'), // Nullable until Phase 12
+  shiftId: int('shift_id').references(() => cashierShifts.id),
   totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
   status: mysqlEnum('status', ['completed', 'cancelled']).notNull().default('completed'),
   notes: varchar('notes', { length: 1000 }),

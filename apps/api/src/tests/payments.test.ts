@@ -9,12 +9,13 @@ import supertest from 'supertest'
 import app from '../app.js'
 import { db } from '../db/connection.js'
 import { users } from '../db/schema/users.js'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 
 import { skates } from '../db/schema/skates.js'
 import { customers } from '../db/schema/customers.js'
 import { settings } from '../db/schema/settings.js'
 import { rentals } from '../db/schema/rentals.js'
+import { cashierShifts } from '../db/schema/treasury.js'
 import { rentalPayments, treasuryMovements } from '../db/schema/payments.js'
 
 const request = supertest(app)
@@ -41,6 +42,15 @@ beforeAll(async () => {
   // Create a test customer
   const [custRes] = await db.insert(customers).values({ name: 'Test Pay Customer', phone: '01011112222', nationalId: '30000000000000', isActive: true, registrationDate: new Date() })
   testCustomerId = (custRes as any).insertId
+
+  // --- Ensure Active Shifts ---
+  const adminUserRes = await db.select().from(users).where(eq(users.email, ADMIN_EMAIL))
+  if (adminUserRes.length) {
+    const existing = await db.select().from(cashierShifts).where(and(eq(cashierShifts.cashierId, adminUserRes[0].id), eq(cashierShifts.status, 'active'))).limit(1)
+    if (!existing.length) {
+      await db.insert(cashierShifts).values({ cashierId: adminUserRes[0].id, openingBalance: '0', status: 'active' })
+    }
+  }
 })
 
 import { sql } from 'drizzle-orm'

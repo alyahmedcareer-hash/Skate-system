@@ -1672,3 +1672,71 @@ Example acceptable sequence: `RN-00025`, `RN-00026`, `RN-00028` — `RN-00027` m
 ---
 
 *Last updated: 2026-09-21 (DEC-070 added — Phase 05 Final Remediation: insertId-based Rental Code strategy approved, superseding DEC-062 generation algorithm; GOVERNANCE-01 noted; DEC-066 operational status boundary at exact equality clarified as NOT overdue per strict `>` rule) by AI Agent*
+
+---
+
+### DEC-071
+
+**Date:** 2026-09-25 (Phase 12 Entry Gate)  
+**Category:** Business — Cashier Shift Cardinality & Ownership  
+**Decision:** Each cashier/user may have only ONE active cashier shift at a time.
+- A cashier cannot open a second active shift while another one is open.
+- Cashier operational transactions (Rentals, Sales, etc.) require an active shift.
+- Admin operations do not require an active shift unless specifically doing cashier work.
+- The server must strictly enforce the active-shift requirement for cashier operations.
+
+**Affected Modules:** Cashier Shifts, Rentals, Sales  
+**Status:** APPROVED  
+**Source:** Owner decision — Phase 12 Entry Gate (2026-09-25)
+
+---
+
+### DEC-072
+
+**Date:** 2026-09-25 (Phase 12 Entry Gate)  
+**Category:** Finance — Payment Methods inside Shifts  
+**Decision:** The cashier shift reconciles PHYSICAL CASH as the primary counted balance.
+- Opening Balance = physical cash at shift opening.
+- Actual/Counted Balance = physical cash counted at shift closing.
+- Expected Cash and Difference are calculated from CASH movements only.
+- Electronic payment methods (Card/Visa, InstaPay) do not affect the physical cash drawer. They are visible in history but excluded from the variance calculation.
+- The existing payment-method and treasury-account mappings are reused.
+
+**Affected Modules:** Cashier Shifts, Treasury  
+**Status:** APPROVED  
+**Source:** Owner decision — Phase 12 Entry Gate (2026-09-25)
+
+---
+
+### DEC-073
+
+**Date:** 2026-09-25 (Phase 12 Entry Gate)  
+**Category:** Business — Shift Closing Approval  
+**Decision:** A cashier can close their own shift without requiring an immediate Admin override, even if there is a shortage or overage.
+- The system must record: opening balance, expected cash, actual balance, difference, opened_by, closed_by, opened_at, closed_at.
+- The recorded difference must be auditable and immutable (append-only ledger).
+- Admins review closed shifts via a separate permission-controlled UI.
+
+**Affected Modules:** Cashier Shifts  
+**Status:** APPROVED  
+**Source:** Owner decision — Phase 12 Entry Gate (2026-09-25)
+
+---
+
+### DEC-074
+
+**Date:** 2026-09-25 (Phase 12 Entry Gate)  
+**Category:** Finance — Refunds Treatment in Shifts  
+**Decision:** No new refund workflow is invented. Existing refund behaviors (`rental_refund`, etc.) participate in cashier-shift accounting.
+- When a refund is performed during an active shift, its treasury movement is associated with that shift.
+- Cash refunds reduce the expected physical cash for that shift.
+- Electronic refunds are visible but do not affect the physical cash count.
+- Preserve the existing append-only financial ledger behavior.
+
+**Affected Modules:** Cashier Shifts, Treasury, Rentals, Sales  
+**Status:** APPROVED  
+**Source:** Owner decision — Phase 12 Entry Gate (2026-09-25)
+
+---
+
+*Last updated: 2026-09-25 (DEC-071 through DEC-074 added — Phase 12 Entry Gate Owner Decisions) by AI Agent*

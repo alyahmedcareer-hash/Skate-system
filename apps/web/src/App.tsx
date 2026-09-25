@@ -59,6 +59,9 @@ import ProductsPage from './modules/products/ProductsPage'
 import SalesPOSPage from './modules/sales/SalesPOSPage'
 import SalesPage from './modules/sales/SalesPage'
 
+// Phase 12 — Treasury & Shifts
+import TreasuryPage from './modules/treasury/TreasuryPage'
+
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
 // Uses EmptyState so no new shared component is needed (GAP-RBAC-013)
@@ -90,7 +93,7 @@ const NAV_ITEMS = [
   { icon: Calendar,        label: 'الحجوزات',    to: '/reservations', permission: 'reservations.view' },
   { icon: Ticket,          label: 'الإيجارات',   to: '/rentals',     permission: 'rentals.view' },
   { icon: AlertTriangle,   label: 'أضرار الزلاجات', to: '/damages',  permission: 'damage.view' },
-  { icon: Landmark,        label: 'الخزينة',     to: '/treasury',    permission: 'treasury.view' },
+  { icon: Landmark,        label: 'الخزينة',     to: '/treasury',    permission: 'shifts.manage' },
   { icon: Wrench,          label: 'الصيانة',     to: '/maintenance', permission: 'maintenance.view' },
   { icon: BarChart2,       label: 'التقارير',    to: '/reports',     permission: 'reports.view' },
 ]
@@ -1116,7 +1119,14 @@ export default function App() {
                     <DamagesPage />
                   </PermissionGate>
                 } />
-                <Route path="/treasury" element={<PlaceholderPage title="الخزينة" phase="المرحلة 06" />} />
+                <Route path="/treasury" element={
+                  <PermissionGate
+                    permission="shifts.manage"
+                    fallback={<NoAccessPage permission="shifts.manage" />}
+                  >
+                    <TreasuryPage />
+                  </PermissionGate>
+                } />
                 <Route path="/maintenance" element={
                   <PermissionGate
                     permission="maintenance.view"

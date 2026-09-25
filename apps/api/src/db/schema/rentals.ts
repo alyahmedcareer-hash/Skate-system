@@ -40,6 +40,7 @@ import { sql } from 'drizzle-orm'
 import { skates } from './skates'
 import { customers } from './customers'
 import { users } from './users'
+import { cashierShifts } from './treasury'
 
 // ---------------------------------------------------------------------------
 // Rental status values (persisted lifecycle) — DEC-064
@@ -92,7 +93,7 @@ export const rentals = mysqlTable('rentals', {
   // DEC-063: nullable — cashier_shifts table does not exist in Phase 05
   // FK to cashier_shifts(id) will be added in Phase 12 migration
   // TD-RENT-01: Phase 12 will add the FK constraint
-  shiftId: int('shift_id'),
+  shiftId: int('shift_id').references(() => cashierShifts.id),
 
   // Planned rental duration in minutes — DEC-069: must be > 0, no maximum
   durationMinutes: int('duration_minutes').notNull(),

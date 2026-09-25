@@ -23,6 +23,7 @@ describe('Returns API (Phase 07)', () => {
       await connection.execute("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE email = ?)", [email])
       await connection.execute("DELETE FROM maintenance_records WHERE created_by IN (SELECT id FROM users WHERE email = ?)", [email])
       await connection.execute("DELETE FROM inspections WHERE inspected_by IN (SELECT id FROM users WHERE email = ?)", [email])
+      await connection.execute("DELETE FROM cashier_shifts WHERE cashier_id IN (SELECT id FROM users WHERE email = ?)", [email])
       await connection.execute("DELETE FROM users WHERE email = ?", [email])
       
       const [uRes] = await connection.execute<any>(
@@ -84,6 +85,18 @@ describe('Returns API (Phase 07)', () => {
       // Get PM
       const [pmRows] = await connection.execute<any>("SELECT id FROM payment_methods WHERE name = 'Main Cash' LIMIT 1")
       pmId = pmRows[0].id
+
+      // --- Ensure Active Shifts ---
+      const [uRows1] = await connection.execute<any>("SELECT id FROM users WHERE email = 'admin.return@koshkskate.com'")
+      const [uRows2] = await connection.execute<any>("SELECT id FROM users WHERE email = 'cashier.return@koshkskate.com'")
+      if (uRows1.length) {
+        const [existing1] = await connection.execute<any>("SELECT id FROM cashier_shifts WHERE cashier_id = ? AND status = 'active'", [uRows1[0].id])
+        if (!existing1.length) await connection.execute("INSERT INTO cashier_shifts (cashier_id, opening_balance, status) VALUES (?, '0', 'active')", [uRows1[0].id])
+      }
+      if (uRows2.length) {
+        const [existing2] = await connection.execute<any>("SELECT id FROM cashier_shifts WHERE cashier_id = ? AND status = 'active'", [uRows2[0].id])
+        if (!existing2.length) await connection.execute("INSERT INTO cashier_shifts (cashier_id, opening_balance, status) VALUES (?, '0', 'active')", [uRows2[0].id])
+      }
     } finally {
       connection.release()
     }

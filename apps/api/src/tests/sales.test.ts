@@ -6,7 +6,8 @@ import { users, userRoles, roles } from '../db/schema/index.js'
 import { treasuryMovements, paymentMethods } from '../db/schema/payments.js'
 import { eq, desc, like } from 'drizzle-orm'
 import { sales, saleItems, salePayments } from '../db/schema/sales.js'
-import { inArray } from 'drizzle-orm'
+import { cashierShifts } from '../db/schema/treasury.js'
+import { inArray, sql, and } from 'drizzle-orm'
 import { productCategories, products } from '../db/schema/products.js'
 import bcrypt from 'bcryptjs'
 
@@ -61,6 +62,22 @@ describe('Sales API', () => {
     const pmRes = await db.select().from(paymentMethods).limit(1)
     paymentMethodId = pmRes[0].id
     treasuryAccountId = pmRes[0].treasuryAccountId
+
+    // --- Ensure Active Shifts ---
+    const adminUserRes = await db.select().from(users).where(eq(users.email, 'admin@koshkskate.com'))
+    const cashierUserRes = await db.select().from(users).where(eq(users.email, 'salescashier@test.com'))
+    if (adminUserRes.length) {
+      const existing = await db.select().from(cashierShifts).where(and(eq(cashierShifts.cashierId, adminUserRes[0].id), eq(cashierShifts.status, 'active'))).limit(1)
+      if (!existing.length) {
+        await db.insert(cashierShifts).values({ cashierId: adminUserRes[0].id, openingBalance: '0', status: 'active' })
+      }
+    }
+    if (cashierUserRes.length) {
+      const existing = await db.select().from(cashierShifts).where(and(eq(cashierShifts.cashierId, cashierUserRes[0].id), eq(cashierShifts.status, 'active'))).limit(1)
+      if (!existing.length) {
+        await db.insert(cashierShifts).values({ cashierId: cashierUserRes[0].id, openingBalance: '0', status: 'active' })
+      }
+    }
   })
 
   afterAll(async () => {

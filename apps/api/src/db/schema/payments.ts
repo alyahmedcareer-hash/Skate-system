@@ -9,6 +9,7 @@ import {
 } from 'drizzle-orm/mysql-core'
 import { users } from './users'
 import { rentals } from './rentals'
+import { cashierShifts } from './treasury'
 
 export const treasuryAccounts = mysqlTable('treasury_accounts', {
   id: int('id').primaryKey().autoincrement(),
@@ -60,6 +61,7 @@ export const treasuryMovements = mysqlTable('treasury_movements', {
   cashierId: int('cashier_id')
     .notNull()
     .references(() => users.id),
+  shiftId: int('shift_id').references(() => cashierShifts.id),
   notes: varchar('notes', { length: 1000 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })

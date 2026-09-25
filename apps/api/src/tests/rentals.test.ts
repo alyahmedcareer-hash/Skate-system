@@ -78,6 +78,7 @@ import {
 } from '../db/schema/index.js'
 import { skates } from '../db/schema/skates.js'
 import { rentals } from '../db/schema/rentals.js'
+import { cashierShifts } from '../db/schema/treasury.js'
 import { paymentMethods, rentalPayments, treasuryMovements } from '../db/schema/payments.js'
 
 const request = supertest(app)
@@ -308,6 +309,21 @@ beforeAll(async () => {
 
   // Reset hourly rate to known value
   await resetHourlyRate()
+
+  // --- Ensure Active Shifts ---
+  const adminUser = (await db.select().from(users).where(eq(users.email, ADMIN_EMAIL)).limit(1))[0]
+  if (adminUser) {
+    const existing = await db.select().from(cashierShifts).where(and(eq(cashierShifts.cashierId, adminUser.id), eq(cashierShifts.status, 'active'))).limit(1)
+    if (!existing.length) {
+      await db.insert(cashierShifts).values({ cashierId: adminUser.id, openingBalance: '0', status: 'active' })
+    }
+  }
+  if (cashierUserId) {
+    const existing = await db.select().from(cashierShifts).where(and(eq(cashierShifts.cashierId, cashierUserId), eq(cashierShifts.status, 'active'))).limit(1)
+    if (!existing.length) {
+      await db.insert(cashierShifts).values({ cashierId: cashierUserId, openingBalance: '0', status: 'active' })
+    }
+  }
 })
 
 afterAll(async () => {
@@ -334,6 +350,7 @@ afterAll(async () => {
   // Clean up test users
   for (const uid of [cashierUserId, maintenUserId, nopermUserId]) {
     if (!uid) continue
+    await db.execute(sql`DELETE FROM cashier_shifts WHERE cashier_id = ${uid}`).catch(() => {})
     await db.delete(userRoles).where(eq(userRoles.userId, uid)).catch(() => {})
     await db.delete(users).where(eq(users.id, uid)).catch(() => {})
   }
