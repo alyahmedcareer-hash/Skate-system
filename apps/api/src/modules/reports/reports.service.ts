@@ -593,32 +593,37 @@ export async function getCashierReport(filters: DateRangeInput): Promise<Paginat
   const { startBound, endBound } = buildDateBounds(filters.startDate, filters.endDate)
   const offset = (filters.page - 1) * filters.limit
   
-  // Aggregate stats per cashier shift
+  // Aggregate stats per cashier account (user) rather than purely by shift,
+  // since some operations might lack a shift_id but will always have a cashier_id.
   const query = sql`
     SELECT 
-      cs.id, u.name,
-      cs.difference as shiftDifference,
-      (SELECT COUNT(id) FROM rentals WHERE shift_id = cs.id) as rentalsCount,
-      (SELECT SUM(amount) FROM treasury_movements WHERE shift_id = cs.id AND reference_type IN ('rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment')) as revenue,
-      (SELECT SUM(amount) FROM treasury_movements WHERE shift_id = cs.id AND reference_type = 'rental_payment') as rentalPayments,
-      (SELECT SUM(amount) FROM expenses WHERE shift_id = cs.id) as expenses
-    FROM cashier_shifts cs
-    INNER JOIN users u ON cs.cashier_id = u.id
-    WHERE cs.opened_at >= ${startBound} AND cs.opened_at < ${endBound}
-    ORDER BY cs.opened_at DESC
+      u.id, u.name,
+      (SELECT SUM(difference) FROM cashier_shifts WHERE cashier_id = u.id AND opened_at >= ${startBound} AND opened_at < ${endBound}) as shiftDifference,
+      (SELECT COUNT(id) FROM rentals WHERE cashier_id = u.id AND started_at >= ${startBound} AND started_at < ${endBound}) as rentalsCount,
+      (SELECT SUM(amount) FROM treasury_movements WHERE cashier_id = u.id AND reference_type IN ('rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment') AND created_at >= ${startBound} AND created_at < ${endBound}) as revenue,
+      (SELECT SUM(amount) FROM treasury_movements WHERE cashier_id = u.id AND reference_type = 'rental_payment' AND created_at >= ${startBound} AND created_at < ${endBound}) as rentalPayments,
+      (SELECT SUM(amount) FROM expenses WHERE cashier_id = u.id AND created_at >= ${startBound} AND created_at < ${endBound}) as expenses
+    FROM users u
+    HAVING rentalsCount > 0 OR revenue > 0 OR expenses > 0 OR shiftDifference IS NOT NULL
+    ORDER BY revenue DESC
     LIMIT ${filters.limit} OFFSET ${offset}
   `
 
-  const countQuery = await db
-    .select({ count: count() })
-    .from(cashierShifts)
-    .where(and(
-      gte(cashierShifts.openedAt, startBound),
-      lt(cashierShifts.openedAt, endBound)
-    ))
+  const countQuery = sql`
+    SELECT COUNT(*) as cnt FROM (
+      SELECT u.id,
+      (SELECT SUM(difference) FROM cashier_shifts WHERE cashier_id = u.id AND opened_at >= ${startBound} AND opened_at < ${endBound}) as shiftDifference,
+      (SELECT COUNT(id) FROM rentals WHERE cashier_id = u.id AND started_at >= ${startBound} AND started_at < ${endBound}) as rentalsCount,
+      (SELECT SUM(amount) FROM treasury_movements WHERE cashier_id = u.id AND reference_type IN ('rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment') AND created_at >= ${startBound} AND created_at < ${endBound}) as revenue,
+      (SELECT SUM(amount) FROM expenses WHERE cashier_id = u.id AND created_at >= ${startBound} AND created_at < ${endBound}) as expenses
+      FROM users u
+      HAVING rentalsCount > 0 OR revenue > 0 OR expenses > 0 OR shiftDifference IS NOT NULL
+    ) sub
+  `
 
   const [data] = await db.execute(query) as any
-  const total = Number(countQuery[0]?.count || 0)
+  const [totalRes] = await db.execute(countQuery) as any
+  const total = Number(totalRes[0]?.cnt || 0)
 
   return {
     data: data.map((r: any) => ({

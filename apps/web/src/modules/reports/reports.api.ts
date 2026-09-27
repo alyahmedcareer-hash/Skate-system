@@ -54,8 +54,8 @@ export const reportsApi = {
   getOperatingFinancial: (params: DateRange) => 
     api.get<ApiResponse<FinancialData>>(`/api/v1/reports/operating-financial${qs(params)}`),
     
-  getRevenue: (params: PaginatedParams) => 
-    api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/revenue${qs(params)}`),
+  getRevenue: (params: DateRange) => 
+    api.get<ApiResponse<any>>(`/api/v1/reports/revenue${qs(params)}`),
     
   getRentals: (params: PaginatedParams) => 
     api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/rentals${qs(params)}`),
@@ -69,8 +69,8 @@ export const reportsApi = {
   getMaintenance: (params: PaginatedParams) => 
     api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/maintenance${qs(params)}`),
     
-  getExpenses: (params: PaginatedParams) => 
-    api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/expenses${qs(params)}`),
+  getExpenses: (params: DateRange) => 
+    api.get<ApiResponse<any>>(`/api/v1/reports/expenses${qs(params)}`),
     
   getCustomers: (params: PaginatedParams) => 
     api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/customers${qs(params)}`),

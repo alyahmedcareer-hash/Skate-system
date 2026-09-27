@@ -29,12 +29,10 @@ export default function GenericListReport({ type, startDate, endDate }: Props) {
         let res;
         const params = { startDate, endDate, page, limit: 10 }
         switch (type) {
-          case 'revenue': res = await reportsApi.getRevenue(params); break;
           case 'rentals': res = await reportsApi.getRentals(params); break;
           case 'late': res = await reportsApi.getLate(params); break;
           case 'damage': res = await reportsApi.getDamage(params); break;
           case 'maintenance': res = await reportsApi.getMaintenance(params); break;
-          case 'expenses': res = await reportsApi.getExpenses(params); break;
           case 'customers': res = await reportsApi.getCustomers(params); break;
           case 'cashiers': res = await reportsApi.getCashiers(params); break;
           case 'skates': res = await reportsApi.getSkates(params); break;

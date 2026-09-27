@@ -15,6 +15,8 @@ import { format, subDays } from 'date-fns'
 import { Button, Input } from '../../components/ui'
 import OverviewReport from './components/OverviewReport'
 import FinancialReport from './components/FinancialReport'
+import RevenueReport from './components/RevenueReport'
+import ExpenseReport from './components/ExpenseReport'
 import GenericListReport from './components/GenericListReport'
 import { exportToCSV, exportToExcel, exportToPDF, fetchAllReportData } from './exportUtils'
 
@@ -209,7 +211,9 @@ export default function ReportsPage() {
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
               {activeTab === 'overview' && <OverviewReport startDate={startDate} endDate={endDate} />}
               {activeTab === 'financial' && <FinancialReport startDate={startDate} endDate={endDate} />}
-              {activeTab !== 'overview' && activeTab !== 'financial' && (
+              {activeTab === 'revenue' && <RevenueReport startDate={startDate} endDate={endDate} />}
+              {activeTab === 'expenses' && <ExpenseReport startDate={startDate} endDate={endDate} />}
+              {activeTab !== 'overview' && activeTab !== 'financial' && activeTab !== 'revenue' && activeTab !== 'expenses' && (
                 <GenericListReport type={activeTab} startDate={startDate} endDate={endDate} />
               )}
             </div>
