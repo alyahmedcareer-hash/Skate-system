@@ -24,6 +24,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
   const [error, setError] = useState<string | null>(null)
 
   // Form State
+  const [skatesList, setSkatesList] = useState<any[]>([])
   const [skateId, setSkateId] = useState<string>('')
   const [problemDescription, setProblemDescription] = useState('')
   const [repairDescription, setRepairDescription] = useState('')
@@ -39,7 +40,14 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
     if (recordId) {
       loadRecord(recordId)
     }
-  }, [recordId])
+    if (isNew) {
+      import('../skates/skates.service').then(m => {
+        m.skatesService.list({ perPage: '500' })
+          .then(res => setSkatesList(res.data))
+          .catch(console.error)
+      })
+    }
+  }, [recordId, isNew])
 
   const loadRecord = async (id: number) => {
     try {
@@ -82,6 +90,11 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
       }
 
       if (isNew) {
+        if (!skateId) {
+          setError('يرجى اختيار الزلاجة')
+          setSaving(false)
+          return
+        }
         await maintenanceService.createMaintenanceRecord({ 
           skateId: Number(skateId), 
           problemDescription 
@@ -198,12 +211,18 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
             <h3 className="font-semibold text-lg border-b pb-2">تفاصيل المشكلة</h3>
             
             {isNew && (
-              <Input 
+              <Select
                 id="skateId"
-                label="رقم الزلاجة (ID)"
-                type="number" 
-                value={skateId} 
+                label="الزلاجة"
+                value={skateId}
                 onChange={e => setSkateId(e.target.value)}
+                options={[
+                  { value: '', label: 'اختر الزلاجة...' },
+                  ...skatesList.map(s => ({
+                    value: String(s.id),
+                    label: `${s.skateCode} — مقاس ${s.size}`
+                  }))
+                ]}
                 disabled={!isNew}
               />
             )}
