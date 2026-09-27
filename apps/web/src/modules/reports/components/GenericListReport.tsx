@@ -82,7 +82,10 @@ export default function GenericListReport({ type, startDate, endDate }: Props) {
       damageType: 'نوع الضرر', problemType: 'نوع المشكلة', description: 'الوصف',
       rentalsCount: 'عدد الإيجارات', damages: 'عدد الأضرار', maintenanceCount: 'مرات الصيانة',
       lateReturns: 'مرات التأخير', shiftsCount: 'عدد الورديات', totalDifference: 'العجز/الزيادة',
-      completedAt: 'وقت الانتهاء', date: 'التاريخ'
+      completedAt: 'وقت الانتهاء', date: 'التاريخ',
+      name: 'الاسم', code: 'الكود', shiftDifference: 'فرق العهدة', expenses: 'المصروفات',
+      rentalPayments: 'مدفوعات الإيجار', revenue: 'الإيرادات', rentalRevenue: 'إيرادات الإيجار',
+      maintenanceCost: 'تكلفة الصيانة', damageCount: 'مرات التلف'
     }
     return map[key] || key
   }

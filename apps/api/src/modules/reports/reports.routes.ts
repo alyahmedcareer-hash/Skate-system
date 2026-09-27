@@ -14,9 +14,16 @@ function validateQuery(req: any): DateRangeInput {
   if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
     throw new ValidationError('يجب أن يكون التاريخ بصيغة YYYY-MM-DD')
   }
+  let start = String(startDate)
+  let end = String(endDate)
+  if (new Date(start) > new Date(end)) {
+    const temp = start
+    start = end
+    end = temp
+  }
   return {
-    startDate: String(startDate),
-    endDate: String(endDate),
+    startDate: start,
+    endDate: end,
     page: parseInt(String(page), 10) || 1,
     limit: parseInt(String(limit), 10) || 50
   }

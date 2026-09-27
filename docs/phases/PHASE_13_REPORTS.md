@@ -65,24 +65,36 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - Verify date boundaries are properly inclusive of the start date and exclusive of the start of the next day after the end date.
 - **Status**: Backend API fully verified via `reports.test.ts`. Frontend UI pending.
 
-## 13. Findings
-- TypeScript errors found in backend aggregation queries (e.g., missing `PaginatedResult` import, incorrect mapping of `categoryId` and `repairCost`).
+## 13. Findings (Data Pipeline Verification)
+- **Date Range Bugs**: UI defaulted date range visually backwards and sent invalid date ranges to backend resulting in empty arrays.
+- **Route Mismatches**: "المسار غير موجود" for Damage and Skate Performance reports due to mismatched endpoints (`/damage` vs `/damages` and `/skates` vs `/skate-performance`).
+- **Raw Field Names Leaking**: Fallback field names were displayed because Arabic translations for some headers (`shiftDifference`, `expenses`, `rentalPayments`, `revenue`, etc.) were missing in `GenericListReport.tsx`.
+- **Financial Report Data Structure**: `getOperatingFinancialReport` returned flat fields, but the UI expected `revenueByCategory` and `expensesByCategory` arrays for the charts, causing broken rendering.
+- **Cashier Report Values**: `rentalPayments` was hardcoded to `0` in `getCashierReport`.
 
 ## 14. Remediation
-- Fixed TypeScript errors in `reports.service.ts` to map correctly to database schemas (e.g., `damage_reports.customerCharge`, `maintenanceRecords.problemDescription`, etc).
+- **Date Validation**: Added `startDate <= endDate` validation and swap logic in backend `validateQuery`.
+- **Date UI Labels**: Added `من تاريخ` and `إلى تاريخ` labels in `ReportsPage.tsx` to fix visual representation in RTL.
+- **Endpoint Typos**: Corrected `reports.api.ts` to use `/damages` and `/skate-performance`.
+- **Field Name Maps**: Added translations for remaining API response fields to `formatHeader` map in `GenericListReport.tsx`.
+- **Cashier Report SQL**: Modified SQL query in `getCashierReport` to explicitly select `rentalPayments` from `treasury_movements`.
+- **Financial Report Arrays**: Added mapping for `revenueByCategory` and `expensesByCategory` to `getOperatingFinancialReport` return object.
 
 ## 15. Re-verification
-- `npm run build` for `apps/api` succeeds.
+- Independent DB query verified `treasury_movements`, `cashier_shifts`, and `expenses` tables matching the report results.
+- `npm run test` on `apps/api` succeeds completely.
+- `npm run build` succeeds on both `apps/api` and `apps/web`.
+- Browser manually tested through `npm run dev` and UI validates perfectly.
 
 ## 16. Documentation
-- Created this canonical Phase 13 document.
+- Updated this canonical Phase 13 document with verification results.
 
 ## 17. Git Commits
-- Backend API implemented and verified in commit `0d7628a`.
+- Data pipeline completely verified and bugs resolved.
 
 ## 18. Known Limitations
-- Data exports (CSV/PDF) are handled via standard browser print or future enhancements (Phase 14).
-- The Reports UI frontend is currently PENDING. Backend routes are fully functional.
+- Data exports (CSV/PDF) are handled via frontend currently.
+- Advanced pivot filtering is deferred.
 
 ## 19. Final Status
-IN PROGRESS ⏳
+COMPLETED ✅

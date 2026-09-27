@@ -195,7 +195,19 @@ export async function getOperatingFinancialReport(filters: DateRangeInput): Prom
       lt(expenses.createdAt, endBound)
     ))
   
-  const totalExpenses = Number(expenseRes[0]?.total || 0)
+  const catRes = await db
+    .select({
+      category: expenses.categoryId,
+      total: sum(expenses.amount)
+    })
+    .from(expenses)
+    .where(and(
+      gte(expenses.createdAt, startBound),
+      lt(expenses.createdAt, endBound)
+    ))
+    .groupBy(expenses.categoryId)
+
+  const totalExpenses = catRes.reduce((acc, curr) => acc + Number(curr.total || 0), 0)
 
   return {
     rentalRevenue: rentalRev,
@@ -205,7 +217,18 @@ export async function getOperatingFinancialReport(filters: DateRangeInput): Prom
     refunds: refunds,
     totalRevenue,
     totalExpenses,
-    operatingResult: totalRevenue - totalExpenses
+    operatingResult: totalRevenue - totalExpenses,
+    revenueByCategory: [
+      { type: 'إيجار الزلاجات', total: rentalRev },
+      { type: 'غرامات التأخير', total: lateRev },
+      { type: 'تعويضات الأضرار', total: damageRev },
+      { type: 'المبيعات', total: salesRev },
+      { type: 'الاسترداد', total: -refunds }
+    ].filter(r => r.total !== 0),
+    expensesByCategory: catRes.map(r => ({
+      category: r.category ? String(r.category) : 'غير مصنف',
+      total: Number(r.total || 0)
+    }))
   }
 }
 
@@ -577,6 +600,7 @@ export async function getCashierReport(filters: DateRangeInput): Promise<Paginat
       cs.difference as shiftDifference,
       (SELECT COUNT(id) FROM rentals WHERE shift_id = cs.id) as rentalsCount,
       (SELECT SUM(amount) FROM treasury_movements WHERE shift_id = cs.id AND reference_type IN ('rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment')) as revenue,
+      (SELECT SUM(amount) FROM treasury_movements WHERE shift_id = cs.id AND reference_type = 'rental_payment') as rentalPayments,
       (SELECT SUM(amount) FROM expenses WHERE shift_id = cs.id) as expenses
     FROM cashier_shifts cs
     INNER JOIN users u ON cs.cashier_id = u.id
@@ -602,7 +626,7 @@ export async function getCashierReport(filters: DateRangeInput): Promise<Paginat
       name: r.name,
       rentalsCount: Number(r.rentalsCount || 0),
       revenue: Number(r.revenue || 0),
-      rentalPayments: 0, // Simplified for now since we'd need complex joins
+      rentalPayments: Number(r.rentalPayments || 0),
       expenses: Number(r.expenses || 0),
       shiftDifference: Number(r.shiftDifference || 0)
     })),

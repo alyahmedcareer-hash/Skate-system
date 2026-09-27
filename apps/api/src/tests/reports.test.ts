@@ -58,28 +58,59 @@ describe('Reports API', () => {
     expect(res.body.data.operatingResult).toBe(res.body.data.totalRevenue - res.body.data.totalExpenses)
   })
 
-  it('should fail with invalid dates', async () => {
+  it('should fetch revenue report', async () => {
     const res = await request(app)
-      .get(`/api/v1/reports/overview?startDate=invalid&endDate=${today}`)
+      .get(`/api/v1/reports/revenue?startDate=${today}&endDate=${today}`)
       .set('Authorization', `Bearer ${adminToken}`)
-    
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data).toHaveProperty('totalRevenue')
+    expect(Array.isArray(res.body.data.chartData)).toBe(true)
   })
 
-  it('should fetch detailed list reports with pagination', async () => {
-    const endpoints = [
-      '/rentals', '/late', '/damages', '/maintenance', '/customers', '/cashiers', '/skate-performance'
-    ]
-    
-    for (const endpoint of endpoints) {
+  it('should fetch expenses report', async () => {
+    const res = await request(app)
+      .get(`/api/v1/reports/expenses?startDate=${today}&endDate=${today}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data).toHaveProperty('totalExpenses')
+    expect(Array.isArray(res.body.data.chartData)).toBe(true)
+  })
+
+  const listReports = [
+    { path: '/rentals', name: 'Rental' },
+    { path: '/late', name: 'Late' },
+    { path: '/damages', name: 'Damage' },
+    { path: '/maintenance', name: 'Maintenance' },
+    { path: '/customers', name: 'Customer' },
+    { path: '/cashiers', name: 'Cashier' },
+    { path: '/skate-performance', name: 'Skate Performance' }
+  ]
+
+  for (const report of listReports) {
+    it(`should fetch ${report.name} report`, async () => {
       const res = await request(app)
-        .get(`/api/v1/reports${endpoint}?startDate=${today}&endDate=${today}&page=1&limit=10`)
+        .get(`/api/v1/reports${report.path}?startDate=${today}&endDate=${today}&page=1&limit=10`)
         .set('Authorization', `Bearer ${adminToken}`)
-      
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(Array.isArray(res.body.data.data)).toBe(true)
       expect(res.body.data.meta).toHaveProperty('total')
-    }
+    })
+  }
+
+  it('should fail with invalid dates', async () => {
+    const res = await request(app)
+      .get(`/api/v1/reports/overview?startDate=invalid&endDate=${today}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(400)
+  })
+
+  it('should swap inverted dates successfully instead of failing', async () => {
+    const res = await request(app)
+      .get(`/api/v1/reports/overview?startDate=2026-12-31&endDate=2026-01-01`)
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(200) // because it auto swaps
   })
 })

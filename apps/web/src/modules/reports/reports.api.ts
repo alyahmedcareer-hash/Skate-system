@@ -64,7 +64,7 @@ export const reportsApi = {
     api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/late${qs(params)}`),
     
   getDamage: (params: PaginatedParams) => 
-    api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/damage${qs(params)}`),
+    api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/damages${qs(params)}`),
     
   getMaintenance: (params: PaginatedParams) => 
     api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/maintenance${qs(params)}`),
@@ -79,5 +79,5 @@ export const reportsApi = {
     api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/cashiers${qs(params)}`),
     
   getSkates: (params: PaginatedParams) => 
-    api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/skates${qs(params)}`),
+    api.get<ApiResponse<PaginatedResult<any>>>(`/api/v1/reports/skate-performance${qs(params)}`),
 }

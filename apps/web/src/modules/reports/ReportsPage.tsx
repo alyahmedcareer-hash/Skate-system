@@ -171,17 +171,16 @@ export default function ReportsPage() {
                   <Input 
                     id="start-date"
                     type="date" 
-                    label=""
+                    label="من تاريخ"
                     value={startDate} 
                     onChange={(e: any) => setStartDate(e.target.value)}
                   />
                 </div>
-                <span style={{ color: 'var(--color-text-muted)' }}>|</span>
                 <div style={{ width: '144px' }}>
                   <Input 
                     id="end-date"
                     type="date" 
-                    label=""
+                    label="إلى تاريخ"
                     value={endDate} 
                     onChange={(e: any) => setEndDate(e.target.value)}
                   />
