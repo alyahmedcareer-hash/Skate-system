@@ -66,50 +66,106 @@ No deviation from a higher-level authority is permitted without explicit owner a
 
 ---
 
-## Scope
+## 1. Objective
+To implement professional invoicing and receipt printing for both Skate Rentals (Phase 05) and Product Sales (Phase 11). The system must support generating structured invoices containing transaction details, payment breakdowns, customer information, and a scannable barcode, optimized for standard 80mm thermal printers.
 
-To be defined when this phase is approved.
+## 2. Scope
+- **Invoice Generation:** Generate complete printable invoices for Rental Transactions (Start & Return) and Sales Transactions.
+- **Barcode Generation:** Embed a scannable barcode representing the transaction ID on every printed invoice.
+- **Print Optimization:** Create a frontend print layout specifically styled for 80mm thermal receipt printers (RTL/Arabic).
+- **Configuration:** Allow Administrators to globally enable or disable invoice printing via the Settings module.
+- **Integration:** Embed print triggers seamlessly within the Cashier's Rental POS and Sales POS workflows.
 
-## Business Requirements
+## 3. Out of Scope
+- Direct hardware ESC/POS driver integration (assuming Browser Print unless decided otherwise).
+- A4/A5 full-page invoice templates (only 80mm thermal roll format is in scope).
+- Automated email/SMS delivery of invoices.
+- Fiscal/Tax Authority integration.
 
-Reference: `Skate_Rental_ERP_Master_Business_Product_Specification.md`
+## 4. Owner Decisions
+*See `docs/decisions/PHASE_14_OWNER_DECISIONS.md` for full context.*
+1. **Invoice Numbering:** Reuse `rentalCode`/`saleCode` or create a centralized `invoice_number` sequence.
+2. **Persistence:** Snapshot storage vs. on-the-fly generation from data.
+3. **Printing Automation:** Auto-print vs. manual click.
+4. **Barcode Format:** CODE128 vs. QR Code.
+5. **Cancellations:** Print requirements for credit notes.
 
-## Technical Requirements
+## 5. Technical Decisions
+- **Printing Technology:** Utilize native browser printing (`window.print()`) combined with an invisible CSS `@media print` layout. This avoids complex local hardware bridges while providing high compatibility.
+- **Barcode Library:** Use a lightweight SVG/Canvas barcode generator (e.g., `jsbarcode` or `qrcode`) to render directly in the browser to avoid server-side image processing.
+- **Invoice Source Data:** Invoices will be generated dynamically by aggregating existing data from `rentals`, `sales`, `users`, `customers`, and `rental_payments` / `sale_payments`. 
 
-To be defined when this phase is approved.
+## 6. Architecture / Modules
+- **API `modules/invoices` (Optional):** A dedicated endpoint to fetch a compiled "print-ready" payload for a given transaction if frontend aggregation is too complex.
+- **Web `components/printer`:** A set of React components dedicated strictly to rendering the print layout off-screen.
 
-## UI Requirements
+## 7. Database Changes
+**DB Impact: PARTIALLY REQUIRED**
+- The core data (rentals, sales, payments, customers) already exists.
+- *If Owner Decision #1 requires centralized numbering*, a new `invoices` table or sequence tracker must be created.
+- A new key `print_invoices_enabled` must be added to the `settings` table.
 
-References:
-- `KOSHK_SKATE_VISUAL_DESIGN_REFERENCE.md` — visual identity
-- `docs/design/DESIGN_SYSTEM.md` — design tokens and standards
-- `docs/design/COMPONENT_LIBRARY.md` — approved reusable components
+## 8. API Changes
+- `GET /api/v1/settings`: (Existing) Expose `print_invoices_enabled`.
+- `PATCH /api/v1/settings`: (Existing) Update print toggle.
+- `GET /api/v1/invoices/rental/:id`: (New) Aggregate all data needed for a rental invoice (rental data + customer + payments + cashier).
+- `GET /api/v1/invoices/sale/:id`: (New) Aggregate all data needed for a sales invoice (sale data + items + payments + cashier).
 
-## Database Impact
+## 9. Frontend Changes
+- **Settings Screen:** Add a toggle to enable/disable printing.
+- **Print Layout:** Create `InvoicePrintTemplate.tsx` optimized for 80mm (`width: 80mm`, `@page { margin: 0 }`).
+- **POS Integration:** Add a "Print Receipt" button on the Rental Confirmation modal, Return Summary modal, and Sales Checkout success screen.
+- **Barcode Display:** Integrate a barcode component into the print template.
 
-To be determined during phase planning.
+## 10. RBAC
+- **Invoices View:** Tied to `rentals.view` and `sales.view`.
+- **Printer Configuration:** Requires `settings.update` (Administrator only).
 
-## API Impact
+## 11. Printing
+- **Format:** 80mm Thermal Receipt.
+- **Language:** Arabic (RTL).
+- **Contents:** Store Header, Date/Time, Cashier Name, Customer Name, Transaction ID, Line Items (Skate/Duration or Product/Qty), Subtotal, Late/Damage Fees (if applicable), Total, Payments by Method, Barcode, Footer.
 
-To be determined during phase planning.
+## 12. Barcode
+- **Standard:** Code128 (assuming 1D scanners are used at checkout) or QR.
+- **Data:** Transaction code (`RN-XXXXX` or `SL-XXXXX`).
 
-## Testing Requirements
+## 13. Tests
+- Unit tests for invoice data aggregation service.
+- Integration tests for `GET /api/v1/invoices/*` endpoints.
+- Component tests verifying the barcode renders correctly.
+- Component tests ensuring the `@media print` CSS classes apply.
 
-Reference: `docs/quality/TEST_MATRIX.md`
+## 14. Verification
+- Verify printer settings can be toggled and persist.
+- Generate a Rental Start invoice and verify all data matches the DB.
+- Generate a Rental Return invoice and verify Late Fees and Damage Charges appear.
+- Generate a Sales invoice and verify items, quantities, and totals.
+- Verify the barcode encodes the correct string.
+- Print to PDF and verify the 80mm layout is preserved without clipping.
 
-## Verification Criteria
+## 15. Findings
+*(To be populated during implementation)*
 
-Reference: `docs/quality/VERIFICATION_RULES.md` and `docs/00-governance/DEFINITION_OF_DONE.md`
+## 16. Risks
+- **Browser Print Dialog:** Browser native print dialogs cannot be completely bypassed by default security policies, which adds an extra click for the cashier.
+- **Margin Issues:** Default browser margins often ruin 80mm thermal prints; strict CSS overrides are required.
 
-## Known Risks
+## 17. Definition of Done
+- Printer setting exists and controls UI behavior.
+- Rental start/return receipts generate correctly.
+- Sales receipts generate correctly.
+- Barcode is readable.
+- Layout perfectly fits 80mm when printed via browser.
+- Tests pass.
 
-To be documented during phase planning.
-
-## Definition of Done
-
-All items in `docs/00-governance/DEFINITION_OF_DONE.md` must be satisfied before this phase is COMPLETED.
-
----
-
-*Last updated: 2026-09-14 (Design System Governance Alignment — DESIGN SYSTEM INHERITANCE added per UI-011)*
+## 18. Implementation Plan
+1. **Owner Decisions:** Wait for PO resolution on numbering, persistence, and hardware strategy.
+2. **Settings API:** Seed the `print_invoices_enabled` setting.
+3. **Data Aggregation:** Implement the backend services to fetch print-ready payloads.
+4. **Barcode Component:** Integrate frontend barcode generator.
+5. **Print Layout:** Develop the hidden 80mm CSS layout.
+6. **UI Integration:** Hook the print triggers into Rental and Sales POS flows.
+7. **Verification:** Test via Print-to-PDF and automated tests.
+8. **Phase Closure.**
 
