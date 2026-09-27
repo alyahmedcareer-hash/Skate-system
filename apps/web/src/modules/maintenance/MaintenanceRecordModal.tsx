@@ -319,28 +319,38 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
                   <div className="flex flex-col gap-2">
                     <h4 className="font-medium text-sm text-navy-800">إضافة قطعة غيار</h4>
                     
-                    {/* Quick Select Chips */}
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {[
-                        { name: 'ويل', cost: '50' },
-                        { name: 'رمان بلي', cost: '20' },
-                        { name: 'ستريب', cost: '30' },
-                        { name: 'باكل', cost: '15' },
-                        { name: 'مسمار', cost: '5' },
-                        { name: 'فريم', cost: '150' },
-                      ].map(part => (
-                        <span 
-                          key={part.name}
-                          onClick={() => {
-                            setPartName(part.name)
-                            setPartUnitCost(part.cost)
-                          }}
-                          className="text-xs bg-navy-50 text-navy-700 px-2 py-1 rounded-full cursor-pointer hover:bg-navy-100 border border-navy-200 transition-colors"
-                        >
-                          {part.name} ({part.cost} ج)
-                        </span>
-                      ))}
-                    </div>
+                    {/* Quick Select Dropdown */}
+                    <Select
+                      id="quickPart"
+                      label="قائمة القطع الشهيرة (اختياري)"
+                      value=""
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (!val) return
+                        const parts = [
+                          { name: 'ويل', cost: '50' },
+                          { name: 'رمان بلي', cost: '20' },
+                          { name: 'ستريب', cost: '30' },
+                          { name: 'باكل', cost: '15' },
+                          { name: 'مسمار', cost: '5' },
+                          { name: 'فريم', cost: '150' },
+                        ]
+                        const found = parts.find(p => p.name === val)
+                        if (found) {
+                          setPartName(found.name)
+                          setPartUnitCost(found.cost)
+                        }
+                      }}
+                      options={[
+                        { value: '', label: 'اختر قطعة للسرعة...' },
+                        { value: 'ويل', label: 'ويل (50 ج)' },
+                        { value: 'رمان بلي', label: 'رمان بلي (20 ج)' },
+                        { value: 'ستريب', label: 'ستريب (30 ج)' },
+                        { value: 'باكل', label: 'باكل (15 ج)' },
+                        { value: 'مسمار', label: 'مسمار (5 ج)' },
+                        { value: 'فريم', label: 'فريم (150 ج)' },
+                      ]}
+                    />
 
                     <Input 
                       id="partName"
