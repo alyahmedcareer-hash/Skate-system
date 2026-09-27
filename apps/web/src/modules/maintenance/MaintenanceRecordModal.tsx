@@ -79,12 +79,12 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
           setSaving(false)
           return
         }
-        await maintenanceService.completeMaintenanceRecord(recordId!, { repairDescription })
-        // Also update labor cost and problem description if they changed
+        // Update labor cost and problem description BEFORE completing
         await maintenanceService.updateMaintenanceRecord(recordId!, {
           laborCost: laborCost ? Number(laborCost) : undefined,
           problemDescription
         })
+        await maintenanceService.completeMaintenanceRecord(recordId!, { repairDescription })
         onSave()
         return
       }
@@ -122,6 +122,10 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
     try {
       setSaving(true)
       setError(null)
+      await maintenanceService.updateMaintenanceRecord(recordId!, {
+        laborCost: laborCost ? Number(laborCost) : undefined,
+        problemDescription
+      })
       await maintenanceService.completeMaintenanceRecord(recordId!, { repairDescription })
       onSave()
     } catch (err: any) {
@@ -352,7 +356,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
               <div className="mt-6 pt-4 border-t border-dashed">
                 <div className="flex justify-between items-center text-lg font-bold text-navy-900">
                   <span>إجمالي التكلفة:</span>
-                  <span>{record?.totalCost} ج.م</span>
+                  <span>{(Number(record?.partsCost || 0) + Number(laborCost || 0)).toFixed(2)} ج.م</span>
                 </div>
               </div>
             </div>

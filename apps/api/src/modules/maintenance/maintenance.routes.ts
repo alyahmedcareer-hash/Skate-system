@@ -35,7 +35,7 @@ router.get('/:id', authenticate, requirePermission('maintenance.view'), async (r
 router.post('/', authenticate, requirePermission('maintenance.create'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = req.body as CreateMaintenanceRecordPayload
-    const insertId = await maintenanceService.createRecord(payload, (req as any).user!.id)
+    const insertId = await maintenanceService.createRecord(payload, (req as any).user!.sub)
     const record = await maintenanceService.getRecord(insertId)
     res.status(201).json({ success: true, data: record })
   } catch (error) {
@@ -84,7 +84,7 @@ router.delete('/:id/parts/:partId', authenticate, requirePermission('maintenance
 router.post('/:id/complete', authenticate, requirePermission('maintenance.complete'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = req.body as CompleteMaintenanceRecordPayload
-    await maintenanceService.completeRecord(Number(req.params.id), (req as any).user!.id, payload)
+    await maintenanceService.completeRecord(Number(req.params.id), (req as any).user!.sub, payload)
     const record = await maintenanceService.getRecord(Number(req.params.id))
     res.json({ success: true, data: record })
   } catch (error) {
