@@ -1,36 +1,27 @@
 # Phase 14 Owner Decisions
 
-This document outlines the business and technical decisions that must be resolved by the product owner before implementing Phase 14 (Invoices & Printing).
+This document outlines the business and technical decisions resolved by the product owner before implementing Phase 14 (Invoices & Printing).
 
 ## 1. Invoice Numbering Format
-**Context:** Currently, rentals have a `rentalCode` (e.g., `RN-00123`) and sales have a `saleCode`. 
-**Decision Required:** 
-- Should the printed invoice simply use the `rentalCode`/`saleCode` as the Invoice ID? 
-- Or should the system generate a centralized, unified `invoice_number` sequence (e.g., `INV-000001`) that spans both rentals and sales for accounting compliance?
+**Decision: B — Use a unified invoice number.**
+The system will generate a centralized, unified sequence for invoices that spans across both rentals and sales, rather than just reusing the individual transaction codes (`RN-XXXXX` / `SL-XXXXX`).
 
 ## 2. Invoice Persistence Strategy
-**Context:** Invoices can either be generated dynamically on-the-fly from existing transaction data, or explicitly saved as immutable records (HTML/PDF/JSON snapshot) in a new `invoices` table.
-**Decision Required:** 
-- Is on-the-fly generation acceptable, or does the business require immutable point-in-time snapshots of every generated invoice?
+**Decision: A — Generate invoices on-the-fly.**
+Invoices will be compiled dynamically from existing transaction and payment records. There will be no separate database table storing immutable snapshots of generated invoices.
 
 ## 3. Printer Integration Architecture
-**Context:** The application is a Cloud ERP accessed via browser. Web browsers cannot easily send raw hardware commands to local USB/Network thermal printers.
-**Decision Required:** 
-- **Option A (Browser Print):** Use standard browser printing (`window.print()`) with a specially formatted 80mm CSS layout. (Easiest, no extra hardware agent needed, but shows browser print dialog).
-- **Option B (Hardware Bridge):** Use raw ESC/POS commands sent to a local hardware agent/proxy running on the cashier's machine. (Seamless, no dialog, but requires installing software on client machines).
+**Decision: TBD — Pluggable Provider Architecture.**
+The specific printer model has not been purchased yet. The system must NOT implement any specific hardware integration or ESC/POS bridging at this stage. Instead, the printing layer must be designed in an abstract/pluggable manner so the actual provider implementation can be finalized and swapped in once the hardware is acquired.
 
 ## 4. Barcode Format and Data
-**Context:** The spec requires a barcode on the invoice.
-**Decision Required:**
-- What data should the invoice barcode encode? The `rentalCode`? A specialized verification URL?
-- Should we standardize on CODE128 (most common for 1D scanners) or QR Codes?
+**Decision: NO BARCODE ON PRINTED INVOICES (OWNER OVERRIDE).**
+*Important Note:* The original Master Business Specification explicitly required barcodes on printed invoices. This decision is a formal OWNER OVERRIDE to remove that requirement from the scope of Phase 14. No barcode will be rendered or printed on receipts.
 
 ## 5. Printing Automation
-**Context:** Cashiers perform many transactions quickly.
-**Decision Required:**
-- Should the system *automatically* trigger the print dialog/command upon a successful rental start or return, or should the cashier always click a "Print" button manually?
+**Decision: A — Auto-print.**
+The system will automatically trigger the print action immediately following a successful transaction (e.g., successful rental start, successful sale checkout, or successful rental return). The cashier will not be required to manually click a print button for standard workflows.
 
 ## 6. Refunds & Cancellations
-**Context:** When a rental is cancelled or a sale refunded, money is returned.
-**Decision Required:**
-- Does the system need to print a formal "Credit Note" or "Cancellation Receipt"?
+**Decision: A — No Cancellation Receipts.**
+Phase 14 will not include or support printing separate "Credit Notes" or cancellation receipts when transactions are voided or refunded.

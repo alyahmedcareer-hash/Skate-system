@@ -71,8 +71,10 @@ To implement professional invoicing and receipt printing for both Skate Rentals 
 
 ## 2. Scope
 - **Invoice Generation:** Generate complete printable invoices for Rental Transactions (Start & Return) and Sales Transactions.
-- **Barcode Generation:** Embed a scannable barcode representing the transaction ID on every printed invoice.
+- **Unified Numbering:** Implement a centralized sequential invoice number system (e.g., `INV-000001`) spanning all transactions.
 - **Print Optimization:** Create a frontend print layout specifically styled for 80mm thermal receipt printers (RTL/Arabic).
+- **Configuration:** Allow Administrators to globally enable or disable invoice printing via the Settings module.
+- **Automation:** Implement auto-print behavior immediately following successful transactions.
 - **Configuration:** Allow Administrators to globally enable or disable invoice printing via the Settings module.
 - **Integration:** Embed print triggers seamlessly within the Cashier's Rental POS and Sales POS workflows.
 
@@ -84,15 +86,16 @@ To implement professional invoicing and receipt printing for both Skate Rentals 
 
 ## 4. Owner Decisions
 *See `docs/decisions/PHASE_14_OWNER_DECISIONS.md` for full context.*
-1. **Invoice Numbering:** Reuse `rentalCode`/`saleCode` or create a centralized `invoice_number` sequence.
-2. **Persistence:** Snapshot storage vs. on-the-fly generation from data.
-3. **Printing Automation:** Auto-print vs. manual click.
-4. **Barcode Format:** CODE128 vs. QR Code.
-5. **Cancellations:** Print requirements for credit notes.
+1. **Invoice Numbering:** **Decision: B** — Use a unified invoice number across rentals and sales.
+2. **Persistence:** **Decision: A** — Generate invoices on-the-fly. No separate persisted invoice snapshot table at this stage.
+3. **Printing Architecture:** **Decision: TBD** — Hardware not purchased. Design the printing layer so the provider can be replaced later.
+4. **Barcode:** **Decision: NO BARCODE** — Explicit OWNER OVERRIDE of the original Master Business Specification. Printed invoices will not have barcodes.
+5. **Printing Automation:** **Decision: A** — Auto-print after a successful transaction.
+6. **Cancellations:** **Decision: A** — No separate Credit Note / cancellation receipt in Phase 14.
 
 ## 5. Technical Decisions
-- **Printing Technology:** Utilize native browser printing (`window.print()`) combined with an invisible CSS `@media print` layout. This avoids complex local hardware bridges while providing high compatibility.
-- **Barcode Library:** Use a lightweight SVG/Canvas barcode generator (e.g., `jsbarcode` or `qrcode`) to render directly in the browser to avoid server-side image processing.
+- **Printing Technology:** Implement an abstract `PrintProvider` interface on the frontend. The initial concrete implementation will use native browser printing (`window.print()`) combined with an invisible CSS `@media print` layout, keeping the system agnostic for future hardware bridges.
+- **No Barcode Engine:** As per Owner Decision #4, no barcode generation library will be introduced.
 - **Invoice Source Data:** Invoices will be generated dynamically by aggregating existing data from `rentals`, `sales`, `users`, `customers`, and `rental_payments` / `sale_payments`. 
 
 ## 6. Architecture / Modules
@@ -100,10 +103,10 @@ To implement professional invoicing and receipt printing for both Skate Rentals 
 - **Web `components/printer`:** A set of React components dedicated strictly to rendering the print layout off-screen.
 
 ## 7. Database Changes
-**DB Impact: PARTIALLY REQUIRED**
-- The core data (rentals, sales, payments, customers) already exists.
-- *If Owner Decision #1 requires centralized numbering*, a new `invoices` table or sequence tracker must be created.
-- A new key `print_invoices_enabled` must be added to the `settings` table.
+**DB Impact: REQUIRED**
+- **Unified Sequences:** A new `sequences` table (or similar mechanism) must be created to track the centralized `invoice_number` sequence atomically across different transaction types.
+- **Settings:** A new key `print_invoices_enabled` must be added to the `settings` table.
+- *Note:* No `invoices` table is required because invoices are generated on-the-fly (Owner Decision #2).
 
 ## 8. API Changes
 - `GET /api/v1/settings`: (Existing) Expose `print_invoices_enabled`.
@@ -114,8 +117,8 @@ To implement professional invoicing and receipt printing for both Skate Rentals 
 ## 9. Frontend Changes
 - **Settings Screen:** Add a toggle to enable/disable printing.
 - **Print Layout:** Create `InvoicePrintTemplate.tsx` optimized for 80mm (`width: 80mm`, `@page { margin: 0 }`).
-- **POS Integration:** Add a "Print Receipt" button on the Rental Confirmation modal, Return Summary modal, and Sales Checkout success screen.
-- **Barcode Display:** Integrate a barcode component into the print template.
+- **POS Integration:** Implement the auto-print trigger upon successful Rental Start, Return, and Sales Checkout.
+- **Print Provider Abstraction:** Encapsulate printing logic to easily swap out `window.print()` for an ESC/POS hardware bridge in the future.
 
 ## 10. RBAC
 - **Invoices View:** Tied to `rentals.view` and `sales.view`.
@@ -124,16 +127,14 @@ To implement professional invoicing and receipt printing for both Skate Rentals 
 ## 11. Printing
 - **Format:** 80mm Thermal Receipt.
 - **Language:** Arabic (RTL).
-- **Contents:** Store Header, Date/Time, Cashier Name, Customer Name, Transaction ID, Line Items (Skate/Duration or Product/Qty), Subtotal, Late/Damage Fees (if applicable), Total, Payments by Method, Barcode, Footer.
+- **Contents:** Store Header, Date/Time, Cashier Name, Customer Name, Unified Invoice Number, Line Items (Skate/Duration or Product/Qty), Subtotal, Late/Damage Fees (if applicable), Total, Payments by Method, Footer.
 
-## 12. Barcode
-- **Standard:** Code128 (assuming 1D scanners are used at checkout) or QR.
-- **Data:** Transaction code (`RN-XXXXX` or `SL-XXXXX`).
+*(Note: Section 12 "Barcode" has been removed due to Owner Decision #4).*
 
 ## 13. Tests
 - Unit tests for invoice data aggregation service.
 - Integration tests for `GET /api/v1/invoices/*` endpoints.
-- Component tests verifying the barcode renders correctly.
+- Integration tests for the atomic `invoice_number` sequence generator.
 - Component tests ensuring the `@media print` CSS classes apply.
 
 ## 14. Verification
@@ -141,7 +142,7 @@ To implement professional invoicing and receipt printing for both Skate Rentals 
 - Generate a Rental Start invoice and verify all data matches the DB.
 - Generate a Rental Return invoice and verify Late Fees and Damage Charges appear.
 - Generate a Sales invoice and verify items, quantities, and totals.
-- Verify the barcode encodes the correct string.
+- Verify the auto-print sequence automatically triggers upon transaction success.
 - Print to PDF and verify the 80mm layout is preserved without clipping.
 
 ## 15. Findings
@@ -153,19 +154,16 @@ To implement professional invoicing and receipt printing for both Skate Rentals 
 
 ## 17. Definition of Done
 - Printer setting exists and controls UI behavior.
-- Rental start/return receipts generate correctly.
-- Sales receipts generate correctly.
-- Barcode is readable.
+- Rental start/return receipts generate automatically.
+- Sales receipts generate automatically.
 - Layout perfectly fits 80mm when printed via browser.
 - Tests pass.
 
 ## 18. Implementation Plan
-1. **Owner Decisions:** Wait for PO resolution on numbering, persistence, and hardware strategy.
-2. **Settings API:** Seed the `print_invoices_enabled` setting.
-3. **Data Aggregation:** Implement the backend services to fetch print-ready payloads.
-4. **Barcode Component:** Integrate frontend barcode generator.
-5. **Print Layout:** Develop the hidden 80mm CSS layout.
-6. **UI Integration:** Hook the print triggers into Rental and Sales POS flows.
-7. **Verification:** Test via Print-to-PDF and automated tests.
-8. **Phase Closure.**
+1. **DB Updates:** Create the `sequences` table for unified invoice numbering and seed settings.
+2. **Data Aggregation:** Implement the backend services to fetch print-ready payloads.
+3. **Print Layout:** Develop the hidden 80mm CSS layout and abstract `PrintProvider`.
+4. **UI Integration:** Hook the auto-print triggers into Rental and Sales POS flows.
+5. **Verification:** Test via Print-to-PDF and automated tests.
+6. **Phase Closure.**
 
