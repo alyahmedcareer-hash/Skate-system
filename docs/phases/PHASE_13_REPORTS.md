@@ -71,6 +71,8 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - **Raw Field Names Leaking**: Fallback field names were displayed because Arabic translations for some headers (`shiftDifference`, `expenses`, `rentalPayments`, `revenue`, etc.) were missing in `GenericListReport.tsx`.
 - **Financial Report Data Structure**: `getOperatingFinancialReport` returned flat fields, but the UI expected `revenueByCategory` and `expensesByCategory` arrays for the charts, causing broken rendering.
 - **Cashier Report Null Shift Bug**: Operations created before Phase 12 (where `shift_id` was nullable or not enforced) had `shift_id` as `null` in DB. Because `getCashierReport` grouped exclusively by `cashier_shifts.id`, all these operations were completely excluded, returning `0` across all metrics even though the operations were linked to the user's `cashier_id`.
+- **Damage Report False Positives**: Skates marked as `status: 'maintenance'` do not automatically create `damage_reports` records. The Damage report correctly showed 0 because the `damage_reports` table in the test database was empty.
+- **Frontend Crash**: `RevenueReport` and `ExpenseReport` had TypeScript compilation errors (unused imports and invalid `page`/`limit` params) causing Vite HMR to fail, silently blocking the user from seeing the new charts.
 
 ## 14. Remediation
 - **Date Validation**: Added `startDate <= endDate` validation and swap logic in backend `validateQuery`.
@@ -79,6 +81,7 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - **Field Name Maps**: Added translations for remaining API response fields to `formatHeader` map in `GenericListReport.tsx`.
 - **Financial Report Arrays**: Added mapping for `revenueByCategory` and `expensesByCategory` to `getOperatingFinancialReport` return object.
 - **Revenue/Expense Charts**: Removed them from the generic list flow, explicitly created `RevenueReport.tsx` and `ExpenseReport.tsx` charting components, and fixed API typings.
+- **Frontend TS Fixes**: Removed unused variables and invalid `page`/`limit` params from `getRevenue` and `getExpenses` calls, restoring Vite HMR and allowing the charts to render properly.
 - **Cashier Report SQL**: Changed SQL query in `getCashierReport` to GROUP BY `users.id` (User account) instead of `cashier_shifts.id`, and queried `cashier_id = u.id` on rentals and movements. This perfectly links all historical operations to the responsible account even if the operations missed `shift_id`.
 
 ## 15. Re-verification

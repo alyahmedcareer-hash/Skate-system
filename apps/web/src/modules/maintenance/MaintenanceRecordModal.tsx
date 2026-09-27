@@ -28,7 +28,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
   const [problemDescription, setProblemDescription] = useState('')
   const [repairDescription, setRepairDescription] = useState('')
   const [laborCost, setLaborCost] = useState<string>('')
-  const [status, setStatus] = useState<'pending' | 'in_progress'>('pending')
+  const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>('pending')
   
   // Part form
   const [partName, setPartName] = useState('')
@@ -63,6 +63,24 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
     try {
       setSaving(true)
       setError(null)
+
+      // If the user selected "completed" from the dropdown, route to the complete logic
+      if (!isNew && status === 'completed' && record?.status !== 'completed') {
+        if (!repairDescription) {
+          setError('يجب إدخال وصف الإصلاح قبل إغلاق الطلب')
+          setSaving(false)
+          return
+        }
+        await maintenanceService.completeMaintenanceRecord(recordId!, { repairDescription })
+        // Also update labor cost and problem description if they changed
+        await maintenanceService.updateMaintenanceRecord(recordId!, {
+          laborCost: laborCost ? Number(laborCost) : undefined,
+          problemDescription
+        })
+        onSave()
+        return
+      }
+
       if (isNew) {
         await maintenanceService.createMaintenanceRecord({ 
           skateId: Number(skateId), 
@@ -73,7 +91,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
           laborCost: laborCost ? Number(laborCost) : undefined,
           problemDescription,
           repairDescription,
-          status
+          status: status as any
         })
       }
       onSave()
@@ -228,7 +246,8 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
                     onChange={e => setStatus(e.target.value as any)}
                     options={[
                       { value: 'pending', label: 'معلق' },
-                      { value: 'in_progress', label: 'قيد الصيانة' }
+                      { value: 'in_progress', label: 'قيد الصيانة' },
+                      { value: 'completed', label: 'مكتمل' }
                     ]}
                     disabled={!canEdit}
                   />
