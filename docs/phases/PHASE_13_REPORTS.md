@@ -70,15 +70,16 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - **Route Mismatches**: "المسار غير موجود" for Damage and Skate Performance reports due to mismatched endpoints (`/damage` vs `/damages` and `/skates` vs `/skate-performance`).
 - **Raw Field Names Leaking**: Fallback field names were displayed because Arabic translations for some headers (`shiftDifference`, `expenses`, `rentalPayments`, `revenue`, etc.) were missing in `GenericListReport.tsx`.
 - **Financial Report Data Structure**: `getOperatingFinancialReport` returned flat fields, but the UI expected `revenueByCategory` and `expensesByCategory` arrays for the charts, causing broken rendering.
-- **Cashier Report Values**: `rentalPayments` was hardcoded to `0` in `getCashierReport`.
+- **Cashier Report Null Shift Bug**: Operations created before Phase 12 (where `shift_id` was nullable or not enforced) had `shift_id` as `null` in DB. Because `getCashierReport` grouped exclusively by `cashier_shifts.id`, all these operations were completely excluded, returning `0` across all metrics even though the operations were linked to the user's `cashier_id`.
 
 ## 14. Remediation
 - **Date Validation**: Added `startDate <= endDate` validation and swap logic in backend `validateQuery`.
 - **Date UI Labels**: Added `من تاريخ` and `إلى تاريخ` labels in `ReportsPage.tsx` to fix visual representation in RTL.
 - **Endpoint Typos**: Corrected `reports.api.ts` to use `/damages` and `/skate-performance`.
 - **Field Name Maps**: Added translations for remaining API response fields to `formatHeader` map in `GenericListReport.tsx`.
-- **Cashier Report SQL**: Modified SQL query in `getCashierReport` to explicitly select `rentalPayments` from `treasury_movements`.
 - **Financial Report Arrays**: Added mapping for `revenueByCategory` and `expensesByCategory` to `getOperatingFinancialReport` return object.
+- **Revenue/Expense Charts**: Removed them from the generic list flow, explicitly created `RevenueReport.tsx` and `ExpenseReport.tsx` charting components, and fixed API typings.
+- **Cashier Report SQL**: Changed SQL query in `getCashierReport` to GROUP BY `users.id` (User account) instead of `cashier_shifts.id`, and queried `cashier_id = u.id` on rentals and movements. This perfectly links all historical operations to the responsible account even if the operations missed `shift_id`.
 
 ## 15. Re-verification
 - Independent DB query verified `treasury_movements`, `cashier_shifts`, and `expenses` tables matching the report results.

@@ -13,7 +13,7 @@ import {
 import { reportsApi } from '../reports.api'
 import { formatCurrency } from '../../../utils/currency'
 import { PageLoader, Alert } from '../../../components/ui'
-import { CreditCard, TrendingDown } from 'lucide-react'
+import { TrendingDown } from 'lucide-react'
 
 interface Props {
   startDate: string
@@ -29,7 +29,7 @@ export default function ExpenseReport({ startDate, endDate }: Props) {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const res = await reportsApi.getExpenses({ startDate, endDate, page: 1, limit: 100 })
+        const res = await reportsApi.getExpenses({ startDate, endDate })
         setData(res.data)
         setError(null)
       } catch (err: any) {

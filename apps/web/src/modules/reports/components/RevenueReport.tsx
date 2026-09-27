@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import {
-  BarChart,
-  Bar,
   LineChart,
   Line,
   XAxis,
@@ -13,7 +11,7 @@ import {
 import { reportsApi } from '../reports.api'
 import { formatCurrency } from '../../../utils/currency'
 import { PageLoader, Alert } from '../../../components/ui'
-import { CreditCard, TrendingUp } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 
 interface Props {
   startDate: string
@@ -29,7 +27,7 @@ export default function RevenueReport({ startDate, endDate }: Props) {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const res = await reportsApi.getRevenue({ startDate, endDate, page: 1, limit: 100 })
+        const res = await reportsApi.getRevenue({ startDate, endDate })
         setData(res.data)
         setError(null)
       } catch (err: any) {
