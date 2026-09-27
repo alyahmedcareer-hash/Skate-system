@@ -66,41 +66,56 @@ Provide comprehensive operational and financial analytics through dedicated repo
 - **Status**: Backend API fully verified via `reports.test.ts`. Frontend UI pending.
 
 ## 13. Findings (Data Pipeline Verification)
-- **Date Range Bugs**: UI defaulted date range visually backwards and sent invalid date ranges to backend resulting in empty arrays.
-- **Route Mismatches**: "المسار غير موجود" for Damage and Skate Performance reports due to mismatched endpoints (`/damage` vs `/damages` and `/skates` vs `/skate-performance`).
-- **Raw Field Names Leaking**: Fallback field names were displayed because Arabic translations for some headers (`shiftDifference`, `expenses`, `rentalPayments`, `revenue`, etc.) were missing in `GenericListReport.tsx`.
-- **Financial Report Data Structure**: `getOperatingFinancialReport` returned flat fields, but the UI expected `revenueByCategory` and `expensesByCategory` arrays for the charts, causing broken rendering.
-- **Cashier Report Null Shift Bug**: Operations created before Phase 12 (where `shift_id` was nullable or not enforced) had `shift_id` as `null` in DB. Because `getCashierReport` grouped exclusively by `cashier_shifts.id`, all these operations were completely excluded, returning `0` across all metrics even though the operations were linked to the user's `cashier_id`.
-- **Damage Report False Positives**: Skates marked as `status: 'maintenance'` do not automatically create `damage_reports` records. The Damage report correctly showed 0 because the `damage_reports` table in the test database was empty.
-- **Frontend Crash**: `RevenueReport` and `ExpenseReport` had TypeScript compilation errors (unused imports and invalid `page`/`limit` params) causing Vite HMR to fail, silently blocking the user from seeing the new charts.
-- **Maintenance UX Missing Option**: Users attempted to complete maintenance records via the status dropdown instead of the dedicated "إغلاق الطلب وإتاحة الزلاجة" button, but "مكتمل" was missing from the dropdown.
+
+**Global Data Verification Method:**
+An independent raw SQL script (`audit_reports_test_db.ts`) was executed directly against the **`koshk_skate_test`** database. 
+Important Note: Previous iterations of this audit used `koshk_skate` which was incorrect for deterministic verification. 
+
+**Database:** `koshk_skate_test`
+
+**Defects Found (Deep Audit):**
+1. **Rental Report Cashier Name:** Bug in the SQL JOIN. It joined `rentals -> cashierShifts -> users` instead of `rentals -> users` directly on `cashierId`. This caused `cashierName` to always be null for rentals created outside an active shift.
+2. **Damage Report Duplicate Cost:** The `repairCost` column was improperly mapped to `customerCharge` instead of returning the distinct repair cost or severity.
+3. **Revenue Report Refunds:** The timeline chart summed all revenue but failed to subtract refunds (unlike the Overview and Financial reports), causing a latent mismatch.
+4. **Expense Report Timezone Bug:** Used `DATE(createdAt)` instead of `DATE(CONVERT_TZ(createdAt, '+00:00', '+03:00'))`, leading to potential day-boundary mismatches compared to Revenue.
+5. **Overview KPI Cards Missing:** The backend correctly returned `lateRentals` and `totalDamages`, but they were not rendered in the frontend KPI cards.
+6. **FinancialData Interface Mismatch:** The TypeScript interface `FinancialData` expected flat fields (`revenue`, `expenses`) while the API returned standard aggregate names (`totalRevenue`, `totalExpenses`), causing potential chart crashes.
+7. **GenericListReport Translations:** Statuses like 'active', 'returned', 'minor', 'severe' were being rendered in raw English. Arabic translations were missing.
+8. **Export Bug:** The export utility for Revenue and Expenses tried to access a non-existent `.data` property on the response instead of `.chartData`, causing CSV/Excel exports to fail.
+9. **Component Corruption:** `MaintenanceRecordModal.tsx` had a duplicated chunk of syntax-error code appended after the closing brace, breaking the build.
+10. **State Bug:** `MaintenanceRecordModal.tsx` tried to set skate list state from `.data.data` when it was just `.data`, causing the dropdown to be empty.
 
 ## 14. Remediation
-- **Date Validation**: Added `startDate <= endDate` validation and swap logic in backend `validateQuery`.
-- **Date UI Labels**: Added `من تاريخ` and `إلى تاريخ` labels in `ReportsPage.tsx` to fix visual representation in RTL.
-- **Endpoint Typos**: Corrected `reports.api.ts` to use `/damages` and `/skate-performance`.
-- **Field Name Maps**: Added translations for remaining API response fields to `formatHeader` map in `GenericListReport.tsx`.
-- **Financial Report Arrays**: Added mapping for `revenueByCategory` and `expensesByCategory` to `getOperatingFinancialReport` return object.
-- **Revenue/Expense Charts**: Removed them from the generic list flow, explicitly created `RevenueReport.tsx` and `ExpenseReport.tsx` charting components, and fixed API typings.
-- **Frontend TS Fixes**: Removed unused variables and invalid `page`/`limit` params from `getRevenue` and `getExpenses` calls, restoring Vite HMR and allowing the charts to render properly.
-- **Cashier Report SQL**: Changed SQL query in `getCashierReport` to GROUP BY `users.id` (User account) instead of `cashier_shifts.id`, and queried `cashier_id = u.id` on rentals and movements. This perfectly links all historical operations to the responsible account even if the operations missed `shift_id`.
-- **Maintenance Completion UX**: Added "مكتمل" to the status dropdown in `MaintenanceRecordModal.tsx`. Updated `handleSave` to intercept this selection and securely trigger the `handleComplete` logic (which enforces repair descriptions and sets skate status to 'available').
+- **SQL Join Fix:** Fixed the `rentals` join to directly use `rentals.cashierId`.
+- **Damage Schema Alignment:** Replaced duplicate `repairCost` with `severity` from the DB schema in the Damage report API response.
+- **Refund Deduction:** Added a query for `rental_refund` and `sale_refund` to subtract from total revenue in the Revenue report.
+- **Timezone Alignment:** Updated the Expense report query to use `CONVERT_TZ` for date grouping.
+- **Overview UI:** Added cards for "إيجارات متأخرة" (Late Rentals) and "الأضرار" (Damages) in `OverviewReport.tsx`.
+- **Interface Fix:** Updated `FinancialData` in `reports.api.ts` to exactly match the API response.
+- **Arabic Translation Map:** Added `statusMap` to `GenericListReport.tsx` for full translation of statuses, damage types, and severities.
+- **Export Fix:** Updated `exportUtils.ts` to correctly pull `.chartData` for Revenue/Expense reports.
+- **Build Fix:** Cleaned up the corrupted trailing code in `MaintenanceRecordModal.tsx`.
+- **State Fix:** Fixed `skates.service.list` response consumption in `MaintenanceRecordModal.tsx`.
 
-## 15. Re-verification
-- Independent DB query verified `treasury_movements`, `cashier_shifts`, and `expenses` tables matching the report results.
-- `npm run test` on `apps/api` succeeds completely.
-- `npm run build` succeeds on both `apps/api` and `apps/web`.
-- Browser manually tested through `npm run dev` and UI validates perfectly.
+## 15. Re-verification Evidence
+- **DB Verification**: `npm run db:verify` executed successfully, re-running all migrations and seeding the `koshk_skate_test` DB.
+- **Independent DB Audit**: The script verified metrics against `koshk_skate_test`. Expected vs Service output perfectly matched. Example:
+  - Total Revenue: Independent=120, Service=120.
+  - Rentals Count: Independent=1, Service=1.
+  - Expenses: Independent=30, Service=30.
+- **Automated Tests**: Executed `npm run test` in `apps/api`. 
+  - **Results**: 13 Test Files passed. 222 Tests passed. 0 failed. 0 skipped.
+- **Build Verification**: 
+  - API: `npm run build` executed successfully without TypeScript errors.
+  - Web: `npm run build` executed successfully (Vite completed without syntax crashes, emitting standard chunks).
+- **Browser QA**: **BROWSER E2E: NOT VERIFIED — BROWSER BLOCKED**. 
+  - The browser subagent encountered a Playwright driver installation error (404 Not Found from Azure edge node). As a result, browser interactions could not be performed.
+- **Export Verification**: **NOT VERIFIED**.
+  - Since the browser tooling is unavailable, CSV, Excel, and PDF exports could not be physically triggered or their contents analyzed. Export code exists but remains functionally untested.
 
-## 16. Documentation
-- Updated this canonical Phase 13 document with verification results.
+## 16. Remaining Blockers
+- **Browser E2E Blocked**: Cannot launch browser instance to perform interactive UI verification of the reports dashboard due to driver download failure.
+- **Export Blocked**: Cannot physically trigger or download CSV/Excel/PDF reports to verify formatting and row structures due to the browser limitation.
 
-## 17. Git Commits
-- Data pipeline completely verified and bugs resolved.
-
-## 18. Known Limitations
-- Data exports (CSV/PDF) are handled via frontend currently.
-- Advanced pivot filtering is deferred.
-
-## 19. Final Status
-COMPLETED ✅
+## 17. Final Status
+**IN PROGRESS** 🚧
