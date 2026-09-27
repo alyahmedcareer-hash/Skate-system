@@ -316,14 +316,40 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
 
               {canEdit && (
                 <div className="bg-white border rounded p-3 mt-4 space-y-3 shadow-xs">
-                  <h4 className="font-medium text-sm text-navy-800">إضافة قطعة غيار</h4>
-                  <Input 
-                    id="partName"
-                    label="اسم القطعة"
-                    placeholder="اسم القطعة" 
-                    value={partName}
-                    onChange={e => setPartName(e.target.value)}
-                  />
+                  <div className="flex flex-col gap-2">
+                    <h4 className="font-medium text-sm text-navy-800">إضافة قطعة غيار</h4>
+                    
+                    {/* Quick Select Chips */}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {[
+                        { name: 'ويل', cost: '50' },
+                        { name: 'رمان بلي', cost: '20' },
+                        { name: 'ستريب', cost: '30' },
+                        { name: 'باكل', cost: '15' },
+                        { name: 'مسمار', cost: '5' },
+                        { name: 'فريم', cost: '150' },
+                      ].map(part => (
+                        <span 
+                          key={part.name}
+                          onClick={() => {
+                            setPartName(part.name)
+                            setPartUnitCost(part.cost)
+                          }}
+                          className="text-xs bg-navy-50 text-navy-700 px-2 py-1 rounded-full cursor-pointer hover:bg-navy-100 border border-navy-200 transition-colors"
+                        >
+                          {part.name} ({part.cost} ج)
+                        </span>
+                      ))}
+                    </div>
+
+                    <Input 
+                      id="partName"
+                      label="اسم القطعة"
+                      placeholder="اسم القطعة" 
+                      value={partName}
+                      onChange={e => setPartName(e.target.value)}
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <Input 
                       id="partQty"
