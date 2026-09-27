@@ -27,14 +27,21 @@ export interface OverviewData {
   totalRentals: number
   activeRentals: number
   lateRentals: number
+  totalDamages: number
+  activeMaintenance: number
 }
 
 export interface FinancialData {
-  revenue: number
-  expenses: number
+  rentalRevenue: number
+  rentalPayments: number
+  damageCharges: number
+  salesRevenue: number
+  refunds: number
+  totalRevenue: number
+  totalExpenses: number
   operatingResult: number
-  revenueByCategory: any[]
-  expensesByCategory: any[]
+  revenueByCategory: { type: string; total: number }[]
+  expensesByCategory: { category: string; total: number }[]
 }
 
 function qs(params: any) {

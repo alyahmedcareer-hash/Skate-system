@@ -257,9 +257,20 @@ export async function getRevenueReport(filters: DateRangeInput): Promise<any> {
       lt(treasuryMovements.createdAt, endBound),
       inArray(treasuryMovements.referenceType, ['rental_payment', 'late_fee_payment', 'damage_charge_payment', 'sale_payment'])
     ))
+
+  const refundsRes = await db
+    .select({ total: sum(treasuryMovements.amount) })
+    .from(treasuryMovements)
+    .where(and(
+      gte(treasuryMovements.createdAt, startBound),
+      lt(treasuryMovements.createdAt, endBound),
+      inArray(treasuryMovements.referenceType, ['rental_refund', 'sale_refund'])
+    ))
+    
+  const totalRevenue = Number(totalRev[0]?.total || 0) - Number(refundsRes[0]?.total || 0)
     
   return {
-    totalRevenue: Number(totalRev[0]?.total || 0),
+    totalRevenue,
     chartData: revenueRes.map(r => ({
       date: r.date,
       value: Number(r.total || 0)
@@ -272,7 +283,7 @@ export async function getExpenseReport(filters: DateRangeInput): Promise<any> {
   
   const expRes = await db
     .select({ 
-      date: sql<string>`DATE(${expenses.createdAt})`,
+      date: sql<string>`DATE(CONVERT_TZ(${expenses.createdAt}, '+00:00', '+03:00'))`,
       total: sum(expenses.amount) 
     })
     .from(expenses)
@@ -280,8 +291,8 @@ export async function getExpenseReport(filters: DateRangeInput): Promise<any> {
       gte(expenses.createdAt, startBound),
       lt(expenses.createdAt, endBound)
     ))
-    .groupBy(sql`DATE(${expenses.createdAt})`)
-    .orderBy(sql`DATE(${expenses.createdAt})`)
+    .groupBy(sql`DATE(CONVERT_TZ(${expenses.createdAt}, '+00:00', '+03:00'))`)
+    .orderBy(sql`DATE(CONVERT_TZ(${expenses.createdAt}, '+00:00', '+03:00'))`)
 
   const catRes = await db
     .select({
@@ -335,8 +346,7 @@ export async function getRentalReport(filters: DateRangeInput): Promise<Paginate
     .from(rentals)
     .leftJoin(customers, eq(rentals.customerId, customers.id))
     .leftJoin(skates, eq(rentals.skateId, skates.id))
-    .leftJoin(cashierShifts, eq(rentals.shiftId, cashierShifts.id))
-    .leftJoin(users, eq(cashierShifts.cashierId, users.id))
+    .leftJoin(users, eq(rentals.cashierId, users.id))
     .where(and(
       gte(rentals.startedAt, startBound),
       lt(rentals.startedAt, endBound)
@@ -442,7 +452,7 @@ export async function getDamageReport(filters: DateRangeInput): Promise<Paginate
       customerName: customers.name,
       damageType: damageReports.damageType,
       chargeAmount: damageReports.customerCharge,
-      repairCost: damageReports.customerCharge,
+      severity: damageReports.severity,
       reportedAt: damageReports.createdAt
     })
     .from(damageReports)
@@ -471,7 +481,7 @@ export async function getDamageReport(filters: DateRangeInput): Promise<Paginate
       customerName: r.customerName,
       damageType: r.damageType,
       chargeAmount: Number(r.chargeAmount || 0),
-      repairCost: Number(r.repairCost || 0),
+      severity: r.severity,
       reportedAt: r.reportedAt.toISOString()
     })),
     meta: {

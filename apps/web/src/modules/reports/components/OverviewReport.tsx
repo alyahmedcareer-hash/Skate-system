@@ -60,6 +60,8 @@ export default function OverviewReport({ startDate, endDate }: Props) {
     { title: 'إجمالي المصروفات', value: formatCurrency(data.totalExpenses), icon: TrendingDown, bgColor: 'var(--color-danger-bg)', iconColor: 'var(--color-danger-text)' },
     { title: 'إجمالي الإيجارات', value: data.totalRentals.toString(), icon: Package, bgColor: 'var(--color-info-bg)', iconColor: 'var(--color-info-text)' },
     { title: 'الإيجارات النشطة', value: data.activeRentals.toString(), icon: Clock, bgColor: 'var(--color-warning-bg)', iconColor: 'var(--color-warning-text)' },
+    { title: 'إيجارات متأخرة', value: (data.lateRentals ?? 0).toString(), icon: Clock, bgColor: 'var(--color-danger-bg)', iconColor: 'var(--color-danger-text)' },
+    { title: 'الأضرار', value: (data.totalDamages ?? 0).toString(), icon: TrendingDown, bgColor: 'var(--color-danger-bg)', iconColor: 'var(--color-danger-text)' },
   ]
 
   const pieData = [

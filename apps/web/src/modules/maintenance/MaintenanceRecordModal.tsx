@@ -30,7 +30,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
   const [repairDescription, setRepairDescription] = useState('')
   const [laborCost, setLaborCost] = useState<string>('')
   const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>('pending')
-  
+
   // Part form
   const [partName, setPartName] = useState('')
   const [partQty, setPartQty] = useState('1')
@@ -79,12 +79,12 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
           setSaving(false)
           return
         }
-        // Update labor cost and problem description BEFORE completing
+        await maintenanceService.completeMaintenanceRecord(recordId!, { repairDescription })
+        // Also update labor cost and problem description if they changed
         await maintenanceService.updateMaintenanceRecord(recordId!, {
           laborCost: laborCost ? Number(laborCost) : undefined,
           problemDescription
         })
-        await maintenanceService.completeMaintenanceRecord(recordId!, { repairDescription })
         onSave()
         return
       }
@@ -95,9 +95,9 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
           setSaving(false)
           return
         }
-        await maintenanceService.createMaintenanceRecord({ 
-          skateId: Number(skateId), 
-          problemDescription 
+        await maintenanceService.createMaintenanceRecord({
+          skateId: Number(skateId),
+          problemDescription
         })
       } else {
         await maintenanceService.updateMaintenanceRecord(recordId, {
@@ -122,10 +122,6 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
     try {
       setSaving(true)
       setError(null)
-      await maintenanceService.updateMaintenanceRecord(recordId!, {
-        laborCost: laborCost ? Number(laborCost) : undefined,
-        problemDescription
-      })
       await maintenanceService.completeMaintenanceRecord(recordId!, { repairDescription })
       onSave()
     } catch (err: any) {
@@ -184,7 +180,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
           {!isCompleted && (
             <div className="flex gap-2">
               {hasPermission('maintenance.complete') && !isNew && (
-                <Button 
+                <Button
                   variant="primary"
                   className="bg-success-text hover:bg-green-700 text-white border-none"
                   disabled={saving}
@@ -213,7 +209,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
           {/* Left Column: Details & Edit */}
           <div className="space-y-4">
             <h3 className="font-semibold text-lg border-b pb-2">تفاصيل المشكلة</h3>
-            
+
             {isNew && (
               <Select
                 id="skateId"
@@ -230,7 +226,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
                 disabled={!isNew}
               />
             )}
-            
+
             <Textarea
               id="problemDescription"
               label="وصف المشكلة"
@@ -251,17 +247,17 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
                   onChange={e => setRepairDescription(e.target.value)}
                   disabled={!canEdit}
                 />
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     id="laborCost"
                     label="تكلفة المصنعية (ج.م)"
-                    type="number" 
+                    type="number"
                     value={laborCost}
                     onChange={e => setLaborCost(e.target.value)}
                     disabled={!canEdit}
                   />
-                  
+
                   <Select
                     id="status"
                     label="الحالة"
@@ -283,7 +279,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
           {!isNew && (
             <div className="space-y-4 border-r pr-6">
               <h3 className="font-semibold text-lg border-b pb-2">قطع الغيار المستخدمة</h3>
-              
+
               {record?.parts && record.parts.length > 0 ? (
                 <div className="space-y-2">
                   {record.parts.map(part => (
@@ -295,7 +291,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
                         </div>
                       </div>
                       {canEdit && (
-                        <button 
+                        <button
                           className="text-danger-text hover:bg-danger-bg p-1 rounded"
                           onClick={() => handleRemovePart(part.id)}
                           disabled={saving}
@@ -316,70 +312,34 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
 
               {canEdit && (
                 <div className="bg-white border rounded p-3 mt-4 space-y-3 shadow-xs">
-                  <div className="flex flex-col gap-2">
-                    <h4 className="font-medium text-sm text-navy-800">إضافة قطعة غيار</h4>
-                    
-                    {/* Quick Select Dropdown */}
-                    <Select
-                      id="quickPart"
-                      label="قائمة القطع الشهيرة (اختياري)"
-                      value=""
-                      onChange={(e) => {
-                        const val = e.target.value
-                        if (!val) return
-                        const parts = [
-                          { name: 'ويل', cost: '50' },
-                          { name: 'رمان بلي', cost: '20' },
-                          { name: 'ستريب', cost: '30' },
-                          { name: 'باكل', cost: '15' },
-                          { name: 'مسمار', cost: '5' },
-                          { name: 'فريم', cost: '150' },
-                        ]
-                        const found = parts.find(p => p.name === val)
-                        if (found) {
-                          setPartName(found.name)
-                          setPartUnitCost(found.cost)
-                        }
-                      }}
-                      options={[
-                        { value: '', label: 'اختر قطعة للسرعة...' },
-                        { value: 'ويل', label: 'ويل (50 ج)' },
-                        { value: 'رمان بلي', label: 'رمان بلي (20 ج)' },
-                        { value: 'ستريب', label: 'ستريب (30 ج)' },
-                        { value: 'باكل', label: 'باكل (15 ج)' },
-                        { value: 'مسمار', label: 'مسمار (5 ج)' },
-                        { value: 'فريم', label: 'فريم (150 ج)' },
-                      ]}
-                    />
-
-                    <Input 
-                      id="partName"
-                      label="اسم القطعة"
-                      placeholder="اسم القطعة" 
-                      value={partName}
-                      onChange={e => setPartName(e.target.value)}
-                    />
-                  </div>
+                  <h4 className="font-medium text-sm text-navy-800">إضافة قطعة غيار</h4>
+                  <Input
+                    id="partName"
+                    label="اسم القطعة"
+                    placeholder="اسم القطعة"
+                    value={partName}
+                    onChange={e => setPartName(e.target.value)}
+                  />
                   <div className="grid grid-cols-2 gap-2">
-                    <Input 
+                    <Input
                       id="partQty"
                       label="الكمية"
-                      type="number" 
-                      placeholder="الكمية" 
+                      type="number"
+                      placeholder="الكمية"
                       value={partQty}
                       onChange={e => setPartQty(e.target.value)}
                     />
-                    <Input 
+                    <Input
                       id="partUnitCost"
                       label="سعر الوحدة"
-                      type="number" 
-                      placeholder="سعر الوحدة" 
+                      type="number"
+                      placeholder="سعر الوحدة"
                       value={partUnitCost}
                       onChange={e => setPartUnitCost(e.target.value)}
                     />
                   </div>
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     className="w-full justify-center"
                     disabled={!partName || !partQty || !partUnitCost || saving}
                     onClick={handleAddPart}
@@ -388,11 +348,11 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
                   </Button>
                 </div>
               )}
-              
+
               <div className="mt-6 pt-4 border-t border-dashed">
                 <div className="flex justify-between items-center text-lg font-bold text-navy-900">
                   <span>إجمالي التكلفة:</span>
-                  <span>{(Number(record?.partsCost || 0) + Number(laborCost || 0)).toFixed(2)} ج.م</span>
+                  <span>{record?.totalCost} ج.م</span>
                 </div>
               </div>
             </div>
@@ -402,3 +362,4 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
     </Modal>
   )
 }
+

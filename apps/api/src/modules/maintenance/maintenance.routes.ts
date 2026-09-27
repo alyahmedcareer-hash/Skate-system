@@ -2,8 +2,8 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { maintenanceService } from './maintenance.service.js'
 import { authenticate } from '../../middleware/auth.js'
 import { requirePermission } from '../../middleware/permission.js'
-import type { 
-  CreateMaintenanceRecordPayload, 
+import type {
+  CreateMaintenanceRecordPayload,
   UpdateMaintenanceRecordPayload,
   CompleteMaintenanceRecordPayload,
   AddMaintenancePartPayload
@@ -35,7 +35,7 @@ router.get('/:id', authenticate, requirePermission('maintenance.view'), async (r
 router.post('/', authenticate, requirePermission('maintenance.create'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = req.body as CreateMaintenanceRecordPayload
-    const insertId = await maintenanceService.createRecord(payload, (req as any).user!.sub)
+    const insertId = await maintenanceService.createRecord(payload, (req as any).user!.id)
     const record = await maintenanceService.getRecord(insertId)
     res.status(201).json({ success: true, data: record })
   } catch (error) {
@@ -48,7 +48,7 @@ router.patch('/:id', authenticate, requirePermission('maintenance.edit'), async 
   try {
     const payload = req.body as UpdateMaintenanceRecordPayload
     const laborCost = req.body.laborCost !== undefined ? Number(req.body.laborCost) : undefined
-    
+
     await maintenanceService.updateRecord(Number(req.params.id), { ...payload, laborCost })
     const record = await maintenanceService.getRecord(Number(req.params.id))
     res.json({ success: true, data: record })
@@ -84,7 +84,7 @@ router.delete('/:id/parts/:partId', authenticate, requirePermission('maintenance
 router.post('/:id/complete', authenticate, requirePermission('maintenance.complete'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = req.body as CompleteMaintenanceRecordPayload
-    await maintenanceService.completeRecord(Number(req.params.id), (req as any).user!.sub, payload)
+    await maintenanceService.completeRecord(Number(req.params.id), (req as any).user!.id, payload)
     const record = await maintenanceService.getRecord(Number(req.params.id))
     res.json({ success: true, data: record })
   } catch (error) {

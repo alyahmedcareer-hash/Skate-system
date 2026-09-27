@@ -78,6 +78,7 @@ export default function GenericListReport({ type, startDate, endDate }: Props) {
       duration: 'المدة (دقيقة)', status: 'الحالة', type: 'النوع', category: 'الفئة',
       lateFee: 'غرامة التأخير', chargeAmount: 'قيمة التحصيل', repairCost: 'تكلفة الإصلاح',
       damageType: 'نوع الضرر', problemType: 'نوع المشكلة', description: 'الوصف',
+      severity: 'الشدة',
       rentalsCount: 'عدد الإيجارات', damages: 'عدد الأضرار', maintenanceCount: 'مرات الصيانة',
       lateReturns: 'مرات التأخير', shiftsCount: 'عدد الورديات', totalDifference: 'العجز/الزيادة',
       completedAt: 'وقت الانتهاء', date: 'التاريخ',
@@ -88,8 +89,19 @@ export default function GenericListReport({ type, startDate, endDate }: Props) {
     return map[key] || key
   }
 
+  const statusMap: Record<string, string> = {
+    active: 'نشط', returned: 'تم الإرجاع', cancelled: 'ملغى',
+    pending: 'معلق', in_progress: 'قيد التنفيذ', completed: 'مكتمل',
+    paid: 'مدفوع', partially_paid: 'مدفوع جزئياً', waived: 'تم الإعفاء',
+    minor: 'بسيط', moderate: 'متوسط', severe: 'شديد',
+    wheel: 'عجلة', strap: 'حزام', brake: 'فرامل', bearing: 'رمان بلي', body: 'هيكل', other: 'أخرى',
+  }
+
   const formatCell = (key: string, value: any) => {
     if (value === null || value === undefined) return '-'
+    if (key === 'status' || key === 'severity' || key === 'damageType') {
+      return statusMap[value] || String(value)
+    }
     if (key.toLowerCase().includes('amount') || key.toLowerCase().includes('cost') || key.toLowerCase().includes('spent') || key.toLowerCase().includes('fee') || key.toLowerCase().includes('revenue') || key === 'totalDifference') {
       return formatCurrency(Number(value))
     }

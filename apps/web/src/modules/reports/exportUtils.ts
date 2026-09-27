@@ -55,12 +55,12 @@ export const exportToPDF = (data: any[], filename: string, title: string) => {
 export const fetchAllReportData = async (type: string, startDate: string, endDate: string) => {
   const params = { startDate, endDate, page: 1, limit: 10000 } // Fetch up to 10k for export
   switch (type) {
-    case 'revenue': return (await reportsApi.getRevenue(params)).data.data
+    case 'revenue': return (await reportsApi.getRevenue(params)).data.chartData || []
     case 'rentals': return (await reportsApi.getRentals(params)).data.data
     case 'late': return (await reportsApi.getLate(params)).data.data
     case 'damage': return (await reportsApi.getDamage(params)).data.data
     case 'maintenance': return (await reportsApi.getMaintenance(params)).data.data
-    case 'expenses': return (await reportsApi.getExpenses(params)).data.data
+    case 'expenses': return (await reportsApi.getExpenses(params)).data.chartData || []
     case 'customers': return (await reportsApi.getCustomers(params)).data.data
     case 'cashiers': return (await reportsApi.getCashiers(params)).data.data
     case 'skates': return (await reportsApi.getSkates(params)).data.data
