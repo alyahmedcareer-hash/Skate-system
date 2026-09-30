@@ -221,7 +221,37 @@ async function seed() {
     }
   }
 
-  // 3. Seed admin user (idempotent: skip if email already exists)
+  // 3. Seed System Actor (for background tasks, lazy updates, crons)
+  const systemEmail = 'system@koshkskate.internal'
+  console.log(`  → Seeding system actor (${systemEmail})...`)
+
+  const existingSystemActor = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, systemEmail))
+    .limit(1)
+
+  if (!existingSystemActor.length) {
+    const sysPasswordHash = await bcrypt.hash('NO_LOGIN_ALLOWED', BCRYPT_ROUNDS)
+    await db.insert(users).values({
+      name: 'System Actor',
+      email: systemEmail,
+      passwordHash: sysPasswordHash,
+      isActive: true,
+      isSystemAccount: true,
+    })
+    console.log(`     Created System Actor (${systemEmail})`)
+  } else {
+    // Ensure the system actor has isSystemAccount set to true if it already exists
+    if (!existingSystemActor[0].isSystemAccount) {
+      await db.update(users).set({ isSystemAccount: true }).where(eq(users.id, existingSystemActor[0].id))
+      console.log(`     Updated existing System Actor to isSystemAccount=true`)
+    } else {
+      console.log(`     System Actor exists (${systemEmail}) (skipped)`)
+    }
+  }
+
+  // 4. Seed admin user (idempotent: skip if email already exists)
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@koshkskate.com'
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'Koshk@12345'
 
@@ -241,6 +271,7 @@ async function seed() {
       email: adminEmail,
       passwordHash,
       isActive: true,
+      isSystemAccount: false,
     })
 
     const adminUserId = result.insertId

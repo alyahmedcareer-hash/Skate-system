@@ -125,7 +125,7 @@ describe('Reservations Service', () => {
       reservedUntil: until.toISOString(),
     })
 
-    await cancelReservation(first.id)
+    await cancelReservation(first.id, userId)
 
     // Should succeed now
     const second = await createReservation(userId, {

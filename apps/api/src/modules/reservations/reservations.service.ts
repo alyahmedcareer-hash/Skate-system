@@ -5,6 +5,7 @@ import { skates } from '../../db/schema/skates.js'
 import { customers } from '../../db/schema/customers.js'
 import { auditService } from '../audit/audit.service.js'
 import { users } from '../../db/schema/users.js'
+import { getSystemActorId } from '../users/users.service.js'
 import { NotFoundError, ValidationError, BusinessRuleError } from '../../utils/errors.js'
 import type {
   ReservationDTO,
@@ -119,15 +120,42 @@ async function fetchReservationsJoined(whereClause?: ReturnType<typeof and>): Pr
  * should be updated to 'cancelled'.
  */
 export async function lazyExpireReservations(): Promise<void> {
-  await db
-    .update(reservations)
-    .set({ status: 'cancelled' })
+  const toCancel = await db
+    .select({ id: reservations.id })
+    .from(reservations)
     .where(
       and(
         inArray(reservations.status, ['pending', 'confirmed']),
         lte(reservations.reservedUntil, sql`NOW()`)
       )
     )
+
+  if (toCancel.length === 0) return
+
+  await db
+    .update(reservations)
+    .set({ status: 'cancelled' })
+    .where(
+      inArray(
+        reservations.id,
+        toCancel.map(r => r.id)
+      )
+    )
+
+  try {
+    const systemActorId = await getSystemActorId()
+    for (const res of toCancel) {
+      await auditService.log({
+        userId: systemActorId,
+        action: 'SYSTEM_CANCEL_EXPIRED_RESERVATION',
+        entityType: 'RESERVATION',
+        entityId: String(res.id),
+        newValue: { status: 'cancelled' }
+      })
+    }
+  } catch (err) {
+    console.error('Failed to log lazy expiration audit:', err)
+  }
 }
 
 // ---------------------------------------------------------------------------

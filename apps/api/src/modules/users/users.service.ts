@@ -25,6 +25,22 @@ import type { CreateUserRequest, UpdateUserRequest, UserDTO } from './users.type
 const BCRYPT_ROUNDS = 12
 
 // ---------------------------------------------------------------------------
+// System Actor
+// ---------------------------------------------------------------------------
+
+let _cachedSystemActorId: number | null = null
+
+export async function getSystemActorId(): Promise<number> {
+  if (_cachedSystemActorId !== null) return _cachedSystemActorId
+  const sysUser = await db.select().from(users).where(eq(users.isSystemAccount, true)).limit(1)
+  if (!sysUser.length) {
+    throw new Error('System Actor not found. Ensure the seed script has been run.')
+  }
+  _cachedSystemActorId = sysUser[0].id
+  return _cachedSystemActorId
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

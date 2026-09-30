@@ -153,6 +153,10 @@ export async function login(body: LoginRequest): Promise<{
     throw new UnauthorizedError('الحساب معطّل. تواصل مع المدير')
   }
 
+  if (user.isSystemAccount) {
+    throw new UnauthorizedError('لا يمكن تسجيل الدخول باستخدام حساب النظام')
+  }
+
   const passwordValid = await bcrypt.compare(password, user.passwordHash)
   if (!passwordValid) {
     throw new UnauthorizedError('البريد الإلكتروني أو كلمة المرور غير صحيحة')

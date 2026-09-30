@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `is_system_account` boolean DEFAULT false NOT NULL;
