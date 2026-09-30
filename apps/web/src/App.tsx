@@ -23,13 +23,12 @@ import {
   UserCog,
   KeyRound,
   Settings,
+  Activity,
   LogOut,
-  Bell,
   Menu,
   X,
   PanelRightClose,
   PanelRightOpen,
-  Construction,
   ShieldOff,
   ShoppingCart,
   ListOrdered,
@@ -39,6 +38,7 @@ import { useAuth } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { PermissionGate } from './components/PermissionGate'
 import { EmptyState } from './components/ui/EmptyState'
+import { NotificationBell } from './components/ui/NotificationBell'
 import LoginPage from './modules/auth/LoginPage'
 import UsersPage from './modules/users/UsersPage'
 import RolesPage from './modules/users/RolesPage'
@@ -59,11 +59,20 @@ import ProductsPage from './modules/products/ProductsPage'
 import SalesPOSPage from './modules/sales/SalesPOSPage'
 import SalesPage from './modules/sales/SalesPage'
 
+// Phase 16 — Audit
+import AuditLogsPage from './modules/audit/AuditLogsPage'
+
 // Phase 12 — Treasury & Shifts
 import TreasuryPage from './modules/treasury/TreasuryPage'
 
 // Phase 13 — Reports
 import ReportsPage from './modules/reports/ReportsPage'
+
+// Phase 14 — Settings & Invoices
+import SettingsPage from './modules/settings/SettingsPage'
+
+// Phase 17 — Dashboard
+import DashboardPage from './modules/dashboard/DashboardPage'
 
 // ---------------------------------------------------------------------------
 // NoAccessPage — shown when an authenticated user lacks route-level permission
@@ -105,6 +114,7 @@ const ADMIN_NAV_ITEMS = [
   { icon: UserCog,  label: 'المستخدمون', to: '/users',    permission: 'users.view' },
   { icon: KeyRound, label: 'الأدوار',    to: '/roles',    permission: 'roles.view' },
   { icon: Settings, label: 'الإعدادات', to: '/settings', permission: 'settings.view' },
+  { icon: Activity, label: 'سجل التدقيق', to: '/audit-logs', permission: 'audit.view' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -753,15 +763,8 @@ function Topbar({ pageTitle, onMobileMenuOpen, hamburgerRef }: TopbarProps) {
         <span className="topbar-title">{pageTitle ?? 'الرئيسية'}</span>
 
         <div className="topbar-actions">
-          {/* Notification bell placeholder */}
-          <button
-            type="button"
-            className="topbar-icon-btn"
-            aria-label="الإشعارات"
-            id="notifications-btn"
-          >
-            <Bell size={20} aria-hidden="true" />
-          </button>
+          {/* Notification bell component (polling + UI) */}
+          <NotificationBell />
 
           {/* User role badge */}
           {user?.roles?.[0] && (
@@ -867,24 +870,7 @@ function Topbar({ pageTitle, onMobileMenuOpen, hamburgerRef }: TopbarProps) {
 // Placeholder page — uses EmptyState component
 // ---------------------------------------------------------------------------
 
-function PlaceholderPage({ title, phase }: { title: string; phase: string }) {
-  return (
-    <div className="page-container">
-      <div style={{
-        backgroundColor: 'var(--color-white)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-card)',
-        border: '1px solid var(--color-border)',
-      }}>
-        <EmptyState
-          icon={Construction}
-          title={title}
-          description={`سيتم تنفيذ هذه الوحدة في ${phase}`}
-        />
-      </div>
-    </div>
-  )
-}
+
 
 // ---------------------------------------------------------------------------
 // AppShell — sidebar collapse state + mobile drawer state
@@ -1016,7 +1002,7 @@ export default function App() {
           <ProtectedRoute>
             <AppShell>
               <Routes>
-                <Route path="/" element={<PlaceholderPage title="لوحة التحكم" phase="المرحلة 17" />} />
+                <Route path="/" element={<DashboardPage />} />
                 <Route path="/users" element={
                   <PermissionGate
                     permission="users.view"
@@ -1146,7 +1132,15 @@ export default function App() {
                     <ReportsPage />
                   </PermissionGate>
                 } />
-                <Route path="/settings" element={<PlaceholderPage title="الإعدادات" phase="المرحلة متأخرة" />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/audit-logs" element={
+                  <PermissionGate
+                    permission="audit.view"
+                    fallback={<NoAccessPage permission="audit.view" />}
+                  >
+                    <AuditLogsPage />
+                  </PermissionGate>
+                } />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </AppShell>

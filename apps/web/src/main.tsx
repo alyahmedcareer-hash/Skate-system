@@ -14,6 +14,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider, ErrorBoundary } from './components/ui'
+import { PrintProvider } from './contexts/PrintContext'
 import './styles/index.css'
 import App from './App.tsx'
 
@@ -22,9 +23,11 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
+          <PrintProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </PrintProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

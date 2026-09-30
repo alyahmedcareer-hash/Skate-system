@@ -14,6 +14,7 @@ import { cashierShifts } from './treasury'
 export const sales = mysqlTable('sales', {
   id: int('id').primaryKey().autoincrement(),
   saleCode: varchar('sale_code', { length: 50 }).notNull().unique(),
+  invoiceNumber: varchar('invoice_number', { length: 50 }).unique(),
   customerId: int('customer_id').references(() => customers.id),
   cashierId: int('cashier_id').notNull().references(() => users.id),
   shiftId: int('shift_id').references(() => cashierShifts.id),

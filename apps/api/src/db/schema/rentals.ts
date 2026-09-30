@@ -81,6 +81,9 @@ export const rentals = mysqlTable('rentals', {
   // Gaps from rolled-back transactions are allowed. See DEC-070 for algorithm details.
   rentalCode: varchar('rental_code', { length: 50 }).notNull().unique(),
 
+  // Phase 14: Unified invoice numbering
+  invoiceNumber: varchar('invoice_number', { length: 50 }).unique(),
+
   // FK to skates — the physical skate being rented
   skateId: int('skate_id').notNull().references(() => skates.id),
 
