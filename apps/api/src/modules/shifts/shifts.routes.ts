@@ -41,6 +41,9 @@ router.post('/:id/close', async (req, res, next) => {
     if (typeof validated.actualBalance !== 'number' || validated.actualBalance < 0) {
       return res.status(400).json({ message: 'الرصيد الفعلي يجب أن يكون 0 أو أكثر' })
     }
+    if (validated.closedAt !== undefined && typeof validated.closedAt !== 'string') {
+      return res.status(400).json({ message: 'وقت الإغلاق يجب أن يكون نص (تاريخ)' })
+    }
     const shift = await ShiftsService.closeShift(shiftId, validated, req.user!.sub)
     res.json(shift)
   } catch (error) {

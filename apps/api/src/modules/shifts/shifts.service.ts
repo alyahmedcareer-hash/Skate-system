@@ -2,8 +2,8 @@ import { eq, and, desc, sql } from 'drizzle-orm'
 import { db } from '../../db/connection.js'
 import { cashierShifts } from '../../db/schema/treasury.js'
 import { users } from '../../db/schema/users.js'
-import { treasuryMovements, paymentMethods } from '../../db/schema/payments.js'
-import { AppError, ConflictError, NotFoundError, ForbiddenError } from '../../utils/errors.js'
+import { treasuryMovements, paymentMethods, treasuryAccounts } from '../../db/schema/payments.js'
+import { AppError, ConflictError, NotFoundError, ForbiddenError, BusinessRuleError } from '../../utils/errors.js'
 import type { OpenShiftInput, CloseShiftInput, ShiftDTO } from './shifts.types.js'
 
 // Map database row to DTO
@@ -122,18 +122,13 @@ export async function calculateExpectedCashBalance(shiftId: number, tx = db): Pr
     .from(treasuryMovements)
     .where(eq(treasuryMovements.shiftId, shiftId))
 
-  // In our seed, ID 1 is Main Cash. We should probably make this configurable or find the 'Main Cash' account.
-  // For now, any account can be considered, but we specifically only want to count physical cash in the drawer?
-  // DEC-072: "Expected Cash and Difference are calculated from CASH movements only."
-  // Let's fetch the cash treasury account ID.
-  // But wait, what if the user has multiple cash accounts?
-  // For now, let's just sum up ALL movements that are linked to Treasury Account 1 (Main Cash)
-  // or we can sum up all movements. If a cashier takes a Visa payment, it goes to Bank (ID 2). Visa doesn't go to Cash (ID 1).
-  // So filtering by Treasury Account 1 is exactly what we want!
-  
+  // Find all cash accounts
+  const cashAccounts = await tx.select({ id: treasuryAccounts.id }).from(treasuryAccounts).where(eq(treasuryAccounts.isCashDrawer, true))
+  const cashAccountIds = new Set(cashAccounts.map(a => a.id))
+
   let netCashMovement = 0
   for (const mov of movements) {
-    if (mov.accountId === 1) { // 1 = Main Cash
+    if (cashAccountIds.has(mov.accountId)) {
       const amt = parseFloat(String(mov.amount))
       if (mov.type === 'in') netCashMovement += amt
       if (mov.type === 'out') netCashMovement -= amt
@@ -171,17 +166,29 @@ export async function closeShift(shiftId: number, input: CloseShiftInput, cashie
       throw new ConflictError('الوردية مغلقة بالفعل')
     }
 
-    // 3. Calculate expected balance
+    // 3. Validate close time
+    let closedAtDate = new Date()
+    if (input.closedAt) {
+      closedAtDate = new Date(input.closedAt)
+      if (isNaN(closedAtDate.getTime())) {
+        throw new BusinessRuleError('تاريخ الإغلاق غير صالح', 'INVALID_DATE')
+      }
+      if (closedAtDate < shift.openedAt) {
+        throw new BusinessRuleError('لا يمكن أن يكون وقت الإغلاق قبل وقت الفتح', 'INVALID_CLOSE_TIME')
+      }
+    }
+
+    // 4. Calculate expected balance
     const expectedBalance = await calculateExpectedCashBalance(shiftId, tx as any)
     const actualBalance = input.actualBalance
     const difference = actualBalance - expectedBalance
 
-    // 4. Update the shift
+    // 5. Update the shift
     await tx
       .update(cashierShifts)
       .set({
         status: 'closed',
-        closedAt: sql`CURRENT_TIMESTAMP`,
+        closedAt: closedAtDate,
         expectedBalance: String(expectedBalance),
         actualBalance: String(actualBalance),
         difference: String(difference),

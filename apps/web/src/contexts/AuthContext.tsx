@@ -65,20 +65,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // refreshAccessToken — silent renewal using HttpOnly refresh cookie
   // ---------------------------------------------------------------------------
 
+  const refreshPromiseRef = useRef<Promise<string | null> | null>(null)
+
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
-    try {
-      const newToken = await refreshApi()
-      setToken(newToken)
-      // Re-load user with new token
-      const updatedUser = await meApi(newToken)
-      setUser(updatedUser)
-      return newToken
-    } catch {
-      // Refresh failed — session expired, clear state
-      setToken(null)
-      setUser(null)
-      return null
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current
     }
+
+    refreshPromiseRef.current = (async () => {
+      try {
+        const newToken = await refreshApi()
+        setToken(newToken)
+        // Re-load user with new token
+        const updatedUser = await meApi(newToken)
+        setUser(updatedUser)
+        return newToken
+      } catch {
+        // Refresh failed — session expired, clear state
+        setToken(null)
+        setUser(null)
+        return null
+      } finally {
+        refreshPromiseRef.current = null
+      }
+    })()
+
+    return refreshPromiseRef.current
   }, [setToken])
 
   // ---------------------------------------------------------------------------

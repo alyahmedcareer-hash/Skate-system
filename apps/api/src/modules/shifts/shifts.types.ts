@@ -4,6 +4,7 @@ export interface OpenShiftInput {
 
 export interface CloseShiftInput {
   actualBalance: number
+  closedAt?: string // Optional explicit end time
 }
 
 export interface ShiftDTO {
