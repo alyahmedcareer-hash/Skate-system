@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Wrench, Plus, RefreshCw } from 'lucide-react'
 import { maintenanceService, type MaintenanceRecord } from './maintenance.service'
 import MaintenanceRecordModal from './MaintenanceRecordModal'
+import MaintenancePaymentModal from './MaintenancePaymentModal'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
   Button, 
@@ -72,14 +73,49 @@ export default function MaintenancePage() {
     }
   }
 
+  const renderPaymentStatus = (status: string) => {
+    switch (status) {
+      case 'unpaid': return <Badge variant="danger">غير مدفوع</Badge>
+      case 'paid': return <Badge variant="success">مدفوع</Badge>
+      case 'paid_external': return <Badge variant="info">مدفوع خارجياً</Badge>
+      case 'legacy': return <Badge variant="neutral">تاريخي</Badge>
+      case 'no_cost': return <Badge variant="neutral">بدون تكلفة</Badge>
+      default: return <Badge variant="neutral">{status}</Badge>
+    }
+  }
+
+  // Payment Modal State
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [paymentRecordId, setPaymentRecordId] = useState<number | undefined>()
+
+  const openPaymentModal = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation()
+    setPaymentRecordId(id)
+    setIsPaymentModalOpen(true)
+  }
+
   const columns: TableColumn<any>[] = [
     { key: 'id', header: 'رقم السجل', render: (_, r: any) => `#${r.id}` },
     { key: 'skate', header: 'كود الزلاجة', render: (_, r: any) => <span className="font-medium text-gold-500">{r.skateCode}</span> },
-    { key: 'status', header: 'الحالة', render: (_, r: any) => renderStatus(r.status) },
+    { key: 'status', header: 'حالة الصيانة', render: (_, r: any) => renderStatus(r.status) },
+    { key: 'paymentStatus', header: 'حالة الدفع', render: (_, r: any) => renderPaymentStatus(r.paymentStatus) },
     { key: 'date', header: 'تاريخ الفتح', render: (_, r: any) => new Date(r.createdAt).toLocaleDateString('ar-EG') },
-    { key: 'desc', header: 'الوصف', render: (_, r: any) => <span className="max-w-[200px] truncate block">{r.problemDescription || '-'}</span> },
     { key: 'cost', header: 'إجمالي التكلفة', render: (_, r: any) => `${r.totalCost} ج.م` },
     { key: 'user', header: 'المسؤول', render: (_, r: any) => r.createdByName },
+    {
+      key: 'actions',
+      header: 'إجراءات',
+      render: (_, r: any) => {
+        if (r.status === 'completed' && r.paymentStatus === 'unpaid' && hasPermission('maintenance.pay')) {
+          return (
+            <Button size="sm" variant="primary" onClick={(e) => openPaymentModal(e, r.id)}>
+              دفع التكلفة
+            </Button>
+          )
+        }
+        return null
+      }
+    }
   ]
 
   return (
@@ -141,6 +177,21 @@ export default function MaintenancePage() {
           recordId={selectedRecordId}
           onClose={handleModalClose}
           onSave={handleModalSave}
+        />
+      )}
+
+      {isPaymentModalOpen && paymentRecordId && (
+        <MaintenancePaymentModal
+          recordId={paymentRecordId}
+          onClose={() => {
+            setIsPaymentModalOpen(false)
+            setPaymentRecordId(undefined)
+          }}
+          onSave={() => {
+            setIsPaymentModalOpen(false)
+            setPaymentRecordId(undefined)
+            loadData()
+          }}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { db } from '../db/connection'
-import { maintenanceRecords, maintenanceParts, skates, users } from '../db/schema'
+import { maintenanceRecords, maintenanceParts, skates, users, auditLogs } from '../db/schema'
 import { maintenanceService } from '../modules/maintenance/maintenance.service'
 import { eq } from 'drizzle-orm'
 import { AppError, BusinessRuleError } from '../utils/errors'
@@ -55,6 +55,7 @@ describe('Maintenance Service', () => {
 
   afterAll(async () => {
     // cleanup
+    await db.delete(auditLogs).where(eq(auditLogs.userId, adminId))
     await db.delete(maintenanceParts)
     await db.delete(maintenanceRecords)
     await db.delete(skates).where(eq(skates.id, skateId1))

@@ -3,6 +3,7 @@ import { skates } from './skates'
 import { users } from './users'
 import { damageReports } from './damages'
 import { inspections } from './inspections'
+import { paymentMethods } from './payments'
 
 export const maintenanceRecords = mysqlTable('maintenance_records', {
   id: int('id').primaryKey().autoincrement(),
@@ -27,6 +28,12 @@ export const maintenanceRecords = mysqlTable('maintenance_records', {
   totalCost: decimal('total_cost', { precision: 10, scale: 2 }).default('0'),
   
   status: mysqlEnum('status', ['pending', 'in_progress', 'completed']).notNull().default('pending'),
+  
+  paymentStatus: mysqlEnum('payment_status', ['unpaid', 'paid', 'paid_external', 'legacy', 'no_cost']).notNull().default('unpaid'),
+  paymentMethodId: int('payment_method_id').references(() => paymentMethods.id),
+  paidAt: datetime('paid_at'),
+  paidBy: int('paid_by').references(() => users.id),
+
   
   startedAt: datetime('started_at'),
   completedAt: datetime('completed_at'),

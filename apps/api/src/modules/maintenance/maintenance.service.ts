@@ -1,7 +1,8 @@
 import { eq, desc, sql, and } from 'drizzle-orm'
 import { db } from '../../db/connection'
-import { maintenanceRecords, maintenanceParts, skates, users } from '../../db/schema/index.js'
+import { maintenanceRecords, maintenanceParts, skates, users, treasuryMovements, paymentMethods, cashierShifts } from '../../db/schema/index.js'
 import { NotFoundError, BusinessRuleError } from '../../utils/errors.js'
+import { auditService } from '../audit/audit.service.js'
 import type { 
   CreateMaintenanceRecordPayload, 
   UpdateMaintenanceRecordPayload,
@@ -45,6 +46,10 @@ export class MaintenanceService {
         createdAt: maintenanceRecords.createdAt,
         startedAt: maintenanceRecords.startedAt,
         completedAt: maintenanceRecords.completedAt,
+        paymentStatus: maintenanceRecords.paymentStatus,
+        paymentMethodId: maintenanceRecords.paymentMethodId,
+        paidAt: maintenanceRecords.paidAt,
+        paidBy: maintenanceRecords.paidBy,
         createdByName: users.name,
       })
       .from(maintenanceRecords)
@@ -86,6 +91,10 @@ export class MaintenanceService {
         createdAt: maintenanceRecords.createdAt,
         startedAt: maintenanceRecords.startedAt,
         completedAt: maintenanceRecords.completedAt,
+        paymentStatus: maintenanceRecords.paymentStatus,
+        paymentMethodId: maintenanceRecords.paymentMethodId,
+        paidAt: maintenanceRecords.paidAt,
+        paidBy: maintenanceRecords.paidBy,
         createdByName: users.name,
       })
       .from(maintenanceRecords)
@@ -318,10 +327,13 @@ export class MaintenanceService {
         throw new BusinessRuleError('يجب إدخال وصف الإصلاح قبل إغلاق الطلب', 'MISSING_DESCRIPTION')
       }
 
+      const isZeroCost = Number(record.totalCost) === 0
+
       // Mark record as completed
       await tx.update(maintenanceRecords)
         .set({
           status: 'completed',
+          paymentStatus: isZeroCost ? 'no_cost' : 'unpaid',
           repairDescription: repairDesc,
           completedBy: userId,
           completedAt: new Date(),
@@ -337,7 +349,156 @@ export class MaintenanceService {
         })
         .where(eq(skates.id, skate.id))
 
-      // No treasury movement in Phase 09 per owner decision.
+      // Phase 16: Audit log
+      auditService.log({
+        userId,
+        action: 'COMPLETE_MAINTENANCE',
+        entityType: 'MAINTENANCE_RECORD',
+        entityId: String(id),
+        oldValue: { status: record.status },
+        newValue: { status: 'completed', repairDescription: repairDesc, totalCost: record.totalCost }
+      }, tx)
+
+      // No treasury movement in Phase 09 per owner decision on completion. Payment is explicit later.
+
+      return { success: true }
+    })
+  }
+
+  /**
+   * System Payment for Maintenance
+   */
+  async payRecord(id: number, userId: number, paymentMethodId: number) {
+    return await db.transaction(async (tx) => {
+      // 1. Lock maintenance record
+      const [record] = await tx
+        .select()
+        .from(maintenanceRecords)
+        .where(eq(maintenanceRecords.id, id))
+        .for('update')
+
+      if (!record) {
+        throw new NotFoundError('سجل الصيانة غير موجود')
+      }
+
+      // 2. Validate completed + unpaid
+      if (record.status !== 'completed') {
+        throw new BusinessRuleError('لا يمكن دفع سجل صيانة غير مكتمل', 'NOT_COMPLETED')
+      }
+      if (record.paymentStatus !== 'unpaid') {
+        throw new BusinessRuleError('سجل الصيانة مدفوع بالفعل أو لا يحتاج للدفع', 'ALREADY_PAID')
+      }
+
+      // 3. Validate totalCost > 0
+      if (Number(record.totalCost) <= 0) {
+        throw new BusinessRuleError('لا توجد تكلفة مالية لهذا السجل', 'NO_COST')
+      }
+
+      // 4. Validate payment method
+      const [method] = await tx
+        .select()
+        .from(paymentMethods)
+        .where(eq(paymentMethods.id, paymentMethodId))
+      
+      if (!method || !method.isActive) {
+        throw new BusinessRuleError('وسيلة الدفع غير صالحة', 'INVALID_PAYMENT_METHOD')
+      }
+
+      // 5. Resolve active cashier shift
+      const [activeShiftRows] = await tx.execute(
+        sql`SELECT id FROM cashier_shifts WHERE cashier_id = ${userId} AND status = 'active' LIMIT 1`
+      )
+      const activeShift = (activeShiftRows as unknown as any[])[0]
+      if (!activeShift) {
+        throw new BusinessRuleError('عملية الدفع تتطلب وجود وردية نشطة للكاشير.', 'NO_ACTIVE_SHIFT')
+      }
+      const shiftId = activeShift.id
+
+      // 6. Create treasury movement
+      await tx.insert(treasuryMovements).values({
+        treasuryAccountId: method.treasuryAccountId,
+        amount: record.totalCost || '0',
+        type: 'out',
+        referenceType: 'maintenance_payment',
+        referenceId: id,
+        cashierId: userId,
+        shiftId: shiftId,
+        notes: `دفعة صيانة: ${record.problemDescription || ''}`
+      })
+
+      // 6b. Update treasury account balance
+      await tx.execute(
+        sql`UPDATE treasury_accounts SET balance = balance - ${record.totalCost || 0}, updated_at = NOW() WHERE id = ${method.treasuryAccountId}`
+      )
+
+      // 7. Update maintenance record
+      await tx.update(maintenanceRecords)
+        .set({
+          paymentStatus: 'paid',
+          paymentMethodId,
+          paidAt: new Date(),
+          paidBy: userId,
+          updatedAt: new Date()
+        })
+        .where(eq(maintenanceRecords.id, id))
+
+      // 8. Audit log
+      auditService.log({
+        userId,
+        action: 'PAY_MAINTENANCE_SYSTEM',
+        entityType: 'MAINTENANCE_RECORD',
+        entityId: String(id),
+        oldValue: { paymentStatus: 'unpaid' },
+        newValue: { paymentStatus: 'paid', paymentMethodId, amount: record.totalCost }
+      }, tx)
+
+      return { success: true }
+    })
+  }
+
+  /**
+   * External Payment for Maintenance
+   */
+  async payRecordExternal(id: number, userId: number) {
+    return await db.transaction(async (tx) => {
+      // 1. Lock maintenance record
+      const [record] = await tx
+        .select()
+        .from(maintenanceRecords)
+        .where(eq(maintenanceRecords.id, id))
+        .for('update')
+
+      if (!record) {
+        throw new NotFoundError('سجل الصيانة غير موجود')
+      }
+
+      // 2. Validate completed + unpaid
+      if (record.status !== 'completed') {
+        throw new BusinessRuleError('لا يمكن دفع سجل صيانة غير مكتمل', 'NOT_COMPLETED')
+      }
+      if (record.paymentStatus !== 'unpaid') {
+        throw new BusinessRuleError('سجل الصيانة مدفوع بالفعل أو لا يحتاج للدفع', 'ALREADY_PAID')
+      }
+
+      // 3. Update maintenance record
+      await tx.update(maintenanceRecords)
+        .set({
+          paymentStatus: 'paid_external',
+          paidAt: new Date(),
+          paidBy: userId,
+          updatedAt: new Date()
+        })
+        .where(eq(maintenanceRecords.id, id))
+
+      // 4. Audit log
+      auditService.log({
+        userId,
+        action: 'PAY_MAINTENANCE_EXTERNAL',
+        entityType: 'MAINTENANCE_RECORD',
+        entityId: String(id),
+        oldValue: { paymentStatus: 'unpaid' },
+        newValue: { paymentStatus: 'paid_external' }
+      }, tx)
 
       return { success: true }
     })

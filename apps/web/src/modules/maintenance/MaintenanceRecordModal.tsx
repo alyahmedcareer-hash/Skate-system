@@ -38,7 +38,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
 
   useEffect(() => {
     if (recordId) {
-      loadRecord(recordId)
+      loadRecord(recordId, true)
     }
     if (isNew) {
       import('../skates/skates.service').then(m => {
@@ -49,17 +49,19 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
     }
   }, [recordId, isNew])
 
-  const loadRecord = async (id: number) => {
+  const loadRecord = async (id: number, initial: boolean = false) => {
     try {
       setLoading(true)
       setError(null)
       const data = await maintenanceService.getMaintenanceRecord(id)
       setRecord(data)
-      setSkateId(String(data.skateId))
-      setProblemDescription(data.problemDescription || '')
-      setRepairDescription(data.repairDescription || '')
-      setLaborCost(data.laborCost === '0.00' ? '' : data.laborCost)
-      setStatus(data.status as any)
+      if (initial) {
+        setSkateId(String(data.skateId))
+        setProblemDescription(data.problemDescription || '')
+        setRepairDescription(data.repairDescription || '')
+        setLaborCost(data.laborCost === '0.00' ? '' : data.laborCost)
+        setStatus(data.status as any)
+      }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'فشل تحميل بيانات السجل')
     } finally {
@@ -142,7 +144,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
       setPartName('')
       setPartQty('1')
       setPartUnitCost('')
-      await loadRecord(recordId!)
+      await loadRecord(recordId!, false)
     } catch (err: any) {
       setError(err?.response?.data?.error || 'فشل إضافة قطعة الغيار')
     } finally {
@@ -155,7 +157,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
       setSaving(true)
       setError(null)
       await maintenanceService.removeMaintenancePart(recordId!, partId)
-      await loadRecord(recordId!)
+      await loadRecord(recordId!, false)
     } catch (err: any) {
       setError(err?.response?.data?.error || 'فشل حذف القطعة')
     } finally {
@@ -352,7 +354,7 @@ export default function MaintenanceRecordModal({ recordId, onClose, onSave }: Ma
               <div className="mt-6 pt-4 border-t border-dashed">
                 <div className="flex justify-between items-center text-lg font-bold text-navy-900">
                   <span>إجمالي التكلفة:</span>
-                  <span>{record?.totalCost} ج.م</span>
+                  <span>{((record ? Number(record.partsCost) : 0) + (Number(laborCost) || 0)).toFixed(2)} ج.م</span>
                 </div>
               </div>
             </div>

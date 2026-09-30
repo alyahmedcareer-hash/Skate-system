@@ -84,7 +84,33 @@ router.delete('/:id/parts/:partId', authenticate, requirePermission('maintenance
 router.post('/:id/complete', authenticate, requirePermission('maintenance.complete'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = req.body as CompleteMaintenanceRecordPayload
-    await maintenanceService.completeRecord(Number(req.params.id), (req as any).user!.id, payload)
+    await maintenanceService.completeRecord(Number(req.params.id), (req as any).user!.sub, payload)
+    const record = await maintenanceService.getRecord(Number(req.params.id))
+    res.json({ success: true, data: record })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Pay record (system)
+router.post('/:id/pay', authenticate, requirePermission('maintenance.pay'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const paymentMethodId = Number(req.body.paymentMethodId)
+    if (!paymentMethodId || isNaN(paymentMethodId)) {
+      throw new Error('paymentMethodId is required')
+    }
+    await maintenanceService.payRecord(Number(req.params.id), (req as any).user!.sub, paymentMethodId)
+    const record = await maintenanceService.getRecord(Number(req.params.id))
+    res.json({ success: true, data: record })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Pay record (external)
+router.post('/:id/pay-external', authenticate, requirePermission('maintenance.pay'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await maintenanceService.payRecordExternal(Number(req.params.id), (req as any).user!.sub)
     const record = await maintenanceService.getRecord(Number(req.params.id))
     res.json({ success: true, data: record })
   } catch (error) {

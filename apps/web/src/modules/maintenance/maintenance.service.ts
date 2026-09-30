@@ -18,6 +18,7 @@ export interface MaintenanceRecord {
   problemDescription: string | null
   repairDescription: string | null
   status: 'pending' | 'in_progress' | 'completed'
+  paymentStatus: 'unpaid' | 'paid' | 'paid_external' | 'legacy' | 'no_cost'
   laborCost: string
   partsCost: string
   totalCost: string
@@ -97,6 +98,16 @@ class MaintenanceService {
     payload: { repairDescription: string }
   ): Promise<MaintenanceRecord> {
     const response = await api.post<ApiResponse<MaintenanceRecord>>(`/api/v1/maintenance/${id}/complete`, payload)
+    return response.data
+  }
+
+  async payRecord(id: number, paymentMethodId: number): Promise<MaintenanceRecord> {
+    const response = await api.post<ApiResponse<MaintenanceRecord>>(`/api/v1/maintenance/${id}/pay`, { paymentMethodId })
+    return response.data
+  }
+
+  async payRecordExternal(id: number): Promise<MaintenanceRecord> {
+    const response = await api.post<ApiResponse<MaintenanceRecord>>(`/api/v1/maintenance/${id}/pay-external`, {})
     return response.data
   }
 }
