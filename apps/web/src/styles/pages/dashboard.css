@@ -1,0 +1,368 @@
+/* =============================================================================
+   KOSHK SKATE ERP — Dashboard Styles
+   Design System: Navy + Gold accent, RTL, Cairo font
+   ============================================================================= */
+
+/* ── Date Controls ── */
+.dashboard-date-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.dashboard-date-controls .btn {
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-3);
+  min-height: unset;
+  height: 32px;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background-color: var(--color-white);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border);
+}
+
+.date-inputs .input {
+  border: none;
+  background: transparent;
+  padding: var(--space-1);
+  min-height: unset;
+  height: auto;
+  font-size: var(--font-size-xs);
+}
+
+.date-inputs .input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.date-separator {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── Dashboard Content Spacing ── */
+.dash-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── KPI Grid ── */
+.dash-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.dash-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.dash-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-kpi-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dash-kpi-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.dash-kpi-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+  color: var(--color-navy-800);
+  margin: 0;
+  font-family: var(--font-family-base);
+}
+
+.dash-kpi-value .dash-kpi-unit {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  margin-right: var(--space-1);
+}
+
+/* ── Full-Width Section ── */
+.dash-section-full {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+/* ── Section Header ── */
+.dash-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.dash-section-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-navy-800);
+  margin: 0;
+}
+
+.dash-section-icon {
+  color: var(--color-gold-500);
+}
+
+/* ── Two-Column Grid ── */
+.dash-grid-2 {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.dash-grid-2-equal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* ── Operational Summary ── */
+.dash-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.dash-summary-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dash-summary-column-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: var(--space-1);
+}
+
+.dash-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.dash-summary-row-value {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy-800);
+}
+
+.dash-summary-row-divider {
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+/* ── Inventory Status List ── */
+.dash-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dash-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-base);
+  background-color: var(--color-page-bg);
+}
+
+.dash-status-row-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dash-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.dash-status-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.dash-status-count {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-navy-800);
+  font-family: var(--font-family-base);
+}
+
+.dash-status-row-total {
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+}
+
+/* ── Alerts Panel ── */
+.dash-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dash-alert-item {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-base);
+  align-items: flex-start;
+}
+
+.dash-alert-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.dash-alert-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-alert-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.dash-alert-detail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: 2px 0 0;
+}
+
+/* ── Chart Container ── */
+.dash-chart-container {
+  height: 280px;
+  direction: ltr; /* Recharts requires LTR */
+}
+
+/* ── Data Table (Rentals / Sales) ── */
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family-base);
+  direction: rtl;
+  font-size: var(--font-size-sm);
+}
+
+.dash-table thead tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dash-table th {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.dash-table td {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-page-bg);
+  vertical-align: middle;
+}
+
+.dash-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dash-table-row-overdue {
+  background-color: var(--color-danger-50, #fff5f5);
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+@media (max-width: 1024px) {
+  .dash-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-grid-2,
+  .dash-grid-2-equal {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-summary-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-date-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-inputs {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-chart-container {
+    height: 220px;
+  }
+}
