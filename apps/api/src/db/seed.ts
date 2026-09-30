@@ -46,6 +46,7 @@ const ALL_PERMISSIONS: Array<{ key: string; labelAr: string; module: string }> =
   { key: 'maintenance.create',   labelAr: 'إضافة طلب صيانة',      module: 'maintenance' },
   { key: 'maintenance.edit',     labelAr: 'تعديل سجل الصيانة',    module: 'maintenance' },
   { key: 'maintenance.complete', labelAr: 'إغلاق طلب الصيانة',    module: 'maintenance' },
+  { key: 'maintenance.pay',      labelAr: 'دفع تكلفة الصيانة',    module: 'maintenance' },
   // Customers
   { key: 'customers.view',       labelAr: 'عرض العملاء',              module: 'customers' },
   { key: 'customers.create',     labelAr: 'إضافة عميل',               module: 'customers' },
@@ -133,7 +134,7 @@ const DEFAULT_ROLES = [
     isSystem: true,
     allPermissions: false,
     permissionKeys: [
-      'maintenance.view', 'maintenance.create', 'maintenance.edit', 'maintenance.complete',
+      'maintenance.view', 'maintenance.create', 'maintenance.edit', 'maintenance.complete', 'maintenance.pay',
       'damage.view', 'damage.create',
       'skates.view',
     ],
@@ -280,6 +281,18 @@ async function seed() {
       // Phase 07: Late fee per minute
       value:   '2',
       labelAr: 'رسوم التأخير لكل دقيقة',
+    },
+    {
+      key:     'print_invoices_enabled',
+      // Phase 14: Printing Invoices
+      value:   'true',
+      labelAr: 'طباعة الفواتير تلقائيا',
+    },
+    {
+      key:     'notification_sound_enabled',
+      // Phase 15: Notifications
+      value:   'true',
+      labelAr: 'صوت التنبيهات',
     },
   ]
 

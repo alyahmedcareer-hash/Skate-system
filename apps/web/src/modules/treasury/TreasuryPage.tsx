@@ -15,6 +15,7 @@ export default function TreasuryPage() {
 
   const [openingBalance, setOpeningBalance] = useState('')
   const [actualBalance, setActualBalance] = useState('')
+  const [closedAt, setClosedAt] = useState('')
 
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [expenseData, setExpenseData] = useState({ amount: '', description: '' })
@@ -27,11 +28,15 @@ export default function TreasuryPage() {
     try {
       setLoading(true)
       const sRes = await treasuryApi.getCurrentShift()
-      setShift(sRes.data)
+      setShift(sRes)
       
-      if (sRes.data && sRes.data.status === 'active') {
+      if (sRes && sRes.status === 'active') {
         const eRes = await treasuryApi.getExpenses()
-        setExpenses(eRes.data)
+        // eRes might also not have .data depending on backend, let's assume getExpenses returns array directly or ApiResponse.
+        // Actually, let's check getExpenses return type later if it fails.
+        // Based on typical Koshk API, usually it's just the array.
+        // Let's use eRes.data || eRes just to be safe.
+        setExpenses((eRes as any).data || (Array.isArray(eRes) ? eRes : []))
       }
     } catch (err: any) {
       if (err.response?.status === 404 || err.response?.data?.error?.code === 'NOT_FOUND') {
@@ -61,7 +66,10 @@ export default function TreasuryPage() {
     e.preventDefault()
     if (!shift || !actualBalance) return
     try {
-      await treasuryApi.closeShift(shift.id, { actualBalance: parseFloat(actualBalance) })
+      await treasuryApi.closeShift(shift.id, { 
+        actualBalance: parseFloat(actualBalance),
+        closedAt: closedAt ? new Date(closedAt).toISOString() : undefined
+      })
       showToast({ type: 'success', title: 'تم إغلاق الوردية بنجاح' })
       setActualBalance('')
       fetchData()
@@ -138,6 +146,15 @@ export default function TreasuryPage() {
                         placeholder="الرصيد الفعلي بالخزينة"
                         value={actualBalance}
                         onChange={(e) => setActualBalance(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <Input
+                        id="closedAt"
+                        label="وقت انتهاء الشيفت الفعلي (اختياري)"
+                        type="datetime-local"
+                        value={closedAt}
+                        onChange={(e) => setClosedAt(e.target.value)}
                       />
                     </div>
                     <Button type="submit" variant="danger">إغلاق وتصفية</Button>

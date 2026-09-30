@@ -16,6 +16,7 @@ export const treasuryAccounts = mysqlTable('treasury_accounts', {
   name: varchar('name', { length: 255 }).notNull(),
   nameAr: varchar('name_ar', { length: 255 }).notNull(),
   isActive: boolean('is_active').notNull().default(true),
+  isCashDrawer: boolean('is_cash_drawer').notNull().default(false),
   balance: decimal('balance', { precision: 12, scale: 2 }).notNull().default('0.00'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
@@ -56,7 +57,7 @@ export const treasuryMovements = mysqlTable('treasury_movements', {
     .references(() => treasuryAccounts.id),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   type: mysqlEnum('type', ['in', 'out']).notNull(),
-  referenceType: mysqlEnum('reference_type', ['rental_payment', 'rental_refund', 'late_fee_payment', 'damage_charge_payment', 'expense', 'sale_payment', 'sale_refund', 'other']).notNull(),
+  referenceType: mysqlEnum('reference_type', ['rental_payment', 'rental_refund', 'late_fee_payment', 'damage_charge_payment', 'expense', 'sale_payment', 'sale_refund', 'maintenance_payment', 'other']).notNull(),
   referenceId: int('reference_id'),
   cashierId: int('cashier_id')
     .notNull()

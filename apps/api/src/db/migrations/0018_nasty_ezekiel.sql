@@ -1,0 +1,1 @@
+ALTER TABLE `treasury_accounts` ADD `is_cash_drawer` boolean DEFAULT false NOT NULL;

@@ -23,10 +23,11 @@ export interface Expense {
 }
 
 export const treasuryApi = {
-  getCurrentShift: () => api.get<ApiResponse<Shift>>('/api/v1/shifts/current'),
+  getCurrentShift: () => api.get<Shift | null>('/api/v1/shifts/current'),
   openShift: (data: { openingBalance: number }) => api.post<ApiResponse<Shift>>('/api/v1/shifts/open', data),
-  closeShift: (id: number, data: { actualBalance: number }) => api.post<ApiResponse<Shift>>(`/api/v1/shifts/${id}/close`, data),
+  closeShift: (id: number, data: { actualBalance: number; closedAt?: string }) => api.post<ApiResponse<Shift>>(`/api/v1/shifts/${id}/close`, data),
   
   getExpenses: () => api.get<ApiResponse<Expense[]>>('/api/v1/expenses'),
   recordExpense: (data: { amount: number; description: string; categoryId?: number }) => api.post<ApiResponse<Expense>>('/api/v1/expenses', data),
+  getPaymentMethods: () => api.get<ApiResponse<any[]>>('/api/v1/payments/methods'),
 }
