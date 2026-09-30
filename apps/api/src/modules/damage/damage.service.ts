@@ -62,8 +62,8 @@ export async function createDamageReport(
         maintenance_required, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
-        data.skateId, data.rentalId, data.inspectionId, data.customerId, cashierId,
-        data.damageType, data.severity, data.description, data.customerCharge,
+        data.skateId, data.rentalId ?? null, data.inspectionId ?? null, data.customerId ?? null, cashierId,
+        data.damageType, data.severity, data.description ?? null, data.customerCharge,
         data.maintenanceRequired ? 1 : 0
       ]
     )
@@ -75,13 +75,48 @@ export async function createDamageReport(
         [data.skateId]
       )
 
-      // DEC-007: Phase 09 automatic maintenance record creation
-      await connection.execute(
-        `INSERT INTO maintenance_records (skate_id, damage_report_id, created_by, status, created_at, updated_at) 
-         VALUES (?, ?, ?, 'pending', NOW(), NOW())`,
-        [data.skateId, insertId, cashierId]
-      )
+      if (data.inspectionId) {
+        const [existing] = await connection.execute<any[]>(
+          'SELECT id FROM maintenance_records WHERE inspection_id = ?',
+          [data.inspectionId]
+        )
+        if (existing[0]) {
+          await connection.execute(
+            'UPDATE maintenance_records SET damage_report_id = ? WHERE id = ?',
+            [insertId, existing[0].id]
+          )
+        } else {
+          await connection.execute(
+            `INSERT INTO maintenance_records (skate_id, damage_report_id, inspection_id, created_by, status, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, 'pending', NOW(), NOW())`,
+            [data.skateId, insertId, data.inspectionId, cashierId]
+          )
+        }
+      } else {
+        await connection.execute(
+          `INSERT INTO maintenance_records (skate_id, damage_report_id, created_by, status, created_at, updated_at) 
+           VALUES (?, ?, ?, 'pending', NOW(), NOW())`,
+          [data.skateId, insertId, cashierId]
+        )
+      }
     }
+
+    // Phase 16: Audit Log
+    await connection.execute(
+      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at)
+       VALUES (?, 'RECORD_DAMAGE', 'DAMAGE_REPORT', ?, NULL, ?, NOW())`,
+      [
+        cashierId,
+        insertId,
+        JSON.stringify({
+          skateId: data.skateId,
+          damageType: data.damageType,
+          severity: data.severity,
+          customerCharge: data.customerCharge,
+          maintenanceRequired: data.maintenanceRequired
+        })
+      ]
+    )
 
     await connection.commit()
   } catch (err) {
@@ -231,6 +266,12 @@ export async function collectCharge(
       throw new BusinessRuleError('المبلغ المطلوب تحصيله أكبر من المبلغ المتبقي', 'OVERPAYMENT_NOT_ALLOWED')
     }
 
+    const [shiftRows] = await connection.execute<any[]>(
+      'SELECT id FROM cashier_shifts WHERE cashier_id = ? AND closed_at IS NULL LIMIT 1',
+      [cashierId]
+    )
+    const shiftId = shiftRows[0]?.id || null;
+
     const paymentMethodIds = data.payments.map(p => p.paymentMethodId)
     const placeholders = paymentMethodIds.map(() => '?').join(',')
     const [pmRows] = await connection.execute<any[]>(
@@ -251,8 +292,8 @@ export async function collectCharge(
       )
 
       await connection.execute(
-        `INSERT INTO treasury_movements (treasury_account_id, amount, type, reference_type, reference_id, cashier_id, notes, created_at) VALUES (?, ?, 'in', 'damage_charge_payment', ?, ?, ?, NOW())`,
-        [pm.treasury_account_id, p.amount, report.rental_id, cashierId, `Damage charge for report \${id}`]
+        `INSERT INTO treasury_movements (treasury_account_id, shift_id, amount, type, reference_type, reference_id, cashier_id, notes, created_at) VALUES (?, ?, ?, 'in', 'damage_charge_payment', ?, ?, ?, NOW())`,
+        [pm.treasury_account_id, shiftId, p.amount, id, cashierId, `Damage charge for report ${id}`]
       )
 
       await connection.execute(
@@ -324,11 +365,16 @@ export async function waiveCharge(
       [newWaived, userId, data.reason, nextStatus, id]
     )
 
-    // Audit log
+    // Phase 16: Audit log
     await connection.execute(
-      `INSERT INTO audit_log (user_id, action, entity_type, entity_id, notes, created_at)
-       VALUES (?, 'waive_damage_charge', 'damage_report', ?, ?, NOW())`,
-      [userId, id, `Waived \${data.amount} EGP. Reason: \${data.reason}`]
+      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at)
+       VALUES (?, 'WAIVE_DAMAGE_CHARGE', 'DAMAGE_REPORT', ?, ?, ?, NOW())`,
+      [
+        userId,
+        id,
+        JSON.stringify({ chargeWaived: currentWaived, status: report.status }),
+        JSON.stringify({ chargeWaived: newWaived, status: nextStatus, amountWaived: data.amount, reason: data.reason })
+      ]
     )
 
     await connection.commit()

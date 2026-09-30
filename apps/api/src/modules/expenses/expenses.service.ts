@@ -30,10 +30,14 @@ export async function recordExpense(cashierId: number, input: CreateExpenseInput
     const newId = result.insertId
 
     // 3. Create treasury movement (Cash Out)
-    // Assuming Cash Account ID = 1 for physical cash drawer expenses.
-    // If we wanted to be rigorous we'd let them select the payment method for the expense, 
-    // but the spec implies cash expenses from the drawer.
-    const treasuryAccountId = 1 // Main Cash
+    const [cashAccountRows] = await tx.execute(
+      sql`SELECT id FROM treasury_accounts WHERE is_cash_drawer = true LIMIT 1`
+    )
+    const cashAccount = (cashAccountRows as unknown as any[])[0]
+    if (!cashAccount) {
+      throw new BusinessRuleError('لا يوجد درج نقدية محدد في النظام', 'NO_CASH_DRAWER')
+    }
+    const treasuryAccountId = cashAccount.id
     
     await tx.insert(treasuryMovements).values({
       treasuryAccountId,

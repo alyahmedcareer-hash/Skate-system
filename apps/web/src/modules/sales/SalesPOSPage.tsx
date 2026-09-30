@@ -3,6 +3,8 @@ import { ShoppingCart, Plus, Minus, X, PackageOpen } from 'lucide-react'
 import { productsApi, type Product, type ProductCategory } from '../products/products.api'
 import { salesApi } from './sales.api'
 import { paymentsService, type PaymentMethodDTO } from '../payments/payments.service'
+import { invoicesService } from '../invoices/invoices.service'
+import { usePrint } from '../../contexts/PrintContext'
 import { Button, SearchBar, useToast, PageLoader, Alert, EmptyState } from '../../components/ui'
 
 interface CartItem extends Product {
@@ -16,6 +18,7 @@ interface PaymentRow {
 
 export default function SalesPOSPage() {
   const { showToast } = useToast()
+  const { printInvoice } = usePrint()
   
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<ProductCategory[]>([])
@@ -139,6 +142,15 @@ export default function SalesPOSPage() {
         }))
       })
       showToast({ type: 'success', title: `تم إنشاء الفاتورة بنجاح: ${res.data.saleCode}` })
+      
+      // Auto-print sale invoice
+      try {
+        const invoiceData = await invoicesService.getSaleInvoice(res.data.id)
+        printInvoice(invoiceData)
+      } catch (err) {
+        showToast({ type: 'error', title: 'فشلت طباعة الفاتورة' })
+      }
+
       setCart([])
       setPayments([])
       fetchData() // refresh stock

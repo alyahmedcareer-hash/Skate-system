@@ -2,7 +2,7 @@ import { eq, desc, sql } from 'drizzle-orm'
 import { db } from '../../db/connection.js'
 import { sales, saleItems, salePayments } from '../../db/schema/sales.js'
 import { products } from '../../db/schema/products.js'
-import { paymentMethods, treasuryMovements } from '../../db/schema/payments.js'
+import { paymentMethods, treasuryMovements, treasuryAccounts } from '../../db/schema/payments.js'
 import { CreateSaleDTO, SaleDTO } from './sales.types.js'
 import { BusinessRuleError, NotFoundError, AppError } from '../../utils/errors.js'
 
@@ -146,9 +146,16 @@ export class SalesService {
         throw new BusinessRuleError('المدفوعات لا تتطابق مع الإجمالي', 'PAYMENT_MISMATCH')
       }
 
+      // Phase 14: Unified Invoice Number
+      await tx.execute(sql`INSERT INTO sequences (name, value) VALUES ('invoice_number', 1) ON DUPLICATE KEY UPDATE value = value + 1`)
+      const [seqRows] = await tx.execute(sql`SELECT value FROM sequences WHERE name = 'invoice_number'`)
+      const invoiceVal = (seqRows as unknown as any[])[0].value
+      const invoiceNumber = `INV-${String(invoiceVal).padStart(6, '0')}`
+
       // 3. Create Sale
       const [saleResult] = await tx.insert(sales).values({
         saleCode: generateSaleCode(),
+        invoiceNumber,
         customerId: data.customerId || null,
         cashierId: data.cashierId,
         shiftId: activeShift.id,
@@ -189,6 +196,15 @@ export class SalesService {
           shiftId: activeShift.id,
           notes: `Payment for Sale ${newSaleId}`
         })
+
+        // Update Treasury Account Balance
+        const [accRow] = await tx.select().from(treasuryAccounts).where(eq(treasuryAccounts.id, p.treasuryAccountId)).limit(1)
+        if (accRow) {
+          const newBalance = parseFloat(accRow.balance as string) + parseFloat(p.amount.toString())
+          await tx.update(treasuryAccounts)
+            .set({ balance: newBalance.toString() })
+            .where(eq(treasuryAccounts.id, p.treasuryAccountId))
+        }
       }
 
       return newSaleId
@@ -247,6 +263,15 @@ export class SalesService {
           shiftId: activeShift ? activeShift.id : null,
           notes: `Refund for Cancelled Sale ${saleId}`
         })
+
+        // Update Treasury Account Balance
+        const [accRow] = await tx.select().from(treasuryAccounts).where(eq(treasuryAccounts.id, p.treasuryAccountId)).limit(1)
+        if (accRow) {
+          const newBalance = parseFloat(accRow.balance as string) - parseFloat(p.amount as string)
+          await tx.update(treasuryAccounts)
+            .set({ balance: newBalance.toString() })
+            .where(eq(treasuryAccounts.id, p.treasuryAccountId))
+        }
       }
     })
 
