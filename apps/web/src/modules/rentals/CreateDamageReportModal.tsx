@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle } from 'lucide-react'
-import { Modal, Button, Alert, Input, useToast } from '../../components/ui'
+import { Modal, Button, Alert, Input, Select, useToast } from '../../components/ui'
 import { damageService } from '../damage/damage.service'
+import { paymentsService, type PaymentMethodDTO } from '../payments/payments.service'
 import type { ActiveRentalDTO } from './rentals.service'
 
 interface CreateDamageReportModalProps {
@@ -24,6 +25,18 @@ export function CreateDamageReportModal({ isOpen, onClose, rental, inspectionId,
   const [customerCharge, setCustomerCharge] = useState(0)
   const [maintenanceRequired, setMaintenanceRequired] = useState(true)
 
+  const [methods, setMethods] = useState<PaymentMethodDTO[]>([])
+  const [paymentMethodId, setPaymentMethodId] = useState<string>('')
+  
+  useEffect(() => {
+    if (isOpen) {
+      paymentsService.listMethods().then(res => {
+        setMethods(res.data)
+        if (res.data.length > 0) setPaymentMethodId(String(res.data[0].id))
+      }).catch(console.error)
+    }
+  }, [isOpen])
+
   if (!isOpen || !rental || !inspectionId) return null
 
   const handleSubmit = async () => {
@@ -36,7 +49,7 @@ export function CreateDamageReportModal({ isOpen, onClose, rental, inspectionId,
     setError(null)
 
     try {
-      await damageService.create({
+      const res = await damageService.create({
         rentalId: rental.id,
         inspectionId,
         skateId: rental.skate.id,
@@ -47,6 +60,14 @@ export function CreateDamageReportModal({ isOpen, onClose, rental, inspectionId,
         customerCharge,
         maintenanceRequired
       })
+      
+      // Attempt to collect charge if set
+      if (customerCharge > 0 && paymentMethodId) {
+        await damageService.pay(res.data.id, {
+          payments: [{ paymentMethodId: Number(paymentMethodId), amount: customerCharge }]
+        })
+      }
+
       showToast({ type: 'success', title: 'تم إنشاء تقرير الضرر بنجاح' })
       onSuccess()
       onClose()
@@ -121,7 +142,7 @@ export function CreateDamageReportModal({ isOpen, onClose, rental, inspectionId,
           required
         />
 
-        <div style={{ marginTop: 16, marginBottom: 16 }}>
+        <div style={{ marginTop: 16, marginBottom: 16, display: 'grid', gridTemplateColumns: customerCharge > 0 ? '1fr 1fr' : '1fr', gap: 12 }}>
           <Input
             id="customer-charge"
             type="number"
@@ -131,6 +152,18 @@ export function CreateDamageReportModal({ isOpen, onClose, rental, inspectionId,
             value={customerCharge}
             onChange={e => setCustomerCharge(Math.max(0, parseFloat(e.target.value) || 0))}
           />
+          {customerCharge > 0 && (
+            <Select
+              id="payment-method"
+              label="طريقة الدفع"
+              value={paymentMethodId}
+              onChange={e => setPaymentMethodId(e.target.value)}
+              options={[
+                { value: '', label: 'اختر طريقة الدفع...' },
+                ...methods.map(m => ({ value: String(m.id), label: m.name }))
+              ]}
+            />
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 12, background: maintenanceRequired ? 'var(--color-danger-bg)' : 'var(--color-surface-raised)', borderRadius: 'var(--radius-md)' }}>

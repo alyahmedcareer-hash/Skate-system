@@ -3,7 +3,7 @@
  */
 
 import 'dotenv/config'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import supertest from 'supertest'
 
 import app from '../app.js'

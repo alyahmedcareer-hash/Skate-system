@@ -41,11 +41,12 @@
  *   the same skate simultaneously.
  */
 
-import { eq, sql, and, gte, lte, count, asc, desc } from 'drizzle-orm'
+import { eq, sql, and, gte, lte, count, asc, desc, inArray, lt, gt } from 'drizzle-orm'
 import { pool } from '../../db/connection.js'
 import { db } from '../../db/connection.js'
 import { rentals, ENDING_SOON_THRESHOLD_MINUTES } from '../../db/schema/rentals.js'
 import { skates } from '../../db/schema/skates.js'
+import { reservations } from '../../db/schema/reservations.js'
 import { customers } from '../../db/schema/customers.js'
 import { users } from '../../db/schema/users.js'
 import { settings } from '../../db/schema/settings'
@@ -476,16 +477,18 @@ export async function startRental(
       throw new BusinessRuleError('الزلاجة غير متاحة للاستئجار', 'SKATE_NOT_AVAILABLE')
     }
 
-    // Check for active reservations for this skate right now
-    const now = new Date()
-    const [overlapRows] = await connection.execute<any[]>(
-      `SELECT id, customer_id FROM reservations 
-       WHERE skate_id = ? 
-       AND status IN ('pending', 'confirmed') 
-       AND reserved_from <= ? 
-       AND reserved_until > ?`,
-      [data.skateId, now, now]
-    )
+    // Check for active reservations that overlap with the intended rental duration
+    const startedAt = new Date()
+    const expectedEndAt = new Date(startedAt.getTime() + data.durationMinutes * 60000)
+
+    const overlapRows = await db.select({ id: reservations.id, customerId: reservations.customerId })
+      .from(reservations)
+      .where(and(
+        eq(reservations.skateId, data.skateId),
+        inArray(reservations.status, ['pending', 'confirmed']),
+        lt(reservations.reservedFrom, expectedEndAt),
+        gt(reservations.reservedUntil, startedAt)
+      ))
 
     if (overlapRows.length > 0) {
       if (!data.reservationId || overlapRows[0].id !== data.reservationId) {
@@ -523,8 +526,18 @@ export async function startRental(
     const rentalAmount = calculateRentalAmount(hourlyRate, data.durationMinutes)
 
     // Capture server time (BR-19)
-    const startedAt = new Date()
-    const expectedEndAt = new Date(startedAt.getTime() + data.durationMinutes * 60000)
+    // (Variables startedAt and expectedEndAt already calculated above for reservation check)
+
+    // Phase 14: Unified Invoice Number Generation
+    await connection.execute(
+      `INSERT INTO sequences (name, value) VALUES ('invoice_number', 1)
+       ON DUPLICATE KEY UPDATE value = value + 1`
+    )
+    const [seqRows] = await connection.execute<any[]>(
+      `SELECT value FROM sequences WHERE name = 'invoice_number'`
+    )
+    const invoiceVal = seqRows[0].value
+    const invoiceNumber = `INV-${String(invoiceVal).padStart(6, '0')}`
 
     // INSERT rental record with a temporary placeholder code.
     // The final rental_code is derived from the auto-increment insertId (DEC-062, F-05).
@@ -533,11 +546,12 @@ export async function startRental(
     const tempCode = `TEMP-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const [insertResult] = await connection.execute<any>(
       `INSERT INTO rentals
-        (rental_code, skate_id, customer_id, cashier_id, shift_id, duration_minutes,
+        (rental_code, invoice_number, skate_id, customer_id, cashier_id, shift_id, duration_minutes,
          price_per_hour, rental_amount, started_at, expected_end_at, status, notes, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW(), NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW(), NOW())`,
       [
         tempCode,
+        invoiceNumber,
         data.skateId,
         data.customerId,
         cashierId,
@@ -614,6 +628,20 @@ export async function startRental(
         [p.amount, pm.treasury_account_id]
       )
     }
+
+    // Phase 16: Audit Log (Atomic with business transaction)
+    await connection.execute(
+      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        cashierId, 
+        'START_RENTAL', 
+        'RENTAL', 
+        newRentalId, 
+        JSON.stringify({ status: 'available' }), 
+        JSON.stringify({ status: 'rented', durationMinutes: data.durationMinutes, rentalAmount })
+      ]
+    )
 
     await connection.commit()
   } catch (err) {
@@ -827,9 +855,9 @@ export async function cancelRental(rentalId: number, cashierId: number): Promise
       await connection.rollback()
       throw new NotFoundError(`الإيجار رقم ${rentalId} غير موجود`)
     }
-    if (rental.status !== 'active') {
+    if (rental.status !== 'active' && rental.status !== 'returned') {
       await connection.rollback()
-      throw new BusinessRuleError('لا يمكن إلغاء إيجار غير نشط', 'RENTAL_NOT_ACTIVE')
+      throw new BusinessRuleError('لا يمكن إلغاء هذا الإيجار', 'RENTAL_NOT_CANCELLABLE')
     }
 
     // 2. Fetch payments for this rental with treasury_account info
@@ -837,7 +865,7 @@ export async function cancelRental(rentalId: number, cashierId: number): Promise
       `SELECT rp.id, rp.amount, pm.treasury_account_id 
        FROM rental_payments rp
        JOIN payment_methods pm ON rp.payment_method_id = pm.id
-       WHERE rp.rental_id = ?`,
+       WHERE rp.rental_id = ? AND rp.payment_type = 'rental'`,
       [rentalId]
     )
 
@@ -1068,6 +1096,20 @@ export async function returnRental(
         `INSERT INTO maintenance_records (skate_id, inspection_id, created_by, status, created_at, updated_at) 
          VALUES (?, ?, ?, 'pending', NOW(), NOW())`,
         [rental.skate_id, inspectionId, cashierId]
+      )
+    }
+
+    // Phase 16: Audit Log
+    if (waivedFee > 0) {
+      await connection.execute(
+        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at)
+         VALUES (?, 'WAIVE_LATE_FEE', 'LATE_FEE', ?, ?, ?, NOW())`,
+        [
+          cashierId,
+          rentalId,
+          JSON.stringify({ calculatedFee }),
+          JSON.stringify({ waivedFee, reason: data.waiverReason })
+        ]
       )
     }
 

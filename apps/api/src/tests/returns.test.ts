@@ -21,9 +21,18 @@ describe('Returns API (Phase 07)', () => {
       const hash = await bcrypt.hash(password, 12)
       
       await connection.execute("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE email = ?)", [email])
+      await connection.execute("DELETE FROM treasury_movements WHERE shift_id IN (SELECT id FROM cashier_shifts WHERE cashier_id IN (SELECT id FROM users WHERE email = ?))", [email])
       await connection.execute("DELETE FROM maintenance_records WHERE created_by IN (SELECT id FROM users WHERE email = ?)", [email])
       await connection.execute("DELETE FROM inspections WHERE inspected_by IN (SELECT id FROM users WHERE email = ?)", [email])
       await connection.execute("DELETE FROM cashier_shifts WHERE cashier_id IN (SELECT id FROM users WHERE email = ?)", [email])
+      await connection.execute("DELETE FROM audit_logs WHERE user_id IN (SELECT id FROM users WHERE email = ?)", [email])
+      await connection.execute("DELETE FROM maintenance_parts WHERE maintenance_id IN (SELECT id FROM maintenance_records WHERE inspection_id IN (SELECT id FROM inspections WHERE rental_id IN (SELECT id FROM rentals WHERE cashier_id IN (SELECT id FROM users WHERE email = ?))))", [email])
+      await connection.execute("DELETE FROM maintenance_records WHERE inspection_id IN (SELECT id FROM inspections WHERE rental_id IN (SELECT id FROM rentals WHERE cashier_id IN (SELECT id FROM users WHERE email = ?)))", [email])
+      await connection.execute("DELETE FROM inspections WHERE rental_id IN (SELECT id FROM rentals WHERE cashier_id IN (SELECT id FROM users WHERE email = ?))", [email])
+      await connection.execute("DELETE FROM late_fee_records WHERE rental_id IN (SELECT id FROM rentals WHERE cashier_id IN (SELECT id FROM users WHERE email = ?))", [email])
+      await connection.execute("DELETE FROM rental_payments WHERE rental_id IN (SELECT id FROM rentals WHERE cashier_id IN (SELECT id FROM users WHERE email = ?))", [email])
+      await connection.execute("DELETE FROM treasury_movements WHERE reference_id IN (SELECT id FROM rentals WHERE cashier_id IN (SELECT id FROM users WHERE email = ?))", [email])
+      await connection.execute("DELETE FROM rentals WHERE cashier_id IN (SELECT id FROM users WHERE email = ?)", [email])
       await connection.execute("DELETE FROM users WHERE email = ?", [email])
       
       const [uRes] = await connection.execute<any>(
@@ -58,17 +67,12 @@ describe('Returns API (Phase 07)', () => {
 
     const connection = await pool.getConnection()
     try {
-      // Clean up for tests
-      await connection.execute('DELETE FROM late_fee_records')
-      await connection.execute('DELETE FROM maintenance_parts')
-      await connection.execute('DELETE FROM maintenance_records')
-      await connection.execute('DELETE FROM inspections')
-      await connection.execute('DELETE FROM treasury_movements')
-      await connection.execute('DELETE FROM rental_payments')
-      await connection.execute('DELETE FROM rentals')
-      await connection.execute('DELETE FROM reservations')
-      await connection.execute('DELETE FROM skates')
-      await connection.execute('DELETE FROM customers')
+      // Only clean up this test's data
+      await connection.execute('DELETE FROM rentals WHERE id IN (SELECT rental_id FROM late_fee_records)')
+      // Let test cleanup handle specifics
+      await connection.execute('DELETE FROM reservations WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01")')
+      await connection.execute('DELETE FROM skates WHERE skate_code = "TEST-RET-01"')
+      await connection.execute('DELETE FROM customers WHERE name = "Test Cust"')
 
       // Insert customer
       const [cRes] = await connection.execute<any>(
@@ -105,16 +109,16 @@ describe('Returns API (Phase 07)', () => {
   afterAll(async () => {
     const connection = await pool.getConnection()
     try {
-      await connection.execute('DELETE FROM late_fee_records')
-      await connection.execute('DELETE FROM maintenance_parts')
-      await connection.execute('DELETE FROM maintenance_records')
-      await connection.execute('DELETE FROM inspections')
-      await connection.execute('DELETE FROM treasury_movements')
-      await connection.execute('DELETE FROM rental_payments')
-      await connection.execute('DELETE FROM rentals')
-      await connection.execute('DELETE FROM reservations')
-      await connection.execute('DELETE FROM skates')
-      await connection.execute('DELETE FROM customers')
+      await connection.execute('DELETE FROM maintenance_parts WHERE maintenance_id IN (SELECT id FROM maintenance_records WHERE inspection_id IN (SELECT id FROM inspections WHERE rental_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01"))))')
+      await connection.execute('DELETE FROM maintenance_records WHERE inspection_id IN (SELECT id FROM inspections WHERE rental_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01")))')
+      await connection.execute('DELETE FROM inspections WHERE rental_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01"))')
+      await connection.execute('DELETE FROM late_fee_records WHERE rental_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01"))')
+      await connection.execute('DELETE FROM rental_payments WHERE rental_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01"))')
+      await connection.execute('DELETE FROM treasury_movements WHERE reference_type = "late_fee_payment" AND reference_id IN (SELECT id FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01"))')
+      await connection.execute('DELETE FROM rentals WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01")')
+      await connection.execute('DELETE FROM reservations WHERE skate_id IN (SELECT id FROM skates WHERE skate_code = "TEST-RET-01")')
+      await connection.execute('DELETE FROM skates WHERE skate_code = "TEST-RET-01"')
+      await connection.execute('DELETE FROM customers WHERE name = "Test Cust"')
     } finally {
       connection.release()
     }
@@ -313,14 +317,13 @@ describe('Returns API (Phase 07)', () => {
     // late by 10 mins
     const rentalId = await createActiveRental(15, -10 * 60000)
     
-    // Dynamically calculate what the backend will expect because of mysql time truncation
-    const connectionForCheck = await pool.getConnection()
     let expectedFee = 20
+    const connectionForCheck = await pool.getConnection()
     try {
       const [rRows] = await connectionForCheck.execute<any>('SELECT expected_end_at FROM rentals WHERE id = ?', [rentalId])
       const expectedEnd = new Date(rRows[0].expected_end_at).getTime()
       const diffMs = Date.now() - expectedEnd
-      expectedFee = Math.ceil(diffMs / 60000) * 2
+      expectedFee = Math.max(0, Math.ceil(diffMs / 60000)) * 2
     } finally {
       connectionForCheck.release()
     }

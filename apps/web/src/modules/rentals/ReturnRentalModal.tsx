@@ -4,6 +4,7 @@ import { Modal, Button, Alert, Input, LoadingSpinner, Badge, useToast } from '..
 import { rentalsService, type ActiveRentalDTO, type ReturnRentalBody } from './rentals.service'
 import { paymentsService, type PaymentMethodDTO } from '../payments/payments.service'
 import { formatCurrency } from '../../utils/currency'
+
 import { Trash2, Plus } from 'lucide-react'
 
 interface ReturnRentalModalProps {
@@ -15,6 +16,7 @@ interface ReturnRentalModalProps {
 
 export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: ReturnRentalModalProps) {
   const { showToast } = useToast()
+
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -189,7 +191,9 @@ export function ReturnRentalModal({ isOpen, onClose, rental, onSuccess }: Return
       const res = await rentalsService.return(rental.id, payload)
       showToast({ type: 'success', title: 'تم إنهاء الإيجار وإعادة الزلاجة بنجاح' })
       
-      const hasDamage = [wheelsCondition, brakeCondition, strapCondition, bearingsCondition, bodyCondition].some(c => c === 'damaged' || c === 'broken')
+      // Auto-print disabled per user request
+
+      const hasDamage = [wheelsCondition, brakeCondition, strapCondition, bearingsCondition, bodyCondition].some(c => c === 'minor_damage' || c === 'damaged' || c === 'broken')
       onSuccess(hasDamage, res.data.lastInspectionId)
       onClose()
     } catch (err: unknown) {

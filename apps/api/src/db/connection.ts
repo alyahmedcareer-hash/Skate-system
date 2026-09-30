@@ -36,7 +36,8 @@ export const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit:    10,
   queueLimit:         0,
-  timezone: '+00:00',  // Store timestamps in UTC
+  timezone: '+03:00', // Match Egypt Time to fix the date offset mapping
+  dateStrings: true,
 })
 
 // ---------------------------------------------------------------------------

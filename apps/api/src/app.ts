@@ -55,6 +55,21 @@ import { expensesRouter } from './modules/expenses/expenses.routes.js'
 // Phase 13 routes
 import { reportsRouter } from './modules/reports/reports.routes.js'
 
+// Phase 14 routes
+import { invoicesRouter } from './modules/invoices/invoices.routes.js'
+
+// Settings
+import { settingsRouter } from './modules/settings/settings.routes.js'
+
+// Phase 15 routes
+import { notificationsRouter } from './modules/notifications/notifications.routes.js'
+
+// Phase 16 routes
+import { auditRouter } from './modules/audit/audit.routes.js'
+
+// Phase 17 routes
+import { dashboardRouter } from './modules/dashboard/dashboard.routes.js'
+
 // ---------------------------------------------------------------------------
 // Express app
 // ---------------------------------------------------------------------------
@@ -192,6 +207,22 @@ app.use('/api/v1/expenses', expensesRouter)
 // Phase 13 routes
 // ---------------------------------------------------------------------------
 app.use('/api/v1/reports', reportsRouter)
+
+// ---------------------------------------------------------------------------
+// Phase 14 routes
+app.use('/api/v1/invoices', invoicesRouter)
+
+// Settings routes
+app.use('/api/v1/settings', settingsRouter)
+
+// Phase 15 routes
+app.use('/api/v1/notifications', notificationsRouter)
+
+// Phase 16 routes
+app.use('/api/v1/audit-logs', auditRouter)
+
+// Phase 17 routes
+app.use('/api/v1/dashboard', dashboardRouter)
 
 // ---------------------------------------------------------------------------
 // 404 handler — must come before error handler, after all routes

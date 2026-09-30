@@ -35,7 +35,9 @@ import { skatesService, type SkateDTO } from '../skates/skates.service'
 import { reservationsService } from '../reservations/reservations.service'
 import { formatCurrency } from '../../utils/currency'
 import { paymentsService, type PaymentMethodDTO } from '../payments/payments.service'
+import { invoicesService } from '../invoices/invoices.service'
 import { Trash2 } from 'lucide-react'
+import { usePrint } from '../../contexts/PrintContext'
 
 // ---------------------------------------------------------------------------
 // Step constants
@@ -760,6 +762,7 @@ export default function RentalPOSPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { showToast } = useToast()
+  const { printInvoice } = usePrint()
 
   const [reservationId, setReservationId] = useState<number | null>(null)
   const [step, setStep]                   = useState(1)
@@ -801,6 +804,15 @@ export default function RentalPOSPage() {
         payments,
       })
       showToast({ type: 'success', title: `تم بدء الإيجار: ${res.data.rentalCode}` })
+      
+      // Auto-print invoice
+      try {
+        const invoiceData = await invoicesService.getRentalInvoice(res.data.id)
+        printInvoice(invoiceData)
+      } catch (err) {
+        showToast({ type: 'error', title: 'فشلت طباعة الفاتورة' })
+      }
+
       navigate('/rentals/active')
     } catch (err: unknown) {
       const errObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string }

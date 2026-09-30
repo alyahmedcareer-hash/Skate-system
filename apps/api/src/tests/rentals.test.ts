@@ -65,7 +65,7 @@
  */
 
 import 'dotenv/config'
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
 import supertest from 'supertest'
 import bcrypt from 'bcryptjs'
 import { eq, like, and, sql } from 'drizzle-orm'
@@ -410,6 +410,7 @@ describe('Rentals — Availability and Creation', () => {
 
   it('TC-RENT-04: Cannot rent skate with status "damaged" → 422', async () => {
     const res = await startRental(adminToken, skateDmgdId, custId1, 30)
+    if (res.status !== 422) console.log('TC-RENT-04 ERROR BODY:', res.body, { skateDmgdId, custId1 })
     expect(res.status).toBe(422)
     expect(res.body.error.code).toBe('SKATE_NOT_AVAILABLE')
   })
