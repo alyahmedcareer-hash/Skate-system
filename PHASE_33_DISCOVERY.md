@@ -13,15 +13,21 @@ However, three significant production-readiness gaps remain.
 ## 2. Identified Production-Readiness Gaps
 
 ### Gap 1: System Actor / Background Task Architecture (Critical Audit Integrity Issue)
-**Status:** ARCHITECTURAL DEFICIENCY 
+**Status:** REMEDIATED (PHASE 33 SYSTEM ACTOR INTEGRITY)
 **Context:** 
 During automated business processes (e.g., `lazyExpireReservations` in `reservations.service.ts` which automatically cancels expired reservations when a user queries the list), actions are performed by the system itself, not an active user.
 **The Problem:** 
-The `audit_logs` database schema enforces `user_id` as a strict, non-nullable foreign key referencing the `users` table. When `reservations.service.ts` attempts to log a cancellation without a `userId` (or passes `undefined`), the database rejects the insert with `ER_NO_DEFAULT_FOR_FIELD`. Because Phase 32 made audit logging non-blocking, these failures are silently caught and dropped (visible only as `stderr` output during test runs). 
+The `audit_logs` database schema enforces `user_id` as a strict, non-nullable foreign key referencing the `users` table. When `reservations.service.ts` attempts to log a cancellation without a `userId` (or passes `undefined`), the database rejects the insert with `ER_NO_DEFAULT_FOR_FIELD`. Because Phase 32 made audit logging non-blocking, these failures are silently caught and dropped (visible only as `stderr` output during test runs). Furthermore, race conditions existed where concurrent requests could execute cancellation without transactional atomic guarantees, and audit failures blocked subsequent audit logs.
 **Impact:** 
-System-initiated actions are entirely un-audited, representing a compliance hole.
-**Proposed Remediation:** 
-Implement a formal "System Actor" identity (e.g., seeding a locked System User with ID 0) or alter the `audit_logs` schema to gracefully handle system-originated events.
+System-initiated actions were entirely un-audited, representing a compliance hole, and susceptible to duplicate logging or business state corruption.
+**Remediation (Phase 33 Fixes):** 
+1. **System Actor Registration:** Implemented a formal "System Actor" identity (`system@koshkskate.internal`) seeded idempotently with `isSystemAccount: true`. Normal logins for this identity are rigorously blocked.
+2. **Race Condition & Concurrency Guard:** `lazyExpireReservations` has been overhauled to apply atomic state transitions. It explicitly transitions candidates `ONLY` if they are strictly still eligible (`status IN ('pending', 'confirmed') AND reserved_until <= NOW()`). 
+3. **Duplicate Audit Protection:** Audit events are now strictly gated behind `result.affectedRows > 0`. If a concurrent request races and is beaten, the database's native optimistic locking causes `affectedRows === 0`, ensuring exactly one state change and exactly one audit event is logged.
+4. **Audit Failure Isolation:** Implemented loop-level `try/catch` isolation. Audit persistence failures for candidate A will no longer abort candidate B. Business transitions remain strictly non-reliant on audit success.
+5. **Test Coverage:** Extensive isolated tests (`system-actor.test.ts`) were added to guarantee isolation across System Actor distinguishability, login blocking, atomic race condition safety, duplicate guards, and audit failure isolation.
+**Remaining Limitations:**
+- `lazyExpireReservations` performs non-transactional `SELECT` then candidate-by-candidate `UPDATE`. While the `UPDATE` is atomic and safe, high volumes of expired reservations may incur N+1 performance constraints.
 
 ### Gap 2: Invoices History & Retrieval Viewer
 **Status:** MISSING FRONTEND CAPABILITY

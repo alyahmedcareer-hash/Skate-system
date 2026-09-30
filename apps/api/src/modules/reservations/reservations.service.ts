@@ -120,7 +120,7 @@ async function fetchReservationsJoined(whereClause?: ReturnType<typeof and>): Pr
  * should be updated to 'cancelled'.
  */
 export async function lazyExpireReservations(): Promise<void> {
-  const toCancel = await db
+  const candidates = await db
     .select({ id: reservations.id })
     .from(reservations)
     .where(
@@ -130,31 +130,50 @@ export async function lazyExpireReservations(): Promise<void> {
       )
     )
 
-  if (toCancel.length === 0) return
+  if (candidates.length === 0) return
 
-  await db
-    .update(reservations)
-    .set({ status: 'cancelled' })
-    .where(
-      inArray(
-        reservations.id,
-        toCancel.map(r => r.id)
-      )
-    )
-
+  let systemActorId: number
   try {
-    const systemActorId = await getSystemActorId()
-    for (const res of toCancel) {
-      await auditService.log({
-        userId: systemActorId,
-        action: 'SYSTEM_CANCEL_EXPIRED_RESERVATION',
-        entityType: 'RESERVATION',
-        entityId: String(res.id),
-        newValue: { status: 'cancelled' }
-      })
-    }
+    systemActorId = await getSystemActorId()
   } catch (err) {
-    console.error('Failed to log lazy expiration audit:', err)
+    console.error('Failed to resolve System Actor ID for lazy expiration:', err)
+    return
+  }
+
+  for (const candidate of candidates) {
+    try {
+      // 1. Atomically transition ONLY if still eligible (concurrency guard)
+      const [result] = await db
+        .update(reservations)
+        .set({ status: 'cancelled' })
+        .where(
+          and(
+            eq(reservations.id, candidate.id),
+            inArray(reservations.status, ['pending', 'confirmed']),
+            lte(reservations.reservedUntil, sql`NOW()`)
+          )
+        )
+
+      // 2. Check if the transition actually happened
+      if (result.affectedRows > 0) {
+        // 3. Attempt audit independently
+        try {
+          await auditService.log({
+            userId: systemActorId,
+            action: 'SYSTEM_CANCEL_EXPIRED_RESERVATION',
+            entityType: 'RESERVATION',
+            entityId: String(candidate.id),
+            newValue: { status: 'cancelled' }
+          })
+        } catch (auditErr) {
+          // Swallow/log audit failure, DO NOT block business transition
+          console.error(`Failed to log audit for expired reservation ${candidate.id}:`, auditErr)
+        }
+      }
+    } catch (dbErr) {
+      // Isolate business transition failure to the specific candidate
+      console.error(`Failed to expire reservation ${candidate.id}:`, dbErr)
+    }
   }
 }
 
