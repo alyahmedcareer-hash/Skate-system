@@ -117,7 +117,7 @@ afterAll(async () => {
   const found = await db.select().from(users).where(eq(users.email, CASHIER_EMAIL)).limit(1)
   if (found.length) {
     await db.delete(userRoles).where(eq(userRoles.userId, found[0].id))
-    await db.delete(users).where(eq(users.id, found[0].id))
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, found[0].id))
   }
 })
 

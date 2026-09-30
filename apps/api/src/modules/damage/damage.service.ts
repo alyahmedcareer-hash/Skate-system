@@ -1,4 +1,5 @@
 import { eq, and, count, desc } from 'drizzle-orm'
+import { auditService } from '../audit/audit.service.js';
 import { db, pool } from '../../db/connection.js'
 import { damageReports } from '../../db/schema/damages.js'
 import { skates } from '../../db/schema/skates.js'
@@ -102,21 +103,13 @@ export async function createDamageReport(
     }
 
     // Phase 16: Audit Log
-    await connection.execute(
-      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at)
-       VALUES (?, 'RECORD_DAMAGE', 'DAMAGE_REPORT', ?, NULL, ?, NOW())`,
-      [
-        cashierId,
-        insertId,
-        JSON.stringify({
+    await auditService.logRaw({ userId: cashierId, action: 'CREATE_DAMAGE_REPORT', entityType: 'DAMAGE_REPORT', entityId: String(insertId), newValue: {
           skateId: data.skateId,
           damageType: data.damageType,
           severity: data.severity,
           customerCharge: data.customerCharge,
           maintenanceRequired: data.maintenanceRequired
-        })
-      ]
-    )
+        } }, connection)
 
     await connection.commit()
   } catch (err) {
@@ -310,6 +303,17 @@ export async function collectCharge(
       [newCollected, nextStatus, id]
     )
 
+    await auditService.logRaw({
+      userId: cashierId,
+      action: 'COLLECT_DAMAGE_CHARGE',
+      entityType: 'DAMAGE_REPORT',
+      entityId: String(id),
+      newValue: {
+        rentalId: report.rental_id,
+        collectedAmount: requestedTotal
+      }
+    }, connection)
+
     await connection.commit()
   } catch (err) {
     try { await connection.rollback() } catch {}
@@ -366,16 +370,7 @@ export async function waiveCharge(
     )
 
     // Phase 16: Audit log
-    await connection.execute(
-      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at)
-       VALUES (?, 'WAIVE_DAMAGE_CHARGE', 'DAMAGE_REPORT', ?, ?, ?, NOW())`,
-      [
-        userId,
-        id,
-        JSON.stringify({ chargeWaived: currentWaived, status: report.status }),
-        JSON.stringify({ chargeWaived: newWaived, status: nextStatus, amountWaived: data.amount, reason: data.reason })
-      ]
-    )
+    await auditService.logRaw({ userId: userId, action: 'WAIVE_DAMAGE_CHARGE', entityType: 'DAMAGE_REPORT', entityId: String(id), oldValue: { chargeWaived: currentWaived, status: report.status }, newValue: { chargeWaived: newWaived, status: nextStatus, amountWaived: data.amount, reason: data.reason } }, connection)
 
     await connection.commit()
   } catch (err) {

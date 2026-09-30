@@ -41,7 +41,7 @@ beforeAll(async () => {
   testSkateId = (skateRes as any).insertId
 
   // Create a test customer
-  const [custRes] = await db.insert(customers).values({ name: 'Test Pay Customer', phone: '01011112222', nationalId: '30000000000000', isActive: true, registrationDate: new Date() })
+  const [custRes] = await db.insert(customers).values({ name: 'Test Pay Customer', phone: '01011112222', nationalId: '1790796796223', isActive: true, registrationDate: new Date() })
   testCustomerId = (custRes as any).insertId
 
   // Get a valid payment method

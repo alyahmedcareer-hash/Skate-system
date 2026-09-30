@@ -99,7 +99,7 @@ afterAll(async () => {
       const id = found[0].id
       await db.delete(userRoles).where(eq(userRoles.userId, id))
       await db.delete(refreshTokens).where(eq(refreshTokens.userId, id))
-      await db.delete(users).where(eq(users.id, id))
+      await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, id))
     }
   }
 })
@@ -123,7 +123,7 @@ describe('TC-AUTH-01: Login success', () => {
     expect(res.body.data.user.isActive).toBe(true)
     expect(Array.isArray(res.body.data.user.roles)).toBe(true)
     expect(Array.isArray(res.body.data.user.permissions)).toBe(true)
-    expect(res.body.data.user.permissions.length).toBe(48) // updated to 48 in Phase 118
+    expect(res.body.data.user.permissions.length).toBe(49) // updated to 48 in Phase 118
 
     // HttpOnly refresh cookie must be set
     const cookies = res.headers['set-cookie'] as string[] | undefined

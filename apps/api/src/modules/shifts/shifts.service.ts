@@ -3,6 +3,7 @@ import { db } from '../../db/connection.js'
 import { cashierShifts } from '../../db/schema/treasury.js'
 import { users } from '../../db/schema/users.js'
 import { treasuryMovements, paymentMethods, treasuryAccounts } from '../../db/schema/payments.js'
+import { auditService } from '../audit/audit.service.js'
 import { AppError, ConflictError, NotFoundError, ForbiddenError, BusinessRuleError } from '../../utils/errors.js'
 import type { OpenShiftInput, CloseShiftInput, ShiftDTO } from './shifts.types.js'
 
@@ -83,6 +84,14 @@ export async function openShift(cashierId: number, input: OpenShiftInput): Promi
     })
 
     const newId = result.insertId
+
+    await auditService.log({
+      userId: cashierId,
+      action: 'OPEN_SHIFT',
+      entityType: 'SHIFT',
+      entityId: String(newId),
+      newValue: { openingBalance: input.openingBalance }
+    }, tx)
 
     // 3. Fetch and return
     const newShift = await tx
@@ -194,6 +203,15 @@ export async function closeShift(shiftId: number, input: CloseShiftInput, cashie
         difference: String(difference),
       })
       .where(eq(cashierShifts.id, shiftId))
+
+    await auditService.log({
+      userId: cashierId,
+      action: 'CLOSE_SHIFT',
+      entityType: 'SHIFT',
+      entityId: String(shiftId),
+      oldValue: { status: shift.status },
+      newValue: { status: 'closed', expectedBalance, actualBalance, difference }
+    }, tx)
 
     // 5. Fetch updated
     const updated = await tx.select().from(cashierShifts).where(eq(cashierShifts.id, shiftId)).limit(1)

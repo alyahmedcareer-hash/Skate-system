@@ -157,10 +157,10 @@ afterAll(async () => {
   // Clean up test users
   if (cashierUserId) {
     await db.delete(userRoles).where(eq(userRoles.userId, cashierUserId))
-    await db.delete(users).where(eq(users.id, cashierUserId))
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, cashierUserId))
   }
   if (nopermUserId) {
-    await db.delete(users).where(eq(users.id, nopermUserId))
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, nopermUserId))
   }
 })
 

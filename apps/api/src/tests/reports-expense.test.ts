@@ -36,7 +36,7 @@ describe('Reports API - Expenses', () => {
     await db.delete(expenses).where(eq(expenses.cashierId, adminId))
     await db.delete(treasuryAccounts).where(eq(treasuryAccounts.id, accountId))
     await db.delete(cashierShifts).where(eq(cashierShifts.id, shiftId))
-    await db.delete(users).where(eq(users.id, adminId))
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, adminId))
   })
 
   it('TC-REP-EXP-01: manual expenses + maintenance payments calculated correctly', async () => {

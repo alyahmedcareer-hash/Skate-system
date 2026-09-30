@@ -82,7 +82,7 @@ describe('Maintenance Payment API', () => {
     await db.delete(treasuryAccounts).where(eq(treasuryAccounts.id, accountId))
     await db.delete(skates).where(eq(skates.id, skateId))
     await db.delete(auditLogs).where(eq(auditLogs.userId, adminId))
-    await db.delete(users).where(eq(users.id, adminId))
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, adminId))
   })
 
   async function setupRecord(cost: number = 330, status: 'pending' | 'in_progress' | 'completed' = 'completed', payStatus: 'unpaid'|'paid'|'paid_external'|'legacy'|'no_cost' = 'unpaid') {

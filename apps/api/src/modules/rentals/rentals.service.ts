@@ -42,6 +42,7 @@
  */
 
 import { eq, sql, and, gte, lte, count, asc, desc, inArray, lt, gt } from 'drizzle-orm'
+import { auditService } from '../audit/audit.service.js';
 import { pool } from '../../db/connection.js'
 import { db } from '../../db/connection.js'
 import { rentals, ENDING_SOON_THRESHOLD_MINUTES } from '../../db/schema/rentals.js'
@@ -890,6 +891,13 @@ export async function cancelRental(rentalId: number, cashierId: number): Promise
       [rentalId]
     )
 
+    await auditService.logRaw({ userId: cashierId, action: 'CANCEL_RENTAL', entityType: 'RENTAL', entityId: String( rentalId), newValue: { status: 'cancelled' } }, connection)
+
+    if (paymentRows.length > 0) {
+      const totalRefund = paymentRows.reduce((sum, p) => sum + p.amount, 0)
+      await auditService.logRaw({ userId: cashierId, action: 'REFUND_RENTAL', entityType: 'RENTAL', entityId: String( rentalId), newValue: { refundedAmount: totalRefund } }, connection)
+    }
+
     // 5. Release the skate
     await connection.execute(
       "UPDATE skates SET status = 'available', updated_at = NOW() WHERE id = ?",
@@ -1040,8 +1048,9 @@ export async function returnRental(
     }
 
     // 6. Insert late fee record
+    let lateFeeRecordId = null
     if (calculatedFee > 0 || lateMinutes > 0) {
-      await connection.execute(
+      const [lfResult] = await connection.execute(
         `INSERT INTO late_fee_records (rental_id, late_minutes, calculated_fee, collected_fee, waived_fee, waived_by, waiver_reason, waived_at, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
@@ -1055,6 +1064,8 @@ export async function returnRental(
           waivedFee > 0 ? now : null
         ]
       )
+      lateFeeRecordId = (lfResult as any).insertId
+
     }
 
     // 7. Insert inspection
@@ -1083,6 +1094,12 @@ export async function returnRental(
       [rentalId]
     )
 
+    await auditService.logRaw({ userId: cashierId, action: 'RETURN_RENTAL', entityType: 'RENTAL', entityId: String( rentalId), newValue: { status: 'returned' } }, connection)
+
+    if (collectedFee > 0 && lateFeeRecordId) {
+      await auditService.logRaw({ userId: cashierId, action: 'COLLECT_LATE_FEE', entityType: 'LATE_FEE', entityId: String( lateFeeRecordId), newValue: { rentalId, collectedFee } }, connection)
+    }
+
     // 9. Update skate status
     const nextSkateStatus = ins.maintenanceRequired ? 'maintenance' : 'available'
     await connection.execute(
@@ -1101,16 +1118,7 @@ export async function returnRental(
 
     // Phase 16: Audit Log
     if (waivedFee > 0) {
-      await connection.execute(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at)
-         VALUES (?, 'WAIVE_LATE_FEE', 'LATE_FEE', ?, ?, ?, NOW())`,
-        [
-          cashierId,
-          rentalId,
-          JSON.stringify({ calculatedFee }),
-          JSON.stringify({ waivedFee, reason: data.waiverReason })
-        ]
-      )
+      await auditService.logRaw({ userId: cashierId, action: 'WAIVE_LATE_FEE', entityType: 'LATE_FEE', entityId: String(lateFeeRecordId), oldValue: { rentalId, calculatedFee }, newValue: { waivedFee, reason: data.waiverReason } }, connection)
     }
 
     await connection.commit()

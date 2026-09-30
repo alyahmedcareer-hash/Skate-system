@@ -94,7 +94,7 @@ beforeAll(async () => {
     if (existing.length) {
       await db.delete(userRoles).where(eq(userRoles.userId, existing[0].id)).catch(() => {})
       await db.delete(refreshTokens).where(eq(refreshTokens.userId, existing[0].id)).catch(() => {})
-      await db.delete(users).where(eq(users.id, existing[0].id)).catch(() => {})
+      await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, existing[0].id)).catch(() => {})
     }
   }
 })
@@ -103,7 +103,7 @@ afterAll(async () => {
   for (const userId of createdUserIds) {
     await db.delete(userRoles).where(eq(userRoles.userId, userId)).catch(() => {})
     await db.delete(refreshTokens).where(eq(refreshTokens.userId, userId)).catch(() => {})
-    await db.delete(users).where(eq(users.id, userId)).catch(() => {})
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, userId)).catch(() => {})
   }
 })
 
@@ -221,7 +221,7 @@ describe('TC-USR-ACT-02: Activation preserves user roles', () => {
 
   afterAll(async () => {
     await db.delete(userRoles).where(eq(userRoles.userId, testUserWithRoleId)).catch(() => {})
-    await db.delete(users).where(eq(users.id, testUserWithRoleId)).catch(() => {})
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, testUserWithRoleId)).catch(() => {})
     createdUserIds = createdUserIds.filter(id => id !== testUserWithRoleId)
   })
 })
@@ -320,7 +320,7 @@ describe('TC-USR-ACT-05: Unauthorized activation rejected', () => {
     const nopermRow = await db.select().from(users).where(eq(users.email, nopermEmail)).limit(1)
     if (nopermRow.length) {
       await db.delete(refreshTokens).where(eq(refreshTokens.userId, nopermRow[0].id)).catch(() => {})
-      await db.delete(users).where(eq(users.id, nopermRow[0].id)).catch(() => {})
+      await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, nopermRow[0].id)).catch(() => {})
       createdUserIds = createdUserIds.filter(id => id !== nopermRow[0].id)
     }
   })
@@ -432,7 +432,7 @@ describe('TC-USR-PWD-04: User without users.change_password permission is reject
 
     // Clean up
     await db.delete(refreshTokens).where(eq(refreshTokens.userId, nopermUserId)).catch(() => {})
-    await db.delete(users).where(eq(users.id, nopermUserId)).catch(() => {})
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, nopermUserId)).catch(() => {})
     createdUserIds = createdUserIds.filter(id => id !== nopermUserId)
   })
 })

@@ -88,7 +88,7 @@ beforeAll(async () => {
   if (existingUser.length) {
     await db.delete(userRoles).where(eq(userRoles.userId, existingUser[0].id))
     await db.delete(refreshTokens).where(eq(refreshTokens.userId, existingUser[0].id))
-    await db.delete(users).where(eq(users.id, existingUser[0].id))
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, existingUser[0].id))
   }
 })
 
@@ -103,7 +103,7 @@ afterAll(async () => {
   for (const userId of createdUserIds) {
     await db.delete(userRoles).where(eq(userRoles.userId, userId)).catch(() => {})
     await db.delete(refreshTokens).where(eq(refreshTokens.userId, userId)).catch(() => {})
-    await db.delete(users).where(eq(users.id, userId)).catch(() => {})
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, userId)).catch(() => {})
   }
 })
 
@@ -483,7 +483,7 @@ describe('TC-ROLE-14: Unauthorized role creation rejected', () => {
     if (existing.length) {
       await db.delete(userRoles).where(eq(userRoles.userId, existing[0].id))
       await db.delete(refreshTokens).where(eq(refreshTokens.userId, existing[0].id))
-      await db.delete(users).where(eq(users.id, existing[0].id))
+      await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, existing[0].id))
     }
 
     const [result] = await db.insert(users).values({

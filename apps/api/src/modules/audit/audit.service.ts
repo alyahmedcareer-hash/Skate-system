@@ -16,6 +16,24 @@ export const auditService = {
    * Log a new audit entry
    * Supports an optional transaction object (tx) for atomic operations.
    */
+    async logRaw(params: LogActionParams, connection: any): Promise<void> {
+    try {
+      await connection.execute(
+        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_value, new_value, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          params.userId,
+          params.action,
+          params.entityType,
+          params.entityId,
+          params.oldValue ? JSON.stringify(params.oldValue) : null,
+          params.newValue ? JSON.stringify(params.newValue) : null,
+        ]
+      )
+    } catch (error) {
+      console.error('Audit Log Error (Raw):', error)
+    }
+  },
+
   async log(params: LogActionParams, tx?: any): Promise<void> {
     const dbInstance = tx || db
     try {

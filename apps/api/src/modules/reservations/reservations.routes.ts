@@ -67,7 +67,7 @@ reservationsRouter.post('/:id/cancel', requirePermission('reservations.cancel'),
       res.status(400).json({ code: 'VALIDATION_ERROR', message: 'معرف غير صالح' })
       return
     }
-    const data = await cancelReservation(id)
+    const data = await cancelReservation(id, req.user!.sub)
     res.json(data)
   } catch (error) {
     next(error)

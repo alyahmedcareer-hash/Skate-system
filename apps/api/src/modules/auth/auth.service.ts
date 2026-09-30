@@ -25,6 +25,7 @@ import { eq, and, gt } from 'drizzle-orm'
 import { db } from '../../db/connection.js'
 import { users, roles, permissions, userRoles, rolePermissions, refreshTokens } from '../../db/schema/index.js'
 import env from '../../config/env.js'
+import { auditService } from '../audit/audit.service.js'
 import { UnauthorizedError, NotFoundError } from '../../utils/errors.js'
 import type { AuthUser, TokenPayload, LoginRequest } from './auth.types.js'
 
@@ -175,6 +176,8 @@ export async function login(body: LoginRequest): Promise<{
 
   const authUser = await loadUserWithPermissions(user.id)
 
+  await auditService.log({ userId: user.id, action: 'USER_LOGIN', entityType: 'USER', entityId: String(user.id) })
+
   return { accessToken, rawRefreshToken, user: authUser }
 }
 
@@ -257,7 +260,11 @@ export async function logout(rawRefreshToken: string | undefined): Promise<void>
   if (!rawRefreshToken) return
 
   const tokenHash = hashToken(rawRefreshToken)
-  await db.delete(refreshTokens).where(eq(refreshTokens.tokenHash, tokenHash))
+  const [tokenRow] = await db.select().from(refreshTokens).where(eq(refreshTokens.tokenHash, tokenHash)).limit(1)
+  if (tokenRow) {
+    await db.delete(refreshTokens).where(eq(refreshTokens.id, tokenRow.id))
+    await auditService.log({ userId: tokenRow.userId, action: 'USER_LOGOUT', entityType: 'USER', entityId: String(tokenRow.userId) })
+  }
 }
 
 // ---------------------------------------------------------------------------

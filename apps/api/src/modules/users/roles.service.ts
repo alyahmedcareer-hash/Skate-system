@@ -68,7 +68,7 @@ export async function getRole(id: number): Promise<RoleDTO> {
 // createRole
 // ---------------------------------------------------------------------------
 
-export async function createRole(body: CreateRoleRequest): Promise<RoleDTO> {
+export async function createRole(body: CreateRoleRequest, actorId: number): Promise<RoleDTO> {
   const { name, nameAr } = body
 
   if (!name?.trim()) throw new ValidationError('اسم الدور مطلوب')
@@ -88,6 +88,7 @@ export async function createRole(body: CreateRoleRequest): Promise<RoleDTO> {
     isSystem: false,
   })
 
+  await auditService.log({ userId: actorId, action: 'CREATE_ROLE', entityType: 'ROLE', entityId: String(result.insertId), newValue: { name: name.trim() } })
   return getRoleWithPermissions(result.insertId)
 }
 
@@ -150,7 +151,7 @@ export async function updateRole(id: number, body: UpdateRoleRequest): Promise<R
 //              roles assigned to active users cannot be deleted (OD-RBAC-003)
 // ---------------------------------------------------------------------------
 
-export async function deleteRole(id: number): Promise<void> {
+export async function deleteRole(id: number, actorId: number): Promise<void> {
   const roleRows = await db.select().from(roles).where(eq(roles.id, id)).limit(1)
   if (!roleRows.length) throw new NotFoundError('الدور غير موجود')
 
@@ -175,6 +176,7 @@ export async function deleteRole(id: number): Promise<void> {
   }
 
   await db.delete(roles).where(eq(roles.id, id))
+  await auditService.log({ userId: actorId, action: 'DELETE_ROLE', entityType: 'ROLE', entityId: String(id) })
 }
 
 // ---------------------------------------------------------------------------

@@ -44,7 +44,7 @@ router.post(
   requirePermission('roles.create'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = await rolesService.createRole(req.body)
+      const data = await rolesService.createRole(req.body, req.user!.sub)
       res.status(201).json({ success: true, data })
     } catch (err) { next(err) }
   },
@@ -97,7 +97,7 @@ router.delete(
   requirePermission('roles.edit'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await rolesService.deleteRole(parseInt(String(req.params['id']), 10))
+      await rolesService.deleteRole(parseInt(String(req.params['id']), 10), (req as any).user!.sub)
       res.json({ success: true, data: { message: 'تم حذف الدور' } })
     } catch (err) { next(err) }
   },

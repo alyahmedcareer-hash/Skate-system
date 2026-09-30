@@ -3,6 +3,7 @@ import { db, pool } from '../../db/connection.js'
 import { reservations } from '../../db/schema/reservations.js'
 import { skates } from '../../db/schema/skates.js'
 import { customers } from '../../db/schema/customers.js'
+import { auditService } from '../audit/audit.service.js'
 import { users } from '../../db/schema/users.js'
 import { NotFoundError, ValidationError, BusinessRuleError } from '../../utils/errors.js'
 import type {
@@ -198,7 +199,7 @@ export async function createReservation(userId: number, data: CreateReservationR
       [data.customerId, data.skateId, from, until, userId, data.notes ?? null]
     )
     newId = insertResult.insertId
-
+    await auditService.logRaw({ userId: userId, action: 'CREATE_RESERVATION', entityType: 'RESERVATION', entityId: String(newId), newValue: { skateId: data.skateId, customerId: data.customerId, reservedFrom: from.toISOString(), reservedUntil: until.toISOString() } }, connection)
     await connection.commit()
   } catch (err) {
     try { await connection.rollback() } catch {}
@@ -362,7 +363,7 @@ export async function updateReservation(id: number, data: UpdateReservationReque
   return await getReservation(id)
 }
 
-export async function cancelReservation(id: number): Promise<ReservationDTO> {
+export async function cancelReservation(id: number, userId: number): Promise<ReservationDTO> {
   const current = await getReservation(id)
   
   if (current.status !== 'pending' && current.status !== 'confirmed') {
@@ -373,6 +374,7 @@ export async function cancelReservation(id: number): Promise<ReservationDTO> {
     .update(reservations)
     .set({ status: 'cancelled' })
     .where(eq(reservations.id, id))
+  await auditService.log({ userId, action: 'CANCEL_RESERVATION', entityType: 'RESERVATION', entityId: String(id), newValue: { status: 'cancelled' } })
 
   return await getReservation(id)
 }

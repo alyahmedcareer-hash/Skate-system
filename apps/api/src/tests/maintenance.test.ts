@@ -60,7 +60,7 @@ describe('Maintenance Service', () => {
     await db.delete(maintenanceRecords)
     await db.delete(skates).where(eq(skates.id, skateId1))
     await db.delete(skates).where(eq(skates.id, skateId2))
-    await db.delete(users).where(eq(users.id, adminId))
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, adminId))
   })
 
   it('should create a maintenance record and ensure skate is maintenance', async () => {

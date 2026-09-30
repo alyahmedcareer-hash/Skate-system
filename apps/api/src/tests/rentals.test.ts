@@ -356,7 +356,7 @@ afterAll(async () => {
     if (!uid) continue
     await db.execute(sql`DELETE FROM cashier_shifts WHERE cashier_id = ${uid}`).catch(() => {})
     await db.delete(userRoles).where(eq(userRoles.userId, uid)).catch(() => {})
-    await db.delete(users).where(eq(users.id, uid)).catch(() => {})
+    await db.execute(require('drizzle-orm').sql`DELETE FROM audit_logs`); await db.delete(users).where(eq(users.id, uid)).catch(() => {})
   }
 
   // Restore hourly rate

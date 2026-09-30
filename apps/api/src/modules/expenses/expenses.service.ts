@@ -3,6 +3,7 @@ import { db } from '../../db/connection.js'
 import { expenses, cashierShifts } from '../../db/schema/treasury.js'
 import { treasuryMovements } from '../../db/schema/payments.js'
 import { users } from '../../db/schema/users.js'
+import { auditService } from '../audit/audit.service.js'
 import { AppError, BusinessRuleError } from '../../utils/errors.js'
 import type { CreateExpenseInput, ExpenseDTO } from './expenses.types.js'
 
@@ -54,6 +55,8 @@ export async function recordExpense(cashierId: number, input: CreateExpenseInput
     await tx.execute(
       sql`UPDATE treasury_accounts SET balance = balance - ${input.amount}, updated_at = NOW() WHERE id = ${treasuryAccountId}`
     )
+
+    await auditService.log({ userId: cashierId, action: 'CREATE_EXPENSE', entityType: 'EXPENSE', entityId: String(newId), newValue: { amount: input.amount, categoryId: input.categoryId } }, tx)
 
     // 5. Fetch inserted
     const [row] = await tx.select().from(expenses).where(eq(expenses.id, newId))

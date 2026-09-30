@@ -3,6 +3,7 @@ import { db } from '../../db/connection.js'
 import { sales, saleItems, salePayments } from '../../db/schema/sales.js'
 import { products } from '../../db/schema/products.js'
 import { paymentMethods, treasuryMovements, treasuryAccounts } from '../../db/schema/payments.js'
+import { auditService } from '../audit/audit.service.js'
 import { CreateSaleDTO, SaleDTO } from './sales.types.js'
 import { BusinessRuleError, NotFoundError, AppError } from '../../utils/errors.js'
 
@@ -207,6 +208,14 @@ export class SalesService {
         }
       }
 
+      await auditService.log({
+        userId: data.cashierId,
+        action: 'CREATE_SALE',
+        entityType: 'SALE',
+        entityId: String(newSaleId),
+        newValue: { totalAmount: computedTotalAmount }
+      }, tx)
+
       return newSaleId
     })
 
@@ -252,7 +261,11 @@ export class SalesService {
 
       // Refund treasury movements
       const payments = await tx.select().from(salePayments).where(eq(salePayments.saleId, saleId))
+      let totalRefundAmount = 0
       for (const p of payments) {
+        const pAmount = parseFloat(p.amount as string)
+        totalRefundAmount += pAmount
+
         await tx.insert(treasuryMovements).values({
           treasuryAccountId: p.treasuryAccountId,
           amount: p.amount,
@@ -267,11 +280,16 @@ export class SalesService {
         // Update Treasury Account Balance
         const [accRow] = await tx.select().from(treasuryAccounts).where(eq(treasuryAccounts.id, p.treasuryAccountId)).limit(1)
         if (accRow) {
-          const newBalance = parseFloat(accRow.balance as string) - parseFloat(p.amount as string)
+          const newBalance = parseFloat(accRow.balance as string) - pAmount
           await tx.update(treasuryAccounts)
             .set({ balance: newBalance.toString() })
             .where(eq(treasuryAccounts.id, p.treasuryAccountId))
         }
+      }
+
+      await auditService.log({ userId: adminUserId, action: 'CANCEL_SALE', entityType: 'SALE', entityId: String(saleId), newValue: { status: 'cancelled' } }, tx)
+      if (totalRefundAmount > 0) {
+        await auditService.log({ userId: adminUserId, action: 'REFUND_SALE', entityType: 'SALE', entityId: String(saleId), newValue: { refundedAmount: totalRefundAmount } }, tx)
       }
     })
 
