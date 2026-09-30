@@ -114,6 +114,7 @@ router.put(
       const data = await rolesService.setRolePermissions(
         parseInt(String(req.params['id']), 10),
         permissionIds ?? [],
+        req.user!.sub
       )
       res.json({ success: true, data })
     } catch (err) { next(err) }

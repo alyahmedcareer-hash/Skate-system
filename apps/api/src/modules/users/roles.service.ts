@@ -14,6 +14,7 @@ import { eq, inArray, and, ne } from 'drizzle-orm'
 import { db } from '../../db/connection.js'
 import { roles, permissions, rolePermissions, users, userRoles } from '../../db/schema/index.js'
 import { NotFoundError, ConflictError, ValidationError, ForbiddenError, BusinessRuleError } from '../../utils/errors.js'
+import { auditService } from '../audit/audit.service.js'
 import type { CreateRoleRequest, UpdateRoleRequest, RoleDTO, PermissionDTO } from './users.types.js'
 
 // ---------------------------------------------------------------------------
@@ -182,9 +183,12 @@ export async function deleteRole(id: number): Promise<void> {
 // GAP-RBAC-007: Validate that all permissionIds exist in DB
 // ---------------------------------------------------------------------------
 
-export async function setRolePermissions(roleId: number, permissionIds: number[]): Promise<RoleDTO> {
+export async function setRolePermissions(roleId: number, permissionIds: number[], actorId: number): Promise<RoleDTO> {
   const roleRows = await db.select().from(roles).where(eq(roles.id, roleId)).limit(1)
   if (!roleRows.length) throw new NotFoundError('الدور غير موجود')
+  
+  const oldRoleData = await getRoleWithPermissions(roleId)
+  const oldPermissionIds = oldRoleData.permissions.map(p => p.id)
 
   // GAP-RBAC-007: Validate permissionIds exist in DB
   if (permissionIds.length > 0) {
@@ -207,6 +211,15 @@ export async function setRolePermissions(roleId: number, permissionIds: number[]
       permissionIds.map(permId => ({ roleId, permissionId: permId }))
     )
   }
+  
+  auditService.log({
+    userId: actorId,
+    action: 'UPDATE_ROLE_PERMISSIONS',
+    entityType: 'ROLE',
+    entityId: String(roleId),
+    oldValue: { permissionIds: oldPermissionIds },
+    newValue: { permissionIds }
+  })
 
   return getRoleWithPermissions(roleId)
 }

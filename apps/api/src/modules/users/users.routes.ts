@@ -43,7 +43,7 @@ router.post(
   requirePermission('users.create'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = await usersService.createUser(req.body)
+      const data = await usersService.createUser(req.body, req.user!.sub)
       res.status(201).json({ success: true, data })
     } catch (err) {
       next(err)
@@ -73,7 +73,7 @@ router.patch(
   requirePermission('users.edit'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = await usersService.updateUser(parseInt(String(req.params['id']), 10), req.body)
+      const data = await usersService.updateUser(parseInt(String(req.params['id']), 10), req.body, req.user!.sub)
       res.json({ success: true, data })
     } catch (err) {
       next(err)
@@ -88,7 +88,7 @@ router.delete(
   requirePermission('users.delete'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await usersService.deactivateUser(parseInt(String(req.params['id']), 10))
+      await usersService.deactivateUser(parseInt(String(req.params['id']), 10), req.user!.sub)
       res.status(200).json({ success: true, data: { message: 'تم تعطيل حساب المستخدم' } })
     } catch (err) {
       next(err)
@@ -104,7 +104,7 @@ router.post(
   requirePermission('users.delete'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await usersService.activateUser(parseInt(String(req.params['id']), 10))
+      await usersService.activateUser(parseInt(String(req.params['id']), 10), req.user!.sub)
       res.status(200).json({ success: true, data: { message: 'تم تفعيل حساب المستخدم' } })
     } catch (err) {
       next(err)
@@ -114,13 +114,6 @@ router.post(
 
 // POST /api/v1/users/:id/change-password — admin/authorized password change (DEC-049)
 // Authorization: users.change_password (dedicated permission — not granted to all roles by default)
-// Body: { newPassword: string, confirmPassword: string }
-// Security:
-//   - Old password is NOT required (administrative capability)
-//   - Password is bcrypt-hashed server-side; never stored as plaintext
-//   - Password is never returned in the response
-//   - Existing sessions remain active (DEC-050 — no session invalidation)
-//   - Works on inactive users; does NOT activate them
 router.post(
   '/:id/change-password',
   authenticate,
@@ -135,6 +128,7 @@ router.post(
         parseInt(String(req.params['id']), 10),
         newPassword ?? '',
         confirmPassword ?? '',
+        req.user!.sub
       )
       res.status(200).json({ success: true, data: { message: 'تم تغيير كلمة المرور بنجاح' } })
     } catch (err) {

@@ -19,6 +19,7 @@ import { eq, ne, inArray } from 'drizzle-orm'
 import { db } from '../../db/connection.js'
 import { users, roles, userRoles } from '../../db/schema/index.js'
 import { NotFoundError, ConflictError, ValidationError } from '../../utils/errors.js'
+import { auditService } from '../audit/audit.service.js'
 import type { CreateUserRequest, UpdateUserRequest, UserDTO } from './users.types.js'
 
 const BCRYPT_ROUNDS = 12
@@ -55,10 +56,15 @@ async function getUserWithRoles(userId: number): Promise<UserDTO> {
 export async function listUsers(): Promise<UserDTO[]> {
   const userRows = await db.select().from(users)
 
-  const result: UserDTO[] = await Promise.all(
-    userRows.map(u => getUserWithRoles(u.id))
+  const result = await Promise.all(
+    userRows.map(u => 
+      getUserWithRoles(u.id).catch(e => {
+        if (e instanceof NotFoundError) return null
+        throw e
+      })
+    )
   )
-  return result
+  return result.filter((u): u is UserDTO => u !== null)
 }
 
 // ---------------------------------------------------------------------------
@@ -73,7 +79,7 @@ export async function getUser(id: number): Promise<UserDTO> {
 // createUser
 // ---------------------------------------------------------------------------
 
-export async function createUser(body: CreateUserRequest): Promise<UserDTO> {
+export async function createUser(body: CreateUserRequest, actorId: number): Promise<UserDTO> {
   const { name, email, password, roleIds } = body
 
   if (!name?.trim()) throw new ValidationError('الاسم مطلوب')
@@ -108,6 +114,15 @@ export async function createUser(body: CreateUserRequest): Promise<UserDTO> {
     }
     await db.insert(userRoles).values(roleIds.map(roleId => ({ userId: newUserId, roleId })))
   }
+  
+  auditService.log({
+    userId: actorId,
+    action: 'CREATE_USER',
+    entityType: 'USER',
+    entityId: String(newUserId),
+    oldValue: null,
+    newValue: { name: name.trim(), email: normalizedEmail, roleIds }
+  })
 
   return getUserWithRoles(newUserId)
 }
@@ -116,9 +131,11 @@ export async function createUser(body: CreateUserRequest): Promise<UserDTO> {
 // updateUser
 // ---------------------------------------------------------------------------
 
-export async function updateUser(id: number, body: UpdateUserRequest): Promise<UserDTO> {
+export async function updateUser(id: number, body: UpdateUserRequest, actorId: number): Promise<UserDTO> {
   const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1)
   if (!userRows.length) throw new NotFoundError('المستخدم غير موجود')
+  
+  const oldUser = userRows[0]
 
   const updates: Partial<typeof users.$inferInsert> = {}
 
@@ -155,7 +172,11 @@ export async function updateUser(id: number, body: UpdateUserRequest): Promise<U
   }
 
   // Update roles if provided (GAP-RBAC-018: validate roleIds exist)
+  let oldRoleIds: number[] = []
   if (body.roleIds !== undefined) {
+    const oldRoles = await db.select({ roleId: userRoles.roleId }).from(userRoles).where(eq(userRoles.userId, id))
+    oldRoleIds = oldRoles.map(r => r.roleId)
+    
     if (body.roleIds.length > 0) {
       const foundRoles = await db
         .select({ id: roles.id })
@@ -171,6 +192,23 @@ export async function updateUser(id: number, body: UpdateUserRequest): Promise<U
     }
   }
 
+  // Phase 16: Audit log
+  // Exclude passwordHash from audit log
+  const { passwordHash: _, ...oldUserSafe } = oldUser
+  const auditNewValue: any = { ...updates }
+  delete auditNewValue.passwordHash
+  if (body.password !== undefined) auditNewValue.passwordChanged = true
+  if (body.roleIds !== undefined) auditNewValue.roleIds = body.roleIds
+
+  auditService.log({
+    userId: actorId,
+    action: 'UPDATE_USER',
+    entityType: 'USER',
+    entityId: String(id),
+    oldValue: { ...oldUserSafe, roleIds: oldRoleIds },
+    newValue: auditNewValue
+  })
+
   return getUserWithRoles(id)
 }
 
@@ -179,11 +217,20 @@ export async function updateUser(id: number, body: UpdateUserRequest): Promise<U
 // No hard delete: historical records must be retained (DEC-009)
 // ---------------------------------------------------------------------------
 
-export async function deactivateUser(id: number): Promise<void> {
+export async function deactivateUser(id: number, actorId: number): Promise<void> {
   const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1)
   if (!userRows.length) throw new NotFoundError('المستخدم غير موجود')
 
   await db.update(users).set({ isActive: false }).where(eq(users.id, id))
+  
+  auditService.log({
+    userId: actorId,
+    action: 'DEACTIVATE_USER',
+    entityType: 'USER',
+    entityId: String(id),
+    oldValue: { isActive: true },
+    newValue: { isActive: false }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -196,7 +243,7 @@ export async function deactivateUser(id: number): Promise<void> {
 // - If user is already active, return gracefully (idempotent)
 // ---------------------------------------------------------------------------
 
-export async function activateUser(id: number): Promise<void> {
+export async function activateUser(id: number, actorId: number): Promise<void> {
   const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1)
   if (!userRows.length) throw new NotFoundError('المستخدم غير موجود')
 
@@ -204,6 +251,15 @@ export async function activateUser(id: number): Promise<void> {
   if (userRows[0].isActive) return
 
   await db.update(users).set({ isActive: true }).where(eq(users.id, id))
+  
+  auditService.log({
+    userId: actorId,
+    action: 'ACTIVATE_USER',
+    entityType: 'USER',
+    entityId: String(id),
+    oldValue: { isActive: false },
+    newValue: { isActive: true }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -223,6 +279,7 @@ export async function changeUserPassword(
   id: number,
   newPassword: string,
   confirmPassword: string,
+  actorId: number
 ): Promise<void> {
   if (!newPassword) throw new ValidationError('كلمة المرور الجديدة مطلوبة')
   if (!confirmPassword) throw new ValidationError('تأكيد كلمة المرور مطلوب')
@@ -237,4 +294,13 @@ export async function changeUserPassword(
 
   // Update only the password hash — isActive and all other fields unchanged
   await db.update(users).set({ passwordHash }).where(eq(users.id, id))
+  
+  auditService.log({
+    userId: actorId,
+    action: 'CHANGE_PASSWORD',
+    entityType: 'USER',
+    entityId: String(id),
+    oldValue: { passwordChanged: false },
+    newValue: { passwordChanged: true }
+  })
 }
